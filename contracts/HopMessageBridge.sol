@@ -9,8 +9,10 @@ interface IHopMessageReceiver {
     function receiveMessageBundle(
         bytes32 bundleRoot,
         uint256 bundleValue,
+        uint256 bundleFees,
+        uint256 fromChainId,
         uint256 toChainId,
-        address bundleRelayerAddress
+        uint256 commitTime
     ) external payable;
 }
 
@@ -42,22 +44,19 @@ contract HopMessageBridge {
     mapping(uint256 => uint256) routeMaxBundleMessages;
 
     function sendMessage(uint256 toChainId, address to, bytes calldata message, uint256 value) external payable {
-        // Require msg.value > bundleFee
-        // Require bundleFee > minBundleFee
-        uint256 routeFee = routeMessageFee[toChainId];
-        uint256 rquiredValue = routeFee + value;
+        uint256 messageFee = routeMessageFee[toChainId];
+        uint256 rquiredValue = messageFee + value;
         require(rquiredValue == msg.value, "MSG_BRG: Incorrect msg.value");
 
         bytes32 messageId = getMessageId(msg.sender, to, msg.value, message);
-        bytes32 storage pendingMessageIds = pendingMessageIdsForChainId[toChainId];
+        bytes32[] storage pendingMessageIds = pendingMessageIdsForChainId[toChainId];
         pendingMessageIds.push(messageId);
 
         pendingValue[toChainId] = pendingValue[toChainId] + msg.value;
-        pendingBundleFees[toChainId] = pendingBundleFees[toChainId] + bundleFee;
+        pendingBundleFees[toChainId] = pendingBundleFees[toChainId] + messageFee;
 
         uint256 maxBundleMessages = routeMaxBundleMessages[toChainId];
-
-        if (pendingMessageIds.length >= routeMaxBundleMessages) {
+        if (pendingMessageIds.length >= maxBundleMessages) {
             _commitMessageBundle(toChainId);
         }
     }
@@ -75,7 +74,7 @@ contract HopMessageBridge {
             pendingFees,
             getChainId(),
             toChainId,
-            now
+            block.timestamp
         );
     }
 
@@ -88,14 +87,11 @@ contract HopMessageBridge {
         uint256 bundleFees,
         uint256 fromChainId,
         uint256 toChainId,
-        address bundleRelayerAddress,
         uint256 commitTime
     )
         external
         payable
     {
-        require(now >= relayWindowStart, "MSG_BRG: Relay window not started");
-
         // distribute bundle reward if msg.sender == bundleRelayerAddress || block.timestamp > (commitTime + protectedRelayTime)
         if (toChainId == getChainId()) {
             bytes32 bundleId = keccak256(abi.encodePacked(bundleRoot, bundleValue, toChainId));
@@ -107,11 +103,12 @@ contract HopMessageBridge {
         uint256 relayWindowStart = commitTime + exitTime[fromChainId];
         uint256 relayWindowEnd = relayWindowStart + relayWindow;
         uint256 relayReward = 0;
-        if (now > relayWindowEnd) {
+        if (block.timestamp > relayWindowEnd) {
             relayReward = bundleFees;
-        } else if (now >= relayWindowStart) {
-            relayReward = (now - relayWindowStart) * bundleFees / relayWindow;
+        } else if (block.timestamp >= relayWindowStart) {
+            relayReward = (block.timestamp - relayWindowStart) * bundleFees / relayWindow;
         }
+
     }
 
     function relayMessage(
@@ -170,10 +167,6 @@ contract HopMessageBridge {
         returns (bytes32)
     {
         return keccak256(abi.encode(from, to, value, message));
-    }
-
-    function getRouteId(uint256 toChainId) public pure returns (bytes32) {
-        return keccak256(getChainId(), toChainId);
     }
 
     function xDomainMessageSender() public view returns (address) {

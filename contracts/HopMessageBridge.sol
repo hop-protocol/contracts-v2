@@ -22,50 +22,66 @@ struct Message {
     uint256 value;
 }
 
-struct Bundle {
+struct PendingBundle {
+    bytes32[] messageIds;
+    uint256 value;
+    uint256 fees;
+}
+
+struct ConfirmedBundle {
     bytes32 bundleRoot;
     uint256 bundleValue;
 }
 
+library Lib_PendingBundle {
+    using Lib_MerkleTree for bytes32;
+
+    function getBundleRoot(PendingBundle storage pendingBundle) internal view returns (bytes32) {
+        return Lib_MerkleTree.getMerkleRoot(pendingBundle.messageIds);
+    }
+}
+
 contract HopMessageBridge {
     using Lib_MerkleTree for bytes32;
+    using Lib_PendingBundle for PendingBundle;
 
     address private constant DEFAULT_XDOMAIN_SENDER = 0x000000000000000000000000000000000000dEaD;
     address private xDomainSender = DEFAULT_XDOMAIN_SENDER;
 
     mapping(uint256 => IHopMessageReceiver) bridgeForChainId;
     // destination chain Id -> pending message Ids
-    mapping(uint256 => bytes32[]) public pendingMessageIdsForChainId;
-    mapping(uint256 => uint256) public pendingValue;
-    mapping(uint256 => uint256) public pendingBundleFees;
-    mapping(bytes32 => Bundle) bundles;
+    mapping(uint256 => PendingBundle) public pendingBundleForChainId;
+    mapping(bytes32 => ConfirmedBundle) bundles;
     mapping(bytes32 => bool) relayedMessage;
     mapping(uint256 => uint256) routeMessageFee; // ToDo: Add setter
     mapping(uint256 => uint256) routeMaxBundleMessages;
 
     function sendMessage(uint256 toChainId, address to, bytes calldata message, uint256 value) external payable {
         uint256 messageFee = routeMessageFee[toChainId];
-        uint256 rquiredValue = messageFee + value;
-        require(rquiredValue == msg.value, "MSG_BRG: Incorrect msg.value");
+        uint256 requiredValue = messageFee + value;
+        require(requiredValue == msg.value, "MSG_BRG: Incorrect msg.value");
+
+        PendingBundle storage pendingBundle = pendingBundleForChainId[toChainId];
 
         bytes32 messageId = getMessageId(msg.sender, to, msg.value, message);
-        bytes32[] storage pendingMessageIds = pendingMessageIdsForChainId[toChainId];
-        pendingMessageIds.push(messageId);
-
-        pendingValue[toChainId] = pendingValue[toChainId] + msg.value;
-        pendingBundleFees[toChainId] = pendingBundleFees[toChainId] + messageFee;
+        pendingBundle.messageIds.push(messageId);
+        // combine these for 1 sstore
+        pendingBundle.value = pendingBundle.value + msg.value;
+        pendingBundle.fees = pendingBundle.fees + messageFee;
 
         uint256 maxBundleMessages = routeMaxBundleMessages[toChainId];
-        if (pendingMessageIds.length >= maxBundleMessages) {
+        if (pendingBundle.messageIds.length >= maxBundleMessages) {
             _commitMessageBundle(toChainId);
         }
     }
 
     function _commitMessageBundle(uint256 toChainId) private {
-        bytes32[] storage pendingMessages = pendingMessageIdsForChainId[toChainId];
-        bytes32 bundleRoot = Lib_MerkleTree.getMerkleRoot(pendingMessages);
-        uint256 bundleValue = pendingValue[toChainId];
-        uint256 pendingFees = pendingBundleFees[toChainId];
+        // bytes32[] storage pendingMessages = pendingMessageIdsForChainId[toChainId];
+        PendingBundle storage pendingBundle = pendingBundleForChainId[toChainId];
+        bytes32 bundleRoot = pendingBundle.getBundleRoot();
+        uint256 bundleValue = pendingBundle.value;
+        uint256 pendingFees = pendingBundle.fees;
+        delete pendingBundleForChainId[toChainId];
 
         IHopMessageReceiver bridge = bridgeForChainId[toChainId];
         bridge.receiveMessageBundle{value: bundleValue}(
@@ -95,7 +111,7 @@ contract HopMessageBridge {
         // distribute bundle reward if msg.sender == bundleRelayerAddress || block.timestamp > (commitTime + protectedRelayTime)
         if (toChainId == getChainId()) {
             bytes32 bundleId = keccak256(abi.encodePacked(bundleRoot, bundleValue, toChainId));
-            bundles[bundleId] = Bundle(bundleRoot, bundleValue);
+            bundles[bundleId] = ConfirmedBundle(bundleRoot, bundleValue);
         } else {
             // forward root to destination
         }
@@ -123,7 +139,7 @@ contract HopMessageBridge {
     )
         external
     {
-        Bundle memory bundle = bundles[bundleId];
+        ConfirmedBundle memory bundle = bundles[bundleId];
         require(bundle.bundleRoot != bytes32(0), "MSG_BRG: Bundle not found");
         bytes32 messageId = getMessageId(from, to, value, message);
         require(

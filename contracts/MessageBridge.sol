@@ -41,7 +41,7 @@ library Lib_PendingBundle {
     }
 }
 
-contract HopMessageBridge {
+contract MessageBridge {
     using Lib_MerkleTree for bytes32;
     using Lib_PendingBundle for PendingBundle;
 

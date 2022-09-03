@@ -1,10 +1,7 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.2;
 
-import "./utils/Lib_MerkleTree.sol";
 import "./MessageBridge.sol";
-
-// attach the bundle fee and bundle relayer to the root and reward them when it is set.
 
 interface ISpokeMessageBridge {
     function receiveMessageBundle(bytes32 bundleRoot, uint256 bundleValue, uint256 fromChainId) external payable;
@@ -12,8 +9,8 @@ interface ISpokeMessageBridge {
 }
 
 contract HubMessageBridge is MessageBridge {
-    mapping(uint256 => IHopMessageReceiver) bridgeForChainId;
-    mapping(uint256 => uint256) exitTime;
+    mapping(uint256 => ISpokeMessageBridge) bridgeForChainId;
+    mapping(uint256 => uint256) exitTimeForChainId;
     uint256 relayWindow;
 
     function sendMessage(
@@ -47,13 +44,13 @@ contract HubMessageBridge is MessageBridge {
 
         if (toChainId == getChainId()) {
             bytes32 bundleId = keccak256(abi.encodePacked(bundleRoot, bundleValue, toChainId));
-            bundles[bundleId] = ConfirmedBundle(bundleRoot, bundleValue);
+            bundles[bundleId] = ConfirmedBundle(bundleRoot, bundleValue, fromChainId);
         } else {
             ISpokeMessageBridge spokeBridge = bridgeForChainId[toChainId];
             spokeBridge.receiveMessageBundle(bundleRoot, bundleValue, fromChainId);
         }
 
-        uint256 relayWindowStart = commitTime + exitTime[fromChainId];
+        uint256 relayWindowStart = commitTime + exitTimeForChainId[fromChainId];
         uint256 relayWindowEnd = relayWindowStart + relayWindow;
         uint256 relayReward = 0;
         if (block.timestamp > relayWindowEnd) {
@@ -63,12 +60,12 @@ contract HubMessageBridge is MessageBridge {
         }
 
         if (relayReward > 0) {
-            transfer(tx.origin, relayReward)
+            transfer(tx.origin, relayReward);
         }
     }
 
     function transfer(address to, uint256 amount) private {
-        (bool success, ) = tx.origin.call{value}
-        require(success, "BRG: Transfer failed")
+        (bool success, ) = tx.origin.call{value: amount}("");
+        require(success, "BRG: Transfer failed");
     }
 }

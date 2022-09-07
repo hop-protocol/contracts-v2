@@ -4,6 +4,20 @@ pragma solidity ^0.8.2;
 import "./MessageBridge.sol";
 import "./utils/Lib_MerkleTree.sol";
 
+struct PendingBundle {
+    bytes32[] messageIds;
+    uint256 value;
+    uint256 fees;
+}
+
+library Lib_PendingBundle {
+    using Lib_MerkleTree for bytes32;
+
+    function getBundleRoot(PendingBundle storage pendingBundle) internal view returns (bytes32) {
+        return Lib_MerkleTree.getMerkleRoot(pendingBundle.messageIds);
+    }
+}
+
 interface IHubMessageBridge {
     function receiveOrForwardMessageBundle(
         bytes32 bundleRoot,
@@ -43,6 +57,15 @@ contract SpokeMessageBridge is MessageBridge {
         if (pendingBundle.messageIds.length >= maxBundleMessages) {
             _commitMessageBundle(toChainId);
         }
+    }
+
+    function commitMessageBundle(uint256 toChainId) external payable {
+        uint256 totalFees = pendingBundleForChainId[toChainId].fees + msg.value;
+        uint256 messageFee = routeMessageFee[toChainId];
+        uint256 numMessages = routeMaxBundleMessages[toChainId];
+        uint256 fullBundleFee = messageFee * numMessages;
+        require(totalFees >= fullBundleFee, "BRG: Not enough fees");
+        _commitMessageBundle(toChainId);
     }
 
     function _commitMessageBundle(uint256 toChainId) private {

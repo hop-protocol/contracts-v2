@@ -20,29 +20,14 @@ struct Message {
     uint256 value;
 }
 
-struct PendingBundle {
-    bytes32[] messageIds;
-    uint256 value;
-    uint256 fees;
-}
-
 struct ConfirmedBundle {
     bytes32 bundleRoot;
     uint256 bundleValue;
     uint256 fromChainId;
 }
 
-library Lib_PendingBundle {
-    using Lib_MerkleTree for bytes32;
-
-    function getBundleRoot(PendingBundle storage pendingBundle) internal view returns (bytes32) {
-        return Lib_MerkleTree.getMerkleRoot(pendingBundle.messageIds);
-    }
-}
-
 abstract contract MessageBridge {
     using Lib_MerkleTree for bytes32;
-    using Lib_PendingBundle for PendingBundle;
 
     address private constant DEFAULT_XDOMAIN_SENDER = 0x000000000000000000000000000000000000dEaD;
     address private xDomainSender = DEFAULT_XDOMAIN_SENDER;

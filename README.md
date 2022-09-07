@@ -1,6 +1,6 @@
 # Hop
 
-The smart contracts that power the Hop Exchange.
+The smart contracts that power Hop Protocol.
 
 ## Compile Contracts
 ```

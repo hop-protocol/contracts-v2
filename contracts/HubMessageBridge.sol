@@ -26,7 +26,9 @@ contract HubMessageBridge is MessageBridge {
         external
         payable
     {
-        require(value == msg.value, "MSG_BRG: Incorrect msg.value");
+        if (value != msg.value) {
+            revert IncorrectValue(value, msg.value);
+        }
         ISpokeMessageBridge spokeBridge = getSpokeBridge(toChainId);
 
         spokeBridge.forwardMessage{value: value}(to, msg.sender, message);
@@ -69,26 +71,32 @@ contract HubMessageBridge is MessageBridge {
 
     function transfer(address to, uint256 amount) private {
         (bool success, ) = to.call{value: amount}("");
-        require(success, "BRG: Transfer failed");
+        if (!success) revert TransferFailed(to, amount);
     }
 
     // Getters
 
     function getSpokeBridge(uint256 chainId) public view returns (ISpokeMessageBridge) {
         ISpokeMessageBridge bridge = spokeBridgeForChainId[chainId];
-        require(address(bridge) != ZERO_ADDRESS, "BRG: No bridge for chainId");
+        if (address(bridge) == ZERO_ADDRESS) {
+            revert NoBridge(chainId);
+        }
         return bridge;
     }
 
     function getChainId(address bridge) public view returns (uint256) {
         uint256 chainId = chainIdForSpokeBridge[bridge];
-        require(chainId != 0, "BRG: Invalid caller");
+        if (chainId == 0) {
+            revert InvalidBridgeCaller(bridge);
+        }
         return chainId;
     }
 
     function getSpokeExitTime(uint256 chainId) public view returns (uint256) {
         uint256 exitTime = exitTimeForChainId[chainId];
-        require(exitTime > 0, "BRG: No exit time for chainId");
+        if (exitTime == 0) {
+            revert InvalidChainId(chainId);
+        }
         return exitTime;
     }
 }

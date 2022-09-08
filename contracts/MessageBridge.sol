@@ -2,6 +2,7 @@
 pragma solidity ^0.8.2;
 
 import "./utils/Lib_MerkleTree.sol";
+import "./libraries/Error.sol";
 
 interface IHopMessageReceiver {
     function receiveMessageBundle(
@@ -48,17 +49,21 @@ abstract contract MessageBridge {
         external
     {
         ConfirmedBundle memory bundle = bundles[bundleId];
-        require(bundle.bundleRoot != bytes32(0), "MSG_BRG: Bundle not found");
         bytes32 messageId = getMessageId(from, to, value, message);
-        require(
-            bundle.bundleRoot.verify(
-                messageId,
-                treeIndex,
-                siblings,
-                totalLeaves
-            ),
-            "MSG_BRG: Invalid proof"
+        if (bundle.bundleRoot == bytes32(0)) {
+            revert BundleNotFound(bundleId, messageId);
+        }
+
+        bool isProofValid = bundle.bundleRoot.verify(
+            messageId,
+            treeIndex,
+            siblings,
+            totalLeaves
         );
+
+        if (!isProofValid) {
+            revert InvalidProof(bundle.bundleRoot, messageId, treeIndex, siblings, totalLeaves);
+        }
 
         relayedMessage[messageId] = true;
 
@@ -94,10 +99,9 @@ abstract contract MessageBridge {
     }
 
     function xDomainMessageSender() public view returns (address) {
-        require(
-            xDomainSender != DEFAULT_XDOMAIN_SENDER,
-            "MSG_BRG: xDomainMessageSender is not set"
-        );
+        if(xDomainSender != DEFAULT_XDOMAIN_SENDER) {
+            revert XDomainMessengerNotSet();
+        }
         return xDomainSender;
     }
 }

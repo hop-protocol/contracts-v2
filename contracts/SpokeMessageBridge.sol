@@ -43,7 +43,9 @@ contract SpokeMessageBridge is MessageBridge {
     function sendMessage(uint256 toChainId, address to, bytes calldata message, uint256 value) external payable {
         uint256 messageFee = routeMessageFee[toChainId];
         uint256 requiredValue = messageFee + value;
-        require(requiredValue == msg.value, "MSG_BRG: Incorrect msg.value");
+        if (requiredValue != msg.value) {
+            revert IncorrectValue(requiredValue, msg.value);
+        }
 
         PendingBundle storage pendingBundle = pendingBundleForChainId[toChainId];
 
@@ -64,7 +66,9 @@ contract SpokeMessageBridge is MessageBridge {
         uint256 messageFee = routeMessageFee[toChainId];
         uint256 numMessages = routeMaxBundleMessages[toChainId];
         uint256 fullBundleFee = messageFee * numMessages;
-        require(totalFees >= fullBundleFee, "BRG: Not enough fees");
+        if (fullBundleFee > totalFees) {
+            revert NotEnoughFees(fullBundleFee, totalFees);
+        }
         _commitMessageBundle(toChainId);
     }
 

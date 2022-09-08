@@ -94,6 +94,6 @@ contract SpokeMessageBridge is MessageBridge {
         payable
     {
         bytes32 bundleId = keccak256(abi.encodePacked(bundleRoot, bundleValue, getChainId()));
-        bundles[bundleId] = ConfirmedBundle(bundleRoot, bundleValue, fromChainId);
+        bundles[bundleId] = ConfirmedBundle(fromChainId, bundleRoot, bundleValue);
     }
 }

@@ -21,9 +21,9 @@ struct Message {
 }
 
 struct ConfirmedBundle {
+    uint256 fromChainId;
     bytes32 bundleRoot;
     uint256 bundleValue;
-    uint256 fromChainId;
 }
 
 abstract contract MessageBridge {

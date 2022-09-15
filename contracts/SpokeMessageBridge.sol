@@ -10,6 +10,12 @@ struct PendingBundle {
     uint256 fees;
 }
 
+struct Route {
+    uint256 chainId;
+    uint256 messageFee;
+    uint256 maxBundleMessages;
+}
+
 library Lib_PendingBundle {
     using Lib_MerkleTree for bytes32;
 
@@ -23,7 +29,6 @@ interface IHubMessageBridge {
         bytes32 bundleRoot,
         uint256 bundleValue,
         uint256 bundleFees,
-        uint256 fromChainId,
         uint256 toChainId,
         uint256 commitTime
     ) external payable;
@@ -36,11 +41,33 @@ contract SpokeMessageBridge is MessageBridge {
     address private xDomainSender = DEFAULT_XDOMAIN_SENDER;
 
     IHubMessageBridge public hubBridge;
-    mapping(uint256 => PendingBundle) public pendingBundleForChainId;
     mapping(uint256 => uint256) routeMessageFee;
     mapping(uint256 => uint256) routeMaxBundleMessages;
 
-    function sendMessage(uint256 toChainId, address to, bytes calldata message, uint256 value) external payable {
+    mapping(uint256 => PendingBundle) public pendingBundleForChainId;
+
+    constructor(IHubMessageBridge _hubBridge, Route[] memory routes) {
+        hubBridge = _hubBridge;
+        for (uint256 i = 0; i < routes.length; i++) {
+            // ToDo: require chainId is not 0
+            // ToDo: require messageFee is not 0
+            // ToDo: require maxBundleMessages is not 0
+            Route memory route = routes[i];
+            routeMessageFee[route.chainId] = route.messageFee;
+            routeMaxBundleMessages[route.chainId] = route.maxBundleMessages;
+        }
+    }
+
+    function sendMessage(
+        uint256 toChainId,
+        address to,
+        bytes calldata message,
+        uint256 value
+    )
+        external
+        override
+        payable
+    {
         uint256 messageFee = routeMessageFee[toChainId];
         uint256 requiredValue = messageFee + value;
         if (requiredValue != msg.value) {
@@ -49,14 +76,14 @@ contract SpokeMessageBridge is MessageBridge {
 
         PendingBundle storage pendingBundle = pendingBundleForChainId[toChainId];
 
-        bytes32 messageId = getMessageId(msg.sender, to, msg.value, message);
+        bytes32 messageId = getMessageId(msg.sender, to, value, message);
         pendingBundle.messageIds.push(messageId);
         // combine these for 1 sstore
         pendingBundle.value = pendingBundle.value + msg.value;
         pendingBundle.fees = pendingBundle.fees + messageFee;
 
         uint256 maxBundleMessages = routeMaxBundleMessages[toChainId];
-        if (pendingBundle.messageIds.length >= maxBundleMessages) {
+        if (pendingBundle.messageIds.length == maxBundleMessages) {
             _commitMessageBundle(toChainId);
         }
     }
@@ -83,7 +110,6 @@ contract SpokeMessageBridge is MessageBridge {
             bundleRoot,
             bundleValue,
             pendingFees,
-            getChainId(),
             toChainId,
             block.timestamp
         );

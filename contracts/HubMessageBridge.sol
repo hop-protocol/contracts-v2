@@ -24,6 +24,7 @@ contract HubMessageBridge is MessageBridge {
         uint256 value
     )
         external
+        override
         payable
     {
         if (value != msg.value) {
@@ -35,10 +36,10 @@ contract HubMessageBridge is MessageBridge {
     }
 
     function receiveOrForwardMessageBundle(
-        uint256 toChainId,
         bytes32 bundleRoot,
         uint256 bundleValue,
         uint256 bundleFees,
+        uint256 toChainId,
         uint256 commitTime
     )
         external
@@ -51,7 +52,7 @@ contract HubMessageBridge is MessageBridge {
             bytes32 bundleId = keccak256(abi.encodePacked(fromChainId, toChainId, bundleRoot, bundleValue));
             bundles[bundleId] = ConfirmedBundle(fromChainId, bundleRoot, bundleValue);
         } else {
-            ISpokeMessageBridge spokeBridge = getSpokeBridge(toChainId);
+            ISpokeMessageBridge spokeBridge = getSpokeBridge(fromChainId);
             spokeBridge.receiveMessageBundle(bundleRoot, bundleValue, fromChainId);
         }
 
@@ -72,6 +73,16 @@ contract HubMessageBridge is MessageBridge {
     function transfer(address to, uint256 amount) private {
         (bool success, ) = to.call{value: amount}("");
         if (!success) revert TransferFailed(to, amount);
+    }
+
+    // Setters
+
+    function setSpokeBridge(uint256 chainId, address spokeBridge, uint256 exitTime) external {
+        // ToDo: Only owner
+        // ToDo: require chainId is not 0
+        chainIdForSpokeBridge[spokeBridge] = chainId;
+        spokeBridgeForChainId[chainId] = ISpokeMessageBridge(spokeBridge);
+        exitTimeForChainId[chainId] = exitTime;
     }
 
     // Getters

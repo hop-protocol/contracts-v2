@@ -3,6 +3,7 @@ pragma solidity ^0.8.2;
 
 import "./utils/Lib_MerkleTree.sol";
 import "./libraries/Error.sol";
+import "hardhat/console.sol"; // ToDo: Remove
 
 interface IHopMessageReceiver {
     function receiveMessageBundle(
@@ -36,11 +37,18 @@ abstract contract MessageBridge {
     mapping(bytes32 => ConfirmedBundle) bundles;
     mapping(bytes32 => bool) relayedMessage;
 
+    function sendMessage(
+        uint256 toChainId,
+        address to,
+        bytes calldata message,
+        uint256 value
+    ) external virtual payable;
+
     function relayMessage(
         address from,
         address to,
-        uint256 value,
         bytes calldata message,
+        uint256 value,
         bytes32 bundleId,
         uint256 treeIndex,
         bytes32[] calldata siblings,

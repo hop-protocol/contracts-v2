@@ -1,5 +1,7 @@
 import { expect, use } from 'chai'
 import { ethers } from 'hardhat'
+// import { SpokeMessageBridge } from 'typechain'
+import type { SpokeMessageBridge as ISpokeMessageBridge } from '../typechain'
 
 type BigNumberish = typeof ethers.BigNumber | string | number
 const { BigNumber, provider } = ethers
@@ -10,13 +12,19 @@ const HUB_CHAIN_ID = 1111
 const SPOKE_CHAIN_ID = 1112
 const RESULT = 12345
 const MESSAGE_VALUE = 5
+const MESSAGE_FEE = 1
+const MAX_BUNDLE_MESSAGES = 2
 
 describe('contracts', function () {
   it('Should call contract Spoke to Hub', async function () {
     const [deployer, sender, relayer] = await ethers.getSigners()
     const message = await getSetResultCalldata(RESULT)
 
-    const { hubBridge, spokeBridge, messageReceiver } = await fixture()
+    const { hubBridge, spokeBridges, messageReceiver } = await fixture(
+      HUB_CHAIN_ID,
+      [SPOKE_CHAIN_ID]
+    )
+    const spokeBridge = spokeBridges[0]
 
     console.log(`Hub Bridge: ${hubBridge.address}`)
     console.log(`Spoke Bridge: ${spokeBridge.address}`)
@@ -91,7 +99,7 @@ function getMessageId(
   )
 }
 
-async function fixture() {
+async function fixture(hubChainId: number, spokeChainIds: number[]) {
   const HubMessageBridge = await ethers.getContractFactory(
     'MockHubMessageBridge'
   )
@@ -99,17 +107,29 @@ async function fixture() {
     'MockSpokeMessageBridge'
   )
   const MessageReceiver = await ethers.getContractFactory('MessageReceiver')
-  const hubBridge = await HubMessageBridge.deploy(HUB_CHAIN_ID)
-  const spokeBridge = await SpokeMessageBridge.deploy(
-    hubBridge.address,
-    [{ chainId: HUB_CHAIN_ID, messageFee: 1, maxBundleMessages: 2 }],
-    SPOKE_CHAIN_ID
-  )
+  const hubBridge = await HubMessageBridge.deploy(hubChainId)
+  const spokeBridges: ISpokeMessageBridge[] = []
+  for (let i = 0; i < spokeChainIds.length; i++) {
+    const spokeChainId = spokeChainIds[i]
+    const spokeBridge = await SpokeMessageBridge.deploy(
+      hubBridge.address,
+      [
+        {
+          chainId: hubChainId,
+          messageFee: MESSAGE_FEE,
+          maxBundleMessages: MAX_BUNDLE_MESSAGES,
+        },
+      ],
+      SPOKE_CHAIN_ID
+    )
+    await hubBridge.setSpokeBridge(spokeChainId, spokeBridge.address, ONE_WEEK)
+
+    spokeBridges.push(spokeBridge)
+  }
+
   const messageReceiver = await MessageReceiver.deploy()
 
-  await hubBridge.setSpokeBridge(SPOKE_CHAIN_ID, spokeBridge.address, ONE_WEEK)
-
-  return { hubBridge, spokeBridge, messageReceiver }
+  return { hubBridge, spokeBridges, messageReceiver }
 }
 
 async function getSetResultCalldata(result: BigNumberish): Promise<string> {

@@ -16,10 +16,10 @@ module.exports = {
     sourceType: 'module', // Allows for the use of imports
   },
   rules: {
-    'prettier/prettier': 'error',
+    'prettier/prettier': 'warn',
     'no-unused-vars': 'off',
     'prefer-const': [2, { destructuring: 'all' }],
-    'object-curly-spacing': ['error', 'always'],
+    'object-curly-spacing': ['warn', 'always'],
   },
   overrides: [
     {
@@ -36,7 +36,7 @@ module.exports = {
       plugins: ['@typescript-eslint', 'prettier', '@typescript-eslint/tslint'],
       rules: {
         'no-empty-pattern': 'warn',
-        'prettier/prettier': ['error', prettierrc],
+        'prettier/prettier': ['warn', prettierrc],
         '@typescript-eslint/member-delimiter-style': ['off'],
         '@typescript-eslint/no-explicit-any': ['off'],
         '@typescript-eslint/no-use-before-define': ['off'],

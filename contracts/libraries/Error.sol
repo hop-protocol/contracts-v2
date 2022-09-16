@@ -9,7 +9,6 @@ error InvalidProof(
     bytes32[] siblings,
     uint256 totalLeaves
 );
-error XDomainMessengerNotSet();
 error IncorrectValue(uint256 requiredValue, uint256 msgValue);
 error TransferFailed(address to, uint256 amount);
 error NoBridge(uint256 chainId);

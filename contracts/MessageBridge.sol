@@ -3,6 +3,7 @@ pragma solidity ^0.8.2;
 
 import "./utils/Lib_MerkleTree.sol";
 import "./libraries/Error.sol";
+import "./MessageForwarder.sol";
 import "hardhat/console.sol"; // ToDo: Remove
 
 interface IHopMessageReceiver {
@@ -17,9 +18,10 @@ interface IHopMessageReceiver {
 }
 
 struct Message {
+    address from;
     address to;
-    bytes message;
     uint256 value;
+    bytes message;
 }
 
 struct ConfirmedBundle {
@@ -31,8 +33,9 @@ struct ConfirmedBundle {
 abstract contract MessageBridge {
     using Lib_MerkleTree for bytes32;
 
-    address private constant DEFAULT_XDOMAIN_SENDER = 0x000000000000000000000000000000000000dEaD;
-    address private xDomainSender = DEFAULT_XDOMAIN_SENDER;
+    MessageForwarder public messageForwarder;
+    // address private constant DEFAULT_XDOMAIN_SENDER = 0x000000000000000000000000000000000000dEaD;
+    // address private xDomainSender = DEFAULT_XDOMAIN_SENDER;
 
     mapping(bytes32 => ConfirmedBundle) bundles;
     mapping(bytes32 => bool) relayedMessage;
@@ -57,7 +60,10 @@ abstract contract MessageBridge {
         external
     {
         ConfirmedBundle memory bundle = bundles[bundleId];
-        bytes32 messageId = getMessageId(from, to, value, message);
+        bytes32 messageId;
+        {
+            messageId = getMessageId(from, to, value, message);
+        }
         if (bundle.bundleRoot == bytes32(0)) {
             revert BundleNotFound(bundleId, messageId);
         }
@@ -75,13 +81,17 @@ abstract contract MessageBridge {
 
         relayedMessage[messageId] = true;
 
-        xDomainSender = from;
-        (bool success, ) = to.call{value: value}(message);
-        xDomainSender = DEFAULT_XDOMAIN_SENDER;
+        // ToDo: Add value
+        bool success = messageForwarder.forward(from, to, message);
 
         if (success == false) {
             relayedMessage[messageId] = false;
         }
+    }
+
+    function setMessageForwarder(MessageForwarder _messageForwarder) external {
+        // ToDo: onlyOwner
+        messageForwarder = _messageForwarder;
     }
 
     /**
@@ -104,12 +114,5 @@ abstract contract MessageBridge {
         returns (bytes32)
     {
         return keccak256(abi.encode(from, to, value, message));
-    }
-
-    function xDomainMessageSender() public view returns (address) {
-        if(xDomainSender != DEFAULT_XDOMAIN_SENDER) {
-            revert XDomainMessengerNotSet();
-        }
-        return xDomainSender;
     }
 }

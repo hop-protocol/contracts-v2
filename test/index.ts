@@ -1,4 +1,5 @@
 import { expect, use } from 'chai'
+import { ContractTransaction } from 'ethers'
 import { ethers } from 'hardhat'
 // import { SpokeMessageBridge } from 'typechain'
 import type { SpokeMessageBridge as ISpokeMessageBridge } from '../typechain'
@@ -33,11 +34,19 @@ describe('contracts', function () {
     const toAddress = messageReceiver.address
 
     // Send message and commit bundle
-    await spokeBridge
-      .connect(sender)
-      .sendMessage(HUB_CHAIN_ID, toAddress, message, MESSAGE_VALUE, {
-        value: MESSAGE_VALUE + 1,
-      })
+    const p = spokeBridge
+        .connect(sender)
+        .sendMessage(HUB_CHAIN_ID, toAddress, message, MESSAGE_VALUE, {
+          value: MESSAGE_VALUE + MESSAGE_FEE,
+        })
+    await logGas(
+      'sendMessage()',
+      spokeBridge
+        .connect(sender)
+        .sendMessage(HUB_CHAIN_ID, toAddress, message, MESSAGE_VALUE, {
+          value: MESSAGE_VALUE + MESSAGE_FEE,
+        })
+    )
 
     await spokeBridge
       .connect(sender)
@@ -64,15 +73,18 @@ describe('contracts', function () {
     )
 
     // Relay message
-    await hubBridge.relayMessage(
-      sender.address,
-      toAddress,
-      message,
-      MESSAGE_VALUE,
-      bundleId,
-      0,
-      [messageId],
-      2
+    await logGas(
+      'relayMessage()',
+      hubBridge.relayMessage(
+        sender.address,
+        toAddress,
+        message,
+        MESSAGE_VALUE,
+        bundleId,
+        0,
+        [messageId],
+        2
+      )
     )
 
     const res = await messageReceiver.result()
@@ -138,4 +150,39 @@ async function getSetResultCalldata(result: BigNumberish): Promise<string> {
     RESULT,
   ])
   return message
+}
+
+async function logGas(
+  txName: string,
+  txPromise: Promise<ContractTransaction>
+): Promise<ContractTransaction> {
+  const tx = await txPromise
+  const receipt = await tx.wait()
+  const gasUsed = receipt.cumulativeGasUsed
+  const { calldataBytes, calldataCost } = getCalldataStats(tx.data)
+  console.log(`    ${txName}
+      gasUsed: ${gasUsed.toString()}
+      calldataCost: ${calldataCost}
+      calldataBytes: ${calldataBytes}`)
+  return tx
+}
+
+function getCalldataStats(calldata: string) {
+  let data = calldata
+  if (calldata.slice(0, 2) === '0x') {
+    data = calldata.slice(2)
+  }
+  const calldataBytes = data.length / 2
+
+  let zeroBytes = 0
+  for (let i = 0; i < calldataBytes; i = i + 2) {
+    const byte = data.slice(i, i + 2)
+    if (byte === '00') {
+      zeroBytes++
+    }
+  }
+  const nonZeroBytes = calldataBytes - zeroBytes
+
+  const calldataCost = zeroBytes * 4 + nonZeroBytes * 16
+  return { calldataBytes, calldataCost }
 }

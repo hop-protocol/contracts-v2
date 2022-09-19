@@ -3,6 +3,7 @@ pragma solidity ^0.8.2;
 
 import "./utils/Lib_MerkleTree.sol";
 import "./libraries/Error.sol";
+import "./libraries/Message.sol";
 import "./MessageForwarder.sol";
 import "hardhat/console.sol"; // ToDo: Remove
 
@@ -17,13 +18,6 @@ interface IHopMessageReceiver {
     ) external payable;
 }
 
-struct Message {
-    address from;
-    address to;
-    uint256 value;
-    bytes message;
-}
-
 struct ConfirmedBundle {
     uint256 fromChainId;
     bytes32 bundleRoot;
@@ -32,6 +26,7 @@ struct ConfirmedBundle {
 
 abstract contract MessageBridge {
     using Lib_MerkleTree for bytes32;
+    using MessageLibrary for Message;
 
     MessageForwarder public messageForwarder;
     // address private constant DEFAULT_XDOMAIN_SENDER = 0x000000000000000000000000000000000000dEaD;
@@ -43,15 +38,12 @@ abstract contract MessageBridge {
     function sendMessage(
         uint256 toChainId,
         address to,
-        bytes calldata message,
-        uint256 value
+        uint256 value,
+        bytes calldata message
     ) external virtual payable;
 
     function relayMessage(
-        address from,
-        address to,
-        bytes calldata message,
-        uint256 value,
+        Message memory message,
         bytes32 bundleId,
         uint256 treeIndex,
         bytes32[] calldata siblings,
@@ -60,10 +52,7 @@ abstract contract MessageBridge {
         external
     {
         ConfirmedBundle memory bundle = bundles[bundleId];
-        bytes32 messageId;
-        {
-            messageId = getMessageId(from, to, value, message);
-        }
+        bytes32 messageId = message.getMessageId();
         if (bundle.bundleRoot == bytes32(0)) {
             revert BundleNotFound(bundleId, messageId);
         }
@@ -81,8 +70,7 @@ abstract contract MessageBridge {
 
         relayedMessage[messageId] = true;
 
-        // ToDo: Add value
-        bool success = messageForwarder.forward(from, to, message);
+        bool success = messageForwarder.forward{value: message.value}(message);
 
         if (success == false) {
             relayedMessage[messageId] = false;
@@ -101,18 +89,5 @@ abstract contract MessageBridge {
      */
     function getChainId() public virtual view returns (uint256 chainId) {
         return block.chainid;
-    }
-
-    function getMessageId(
-        address from,
-        address to,
-        uint256 value,
-        bytes memory message
-    )
-        public
-        pure
-        returns (bytes32)
-    {
-        return keccak256(abi.encode(from, to, value, message));
     }
 }

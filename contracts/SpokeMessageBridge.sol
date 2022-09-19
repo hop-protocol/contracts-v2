@@ -36,6 +36,7 @@ interface IHubMessageBridge {
 
 contract SpokeMessageBridge is MessageBridge {
     using Lib_PendingBundle for PendingBundle;
+    using MessageLibrary for Message;
 
     address private constant DEFAULT_XDOMAIN_SENDER = 0x000000000000000000000000000000000000dEaD;
     address private xDomainSender = DEFAULT_XDOMAIN_SENDER;
@@ -61,8 +62,8 @@ contract SpokeMessageBridge is MessageBridge {
     function sendMessage(
         uint256 toChainId,
         address to,
-        bytes calldata message,
-        uint256 value
+        uint256 value,
+        bytes calldata data
     )
         external
         override
@@ -74,9 +75,17 @@ contract SpokeMessageBridge is MessageBridge {
             revert IncorrectValue(requiredValue, msg.value);
         }
 
-        PendingBundle storage pendingBundle = pendingBundleForChainId[toChainId];
+        uint256 fromChainId = getChainId();
+        Message memory message = Message(
+            fromChainId,
+            msg.sender,
+            to,
+            value,
+            data
+        );
+        bytes32 messageId = message.getMessageId();
 
-        bytes32 messageId = getMessageId(msg.sender, to, value, message);
+        PendingBundle storage pendingBundle = pendingBundleForChainId[toChainId];
         pendingBundle.messageIds.push(messageId);
         // combine these for 1 sstore
         pendingBundle.value = pendingBundle.value + msg.value;

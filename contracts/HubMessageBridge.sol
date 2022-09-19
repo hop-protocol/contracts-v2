@@ -20,8 +20,8 @@ contract HubMessageBridge is MessageBridge {
     function sendMessage(
         uint256 toChainId,
         address to,
-        bytes calldata message,
-        uint256 value
+        uint256 value,
+        bytes calldata message
     )
         external
         override
@@ -45,7 +45,8 @@ contract HubMessageBridge is MessageBridge {
         external
         payable
     {
-        // Nonreentrant
+        // ToDo: Nonreentrant
+        // ToDo: Require that msg.value == bundleValue + bundleFees
 
         uint256 fromChainId = getChainId(msg.sender);
         if (toChainId == getChainId()) {

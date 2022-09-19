@@ -1,6 +1,8 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.2;
 
+import "./libraries/Message.sol";
+
 error Unauthorized(address expected, address actual);
 error XDomainMessengerNotSet();
 
@@ -13,14 +15,16 @@ contract MessageForwarder {
         messageSource = _messageSource;
     }
 
-    function forward(address from, address to, bytes calldata data) external returns (bool) {
+    function forward(Message calldata message) external payable returns (bool) {
+        // ToDo: Require msg.value == message.value
         if (msg.sender != messageSource) {
             revert Unauthorized(messageSource, msg.sender);
         }
-        xDomainSender = from;
-        // (bool success, ) = to.call{value: value}(data);
-        (bool success, ) = to.call(data);
+
+        xDomainSender = message.from;
+        (bool success, ) = message.to.call{value: message.value}(message.data);
         xDomainSender = DEFAULT_XDOMAIN_SENDER;
+
         return success;
     }
 

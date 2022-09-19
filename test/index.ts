@@ -129,7 +129,6 @@ async function fixture(hubChainId: number, spokeChainIds: number[]) {
   const SpokeMessageBridge = await ethers.getContractFactory(
     'MockSpokeMessageBridge'
   )
-  const MessageForwarder = await ethers.getContractFactory('MessageForwarder')
   const MessageReceiver = await ethers.getContractFactory('MessageReceiver')
 
   // Deploy
@@ -153,12 +152,9 @@ async function fixture(hubChainId: number, spokeChainIds: number[]) {
     spokeBridges.push(spokeBridge)
   }
 
-  const messageForwarder = await MessageForwarder.deploy(hubBridge.address)
-  await hubBridge.setMessageForwarder(messageForwarder.address)
-
   const messageReceiver = await MessageReceiver.deploy()
 
-  return { hubBridge, spokeBridges, messageForwarder, messageReceiver }
+  return { hubBridge, spokeBridges, messageReceiver }
 }
 
 async function getSetResultCalldata(result: BigNumberish): Promise<string> {

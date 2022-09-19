@@ -28,9 +28,8 @@ abstract contract MessageBridge {
     using Lib_MerkleTree for bytes32;
     using MessageLibrary for Message;
 
-    MessageForwarder public messageForwarder;
-    // address private constant DEFAULT_XDOMAIN_SENDER = 0x000000000000000000000000000000000000dEaD;
-    // address private xDomainSender = DEFAULT_XDOMAIN_SENDER;
+    address private constant DEFAULT_XDOMAIN_SENDER = 0x000000000000000000000000000000000000dEaD;
+    address private xDomainSender = DEFAULT_XDOMAIN_SENDER;
 
     mapping(bytes32 => ConfirmedBundle) bundles;
     mapping(bytes32 => bool) relayedMessage;
@@ -70,16 +69,13 @@ abstract contract MessageBridge {
 
         relayedMessage[messageId] = true;
 
-        bool success = messageForwarder.forward{value: message.value}(message);
+        xDomainSender = message.from;
+        (bool success, ) = message.to.call{value: message.value}(message.data);
+        xDomainSender = DEFAULT_XDOMAIN_SENDER;
 
         if (success == false) {
             relayedMessage[messageId] = false;
         }
-    }
-
-    function setMessageForwarder(MessageForwarder _messageForwarder) external {
-        // ToDo: onlyOwner
-        messageForwarder = _messageForwarder;
     }
 
     /**

@@ -56,19 +56,16 @@ describe('contracts', function () {
       MESSAGE_VALUE,
       message
     )
-    console.log('XmessageId:', messageId)
 
     const bundleRoot = solidityKeccak256(
       ['bytes32', 'bytes32'],
       [messageId, messageId]
     )
-    console.log('XbundleRoot:', bundleRoot)
 
     const bundleId = solidityKeccak256(
       ['uint256', 'uint256', 'bytes32', 'uint256'],
       [SPOKE_CHAIN_ID, HUB_CHAIN_ID, bundleRoot, 12]
     )
-    console.log('XbundleId:', bundleId)
 
     // Relay message
     await logGas(
@@ -93,8 +90,8 @@ describe('contracts', function () {
       messageReceiver.address
     )
     expect(res).to.eq(RESULT)
-    // const msgValue = BigNumber.from(MESSAGE_VALUE)
-    // expect(messageReceiverBal).to.eq(msgValue)
+    const msgValue = BigNumber.from(MESSAGE_VALUE)
+    expect(messageReceiverBal).to.eq(msgValue)
   })
 })
 

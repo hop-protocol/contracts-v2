@@ -1,7 +1,6 @@
 import { expect, use } from 'chai'
 import { ContractTransaction } from 'ethers'
 import { ethers } from 'hardhat'
-// import { SpokeMessageBridge } from 'typechain'
 import type { SpokeMessageBridge as ISpokeMessageBridge } from '../typechain'
 
 type BigNumberish = typeof ethers.BigNumber | string | number
@@ -38,43 +37,50 @@ describe('contracts', function () {
       'sendMessage()',
       spokeBridge
         .connect(sender)
-        .sendMessage(HUB_CHAIN_ID, toAddress, message, MESSAGE_VALUE, {
+        .sendMessage(HUB_CHAIN_ID, toAddress, MESSAGE_VALUE, message, {
           value: MESSAGE_VALUE + MESSAGE_FEE,
         })
     )
 
     await spokeBridge
       .connect(sender)
-      .sendMessage(HUB_CHAIN_ID, toAddress, message, MESSAGE_VALUE, {
+      .sendMessage(HUB_CHAIN_ID, toAddress, MESSAGE_VALUE, message, {
         value: MESSAGE_VALUE + 1,
       })
 
     // ToDo: Get messageId, bundleId from events
     const messageId = getMessageId(
+      SPOKE_CHAIN_ID,
       sender.address,
       toAddress,
       MESSAGE_VALUE,
       message
     )
+    console.log('XmessageId:', messageId)
 
     const bundleRoot = solidityKeccak256(
       ['bytes32', 'bytes32'],
       [messageId, messageId]
     )
+    console.log('XbundleRoot:', bundleRoot)
 
     const bundleId = solidityKeccak256(
       ['uint256', 'uint256', 'bytes32', 'uint256'],
       [SPOKE_CHAIN_ID, HUB_CHAIN_ID, bundleRoot, 12]
     )
+    console.log('XbundleId:', bundleId)
 
     // Relay message
     await logGas(
       'relayMessage()',
       hubBridge.relayMessage(
-        sender.address,
-        toAddress,
-        message,
-        MESSAGE_VALUE,
+        {
+          fromChainId: SPOKE_CHAIN_ID,
+          from: sender.address,
+          to: toAddress,
+          value: MESSAGE_VALUE,
+          data: message,
+        },
         bundleId,
         0,
         [messageId],
@@ -93,16 +99,25 @@ describe('contracts', function () {
 })
 
 function getMessageId(
+  fromChainId: BigNumberish,
   from: string,
   to: string,
   value: BigNumberish,
   message: string
 ) {
-  return keccak256(
-    abi.encode(
-      ['address', 'address', 'uint256', 'bytes'],
-      [from, to, value, message]
-    )
+  return keccak256(encodeMessage(fromChainId, from, to, value, message))
+}
+
+function encodeMessage(
+  fromChainId: BigNumberish,
+  from: string,
+  to: string,
+  value: BigNumberish,
+  message: string
+) {
+  return abi.encode(
+    ['uint256', 'address', 'address', 'uint256', 'bytes'],
+    [fromChainId, from, to, value, message]
   )
 }
 

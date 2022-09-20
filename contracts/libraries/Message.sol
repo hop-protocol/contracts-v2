@@ -23,15 +23,4 @@ library MessageLibrary {
             )
         );
     }
-
-    function encode(Message memory message) internal pure returns (bytes memory) {
-        return abi.encode(
-            message.nonce,
-            message.fromChainId,
-            message.from,
-            message.to,
-            message.value,
-            message.data
-        );
-    }
 }

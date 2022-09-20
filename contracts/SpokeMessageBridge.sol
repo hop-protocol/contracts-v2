@@ -47,6 +47,9 @@ contract SpokeMessageBridge is MessageBridge {
 
     mapping(uint256 => PendingBundle) public pendingBundleForChainId;
 
+    // Message nonce
+    uint256 public messageNonce = uint256(keccak256(abi.encodePacked(getChainId(), "SpokeMessageBridge v1.0")));
+
     constructor(IHubMessageBridge _hubBridge, Route[] memory routes) {
         hubBridge = _hubBridge;
         for (uint256 i = 0; i < routes.length; i++) {
@@ -74,17 +77,19 @@ contract SpokeMessageBridge is MessageBridge {
         if (requiredValue != msg.value) {
             revert IncorrectValue(requiredValue, msg.value);
         }
-
         uint256 fromChainId = getChainId();
+
         Message memory message = Message(
+            messageNonce,
             fromChainId,
             msg.sender,
             to,
             value,
             data
         );
-        bytes32 messageId = message.getMessageId();
+        messageNonce++;
 
+        bytes32 messageId = message.getMessageId();
         PendingBundle storage pendingBundle = pendingBundleForChainId[toChainId];
         pendingBundle.messageIds.push(messageId);
         // combine these for 1 sstore

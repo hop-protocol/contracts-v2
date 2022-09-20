@@ -1,10 +1,10 @@
 import { expect, use } from 'chai'
-import { ContractTransaction } from 'ethers'
+import { ContractTransaction, BigNumberish } from 'ethers'
 import { ethers } from 'hardhat'
 import type { SpokeMessageBridge as ISpokeMessageBridge } from '../typechain'
 
-type BigNumberish = typeof ethers.BigNumber | string | number
 const { BigNumber, provider } = ethers
+// type BigNumberish = typeof BigNumber | string | number
 const { solidityKeccak256, keccak256, defaultAbiCoder: abi } = ethers.utils
 
 const ONE_WEEK = 604800
@@ -33,6 +33,7 @@ describe('contracts', function () {
     const toAddress = messageReceiver.address
 
     // Send message and commit bundle
+    const messageNonce1 = await spokeBridge.messageNonce()
     await logGas(
       'sendMessage()',
       spokeBridge
@@ -42,14 +43,25 @@ describe('contracts', function () {
         })
     )
 
+    const messageNonce2 = await spokeBridge.messageNonce()
     await spokeBridge
       .connect(sender)
       .sendMessage(HUB_CHAIN_ID, toAddress, MESSAGE_VALUE, message, {
-        value: MESSAGE_VALUE + 1,
+        value: MESSAGE_VALUE + MESSAGE_FEE,
       })
 
     // ToDo: Get messageId, bundleId from events
-    const messageId = getMessageId(
+    const messageId1 = getMessageId(
+      messageNonce1,
+      SPOKE_CHAIN_ID,
+      sender.address,
+      toAddress,
+      MESSAGE_VALUE,
+      message
+    )
+
+    const messageId2 = getMessageId(
+      messageNonce2,
       SPOKE_CHAIN_ID,
       sender.address,
       toAddress,
@@ -59,7 +71,7 @@ describe('contracts', function () {
 
     const bundleRoot = solidityKeccak256(
       ['bytes32', 'bytes32'],
-      [messageId, messageId]
+      [messageId1, messageId2]
     )
 
     const bundleId = solidityKeccak256(
@@ -72,6 +84,7 @@ describe('contracts', function () {
       'relayMessage()',
       hubBridge.relayMessage(
         {
+          nonce: messageNonce1,
           fromChainId: SPOKE_CHAIN_ID,
           from: sender.address,
           to: toAddress,
@@ -80,7 +93,7 @@ describe('contracts', function () {
         },
         bundleId,
         0,
-        [messageId],
+        [messageId2],
         2
       )
     )
@@ -96,25 +109,18 @@ describe('contracts', function () {
 })
 
 function getMessageId(
+  nonce: BigNumberish,
   fromChainId: BigNumberish,
   from: string,
   to: string,
   value: BigNumberish,
   message: string
 ) {
-  return keccak256(encodeMessage(fromChainId, from, to, value, message))
-}
-
-function encodeMessage(
-  fromChainId: BigNumberish,
-  from: string,
-  to: string,
-  value: BigNumberish,
-  message: string
-) {
-  return abi.encode(
-    ['uint256', 'address', 'address', 'uint256', 'bytes'],
-    [fromChainId, from, to, value, message]
+  return keccak256(
+    abi.encode(
+      ['uint256', 'uint256', 'address', 'address', 'uint256', 'bytes'],
+      [nonce, fromChainId, from, to, value, message]
+    )
   )
 }
 

@@ -4,7 +4,7 @@ pragma solidity ^0.8.2;
 import "./MessageBridge.sol";
 
 interface ISpokeMessageBridge {
-    function receiveMessageBundle(bytes32 bundleRoot, uint256 bundleValue, uint256 fromChainId) external payable;
+    function receiveMessageBundle(bytes32 bundleRoot, uint256 fromChainId) external payable;
     function forwardMessage(address to, address from, bytes calldata message) external payable;
 }
 
@@ -20,24 +20,19 @@ contract HubMessageBridge is MessageBridge {
     function sendMessage(
         uint256 toChainId,
         address to,
-        uint256 value,
         bytes calldata message
     )
         external
         override
         payable
     {
-        if (value != msg.value) {
-            revert IncorrectValue(value, msg.value);
-        }
         ISpokeMessageBridge spokeBridge = getSpokeBridge(toChainId);
 
-        spokeBridge.forwardMessage{value: value}(to, msg.sender, message);
+        spokeBridge.forwardMessage(to, msg.sender, message);
     }
 
     function receiveOrForwardMessageBundle(
         bytes32 bundleRoot,
-        uint256 bundleValue,
         uint256 bundleFees,
         uint256 toChainId,
         uint256 commitTime
@@ -50,11 +45,11 @@ contract HubMessageBridge is MessageBridge {
 
         uint256 fromChainId = getChainId(msg.sender);
         if (toChainId == getChainId()) {
-            bytes32 bundleId = keccak256(abi.encodePacked(fromChainId, toChainId, bundleRoot, bundleValue));
-            bundles[bundleId] = ConfirmedBundle(fromChainId, bundleRoot, bundleValue);
+            bytes32 bundleId = keccak256(abi.encodePacked(fromChainId, toChainId, bundleRoot));
+            bundles[bundleId] = ConfirmedBundle(fromChainId, bundleRoot);
         } else {
             ISpokeMessageBridge spokeBridge = getSpokeBridge(fromChainId);
-            spokeBridge.receiveMessageBundle(bundleRoot, bundleValue, fromChainId);
+            spokeBridge.receiveMessageBundle(bundleRoot, fromChainId);
         }
 
         uint256 relayWindowStart = commitTime + getSpokeExitTime(fromChainId);

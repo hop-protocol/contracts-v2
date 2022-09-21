@@ -6,7 +6,6 @@ import "./utils/Lib_MerkleTree.sol";
 
 struct PendingBundle {
     bytes32[] messageIds;
-    uint256 value;
     uint256 fees;
 }
 
@@ -27,7 +26,6 @@ library Lib_PendingBundle {
 interface IHubMessageBridge {
     function receiveOrForwardMessageBundle(
         bytes32 bundleRoot,
-        uint256 bundleValue,
         uint256 bundleFees,
         uint256 toChainId,
         uint256 commitTime
@@ -65,7 +63,6 @@ contract SpokeMessageBridge is MessageBridge {
     function sendMessage(
         uint256 toChainId,
         address to,
-        uint256 value,
         bytes calldata data
     )
         external
@@ -73,9 +70,8 @@ contract SpokeMessageBridge is MessageBridge {
         payable
     {
         uint256 messageFee = routeMessageFee[toChainId];
-        uint256 requiredValue = messageFee + value;
-        if (requiredValue != msg.value) {
-            revert IncorrectValue(requiredValue, msg.value);
+        if (messageFee != msg.value) {
+            revert IncorrectFee(messageFee, msg.value);
         }
         uint256 fromChainId = getChainId();
 
@@ -84,7 +80,6 @@ contract SpokeMessageBridge is MessageBridge {
             fromChainId,
             msg.sender,
             to,
-            value,
             data
         );
         messageNonce++;
@@ -92,8 +87,6 @@ contract SpokeMessageBridge is MessageBridge {
         bytes32 messageId = message.getMessageId();
         PendingBundle storage pendingBundle = pendingBundleForChainId[toChainId];
         pendingBundle.messageIds.push(messageId);
-        // combine these for 1 sstore
-        pendingBundle.value = pendingBundle.value + msg.value;
         pendingBundle.fees = pendingBundle.fees + messageFee;
 
         uint256 maxBundleMessages = routeMaxBundleMessages[toChainId];
@@ -116,13 +109,11 @@ contract SpokeMessageBridge is MessageBridge {
     function _commitMessageBundle(uint256 toChainId) private {
         PendingBundle storage pendingBundle = pendingBundleForChainId[toChainId];
         bytes32 bundleRoot = pendingBundle.getBundleRoot();
-        uint256 bundleValue = pendingBundle.value;
         uint256 pendingFees = pendingBundle.fees;
         delete pendingBundleForChainId[toChainId];
 
-        hubBridge.receiveOrForwardMessageBundle{value: bundleValue}(
+        hubBridge.receiveOrForwardMessageBundle{value: pendingFees}(
             bundleRoot,
-            bundleValue,
             pendingFees,
             toChainId,
             block.timestamp
@@ -131,13 +122,12 @@ contract SpokeMessageBridge is MessageBridge {
 
     function receiveMessageBundle(
         bytes32 bundleRoot,
-        uint256 bundleValue,
         uint256 fromChainId
     )
         external
         payable
     {
-        bytes32 bundleId = keccak256(abi.encodePacked(bundleRoot, bundleValue, getChainId()));
-        bundles[bundleId] = ConfirmedBundle(fromChainId, bundleRoot, bundleValue);
+        bytes32 bundleId = keccak256(abi.encodePacked(bundleRoot, getChainId()));
+        bundles[bundleId] = ConfirmedBundle(fromChainId, bundleRoot);
     }
 }

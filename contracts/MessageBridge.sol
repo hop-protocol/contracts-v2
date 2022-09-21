@@ -10,7 +10,6 @@ import "hardhat/console.sol"; // ToDo: Remove
 interface IHopMessageReceiver {
     function receiveMessageBundle(
         bytes32 bundleRoot,
-        uint256 bundleValue,
         uint256 bundleFees,
         uint256 fromChainId,
         uint256 toChainId,
@@ -21,7 +20,6 @@ interface IHopMessageReceiver {
 struct ConfirmedBundle {
     uint256 fromChainId;
     bytes32 bundleRoot;
-    uint256 bundleValue;
 }
 
 abstract contract MessageBridge {
@@ -37,7 +35,6 @@ abstract contract MessageBridge {
     function sendMessage(
         uint256 toChainId,
         address to,
-        uint256 value,
         bytes calldata message
     ) external virtual payable;
 
@@ -70,7 +67,7 @@ abstract contract MessageBridge {
         relayedMessage[messageId] = true;
 
         xDomainSender = message.from;
-        (bool success, ) = message.to.call{value: message.value}(message.data);
+        (bool success, ) = message.to.call(message.data);
         xDomainSender = DEFAULT_XDOMAIN_SENDER;
 
         if (success == false) {

@@ -6,7 +6,6 @@ struct Message {
     uint256 fromChainId;
     address from;
     address to;
-    uint256 value;
     bytes data;
 }
 
@@ -18,7 +17,6 @@ library MessageLibrary {
                 message.fromChainId,
                 message.from,
                 message.to,
-                message.value,
                 message.data
             )
         );

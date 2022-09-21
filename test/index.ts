@@ -4,14 +4,12 @@ import { ethers } from 'hardhat'
 import type { SpokeMessageBridge as ISpokeMessageBridge } from '../typechain'
 
 const { BigNumber, provider } = ethers
-// type BigNumberish = typeof BigNumber | string | number
 const { solidityKeccak256, keccak256, defaultAbiCoder: abi } = ethers.utils
 
 const ONE_WEEK = 604800
 const HUB_CHAIN_ID = 1111
 const SPOKE_CHAIN_ID = 1112
 const RESULT = 12345
-const MESSAGE_VALUE = 5
 const MESSAGE_FEE = 1
 const MAX_BUNDLE_MESSAGES = 2
 
@@ -38,16 +36,16 @@ describe('contracts', function () {
       'sendMessage()',
       spokeBridge
         .connect(sender)
-        .sendMessage(HUB_CHAIN_ID, toAddress, MESSAGE_VALUE, message, {
-          value: MESSAGE_VALUE + MESSAGE_FEE,
+        .sendMessage(HUB_CHAIN_ID, toAddress, message, {
+          value: MESSAGE_FEE,
         })
     )
 
     const messageNonce2 = await spokeBridge.messageNonce()
     await spokeBridge
       .connect(sender)
-      .sendMessage(HUB_CHAIN_ID, toAddress, MESSAGE_VALUE, message, {
-        value: MESSAGE_VALUE + MESSAGE_FEE,
+      .sendMessage(HUB_CHAIN_ID, toAddress, message, {
+        value: MESSAGE_FEE,
       })
 
     // ToDo: Get messageId, bundleId from events
@@ -56,7 +54,6 @@ describe('contracts', function () {
       SPOKE_CHAIN_ID,
       sender.address,
       toAddress,
-      MESSAGE_VALUE,
       message
     )
 
@@ -65,7 +62,6 @@ describe('contracts', function () {
       SPOKE_CHAIN_ID,
       sender.address,
       toAddress,
-      MESSAGE_VALUE,
       message
     )
 
@@ -75,8 +71,8 @@ describe('contracts', function () {
     )
 
     const bundleId = solidityKeccak256(
-      ['uint256', 'uint256', 'bytes32', 'uint256'],
-      [SPOKE_CHAIN_ID, HUB_CHAIN_ID, bundleRoot, 12]
+      ['uint256', 'uint256', 'bytes32'],
+      [SPOKE_CHAIN_ID, HUB_CHAIN_ID, bundleRoot]
     )
 
     // Relay message
@@ -88,7 +84,6 @@ describe('contracts', function () {
           fromChainId: SPOKE_CHAIN_ID,
           from: sender.address,
           to: toAddress,
-          value: MESSAGE_VALUE,
           data: message,
         },
         bundleId,
@@ -103,8 +98,8 @@ describe('contracts', function () {
       messageReceiver.address
     )
     expect(res).to.eq(RESULT)
-    const msgValue = BigNumber.from(MESSAGE_VALUE)
-    expect(messageReceiverBal).to.eq(msgValue)
+    // const msgValue = BigNumber.from(MESSAGE_VALUE)
+    // expect(messageReceiverBal).to.eq(msgValue)
   })
 })
 
@@ -113,13 +108,12 @@ function getMessageId(
   fromChainId: BigNumberish,
   from: string,
   to: string,
-  value: BigNumberish,
   message: string
 ) {
   return keccak256(
     abi.encode(
-      ['uint256', 'uint256', 'address', 'address', 'uint256', 'bytes'],
-      [nonce, fromChainId, from, to, value, message]
+      ['uint256', 'uint256', 'address', 'address', 'bytes'],
+      [nonce, fromChainId, from, to, message]
     )
   )
 }

@@ -1,7 +1,10 @@
 import { expect, use } from 'chai'
 import { ContractTransaction, BigNumberish } from 'ethers'
 import { ethers } from 'hardhat'
-import type { SpokeMessageBridge as ISpokeMessageBridge } from '../typechain'
+import type {
+  SpokeMessageBridge as ISpokeMessageBridge,
+  FeeDistributor as IFeeDistributor
+} from '../typechain'
 
 const { BigNumber, provider } = ethers
 const { solidityKeccak256, keccak256, defaultAbiCoder: abi } = ethers.utils
@@ -10,19 +13,24 @@ const ONE_WEEK = 604800
 const HUB_CHAIN_ID = 1111
 const SPOKE_CHAIN_ID = 1112
 const RESULT = 12345
-const MESSAGE_FEE = 1
+const MESSAGE_FEE = 100
 const MAX_BUNDLE_MESSAGES = 2
+const TREASURY = '0x1111000000000000000000000000000000001111'
+const PUBLIC_GOODS = '0x2222000000000000000000000000000000002222'
+const MIN_PUBLIC_GOODS_BPS = 100_000
+const FULL_POOL_SIZE = 100000
 
 describe('contracts', function () {
   it('Should call contract Spoke to Hub', async function () {
     const [deployer, sender, relayer] = await ethers.getSigners()
     const message = await getSetResultCalldata(RESULT)
 
-    const { hubBridge, spokeBridges, messageReceiver } = await fixture(
+    const { hubBridge, spokeBridges, feeDistributors, messageReceiver } = await fixture(
       HUB_CHAIN_ID,
       [SPOKE_CHAIN_ID]
     )
     const spokeBridge = spokeBridges[0]
+    const feeDistributor = feeDistributors[0]
 
     console.log(`Hub Bridge: ${hubBridge.address}`)
     console.log(`Spoke Bridge: ${spokeBridge.address}`)
@@ -94,12 +102,12 @@ describe('contracts', function () {
     )
 
     const res = await messageReceiver.result()
-    const messageReceiverBal = await provider.getBalance(
-      messageReceiver.address
+    const feeDistributorBalance = await provider.getBalance(
+      feeDistributor.address
     )
     expect(res).to.eq(RESULT)
-    // const msgValue = BigNumber.from(MESSAGE_VALUE)
-    // expect(messageReceiverBal).to.eq(msgValue)
+    const expectedFeeDistributorBalance = BigNumber.from(MESSAGE_FEE).mul(2)
+    expect(expectedFeeDistributorBalance).to.eq(feeDistributorBalance)
   })
 })
 
@@ -127,14 +135,25 @@ async function fixture(hubChainId: number, spokeChainIds: number[]) {
     'MockSpokeMessageBridge'
   )
   const MessageReceiver = await ethers.getContractFactory('MessageReceiver')
+  const FeeDistributor = await ethers.getContractFactory('FeeDistributor')
 
   // Deploy
   const hubBridge = await HubMessageBridge.deploy(hubChainId)
   const spokeBridges: ISpokeMessageBridge[] = []
+  const feeDistributors: IFeeDistributor[] = []
   for (let i = 0; i < spokeChainIds.length; i++) {
+    const feeDistributor = await FeeDistributor.deploy(
+      hubBridge.address,
+      TREASURY,
+      PUBLIC_GOODS,
+      MIN_PUBLIC_GOODS_BPS,
+      FULL_POOL_SIZE
+    )
+
     const spokeChainId = spokeChainIds[i]
     const spokeBridge = await SpokeMessageBridge.deploy(
       hubBridge.address,
+      feeDistributor.address,
       [
         {
           chainId: hubChainId,
@@ -144,14 +163,21 @@ async function fixture(hubChainId: number, spokeChainIds: number[]) {
       ],
       SPOKE_CHAIN_ID
     )
-    await hubBridge.setSpokeBridge(spokeChainId, spokeBridge.address, ONE_WEEK)
+
+    await hubBridge.setSpokeBridge(
+      spokeChainId,
+      spokeBridge.address,
+      ONE_WEEK,
+      feeDistributor.address
+    )
 
     spokeBridges.push(spokeBridge)
+    feeDistributors.push(feeDistributor)
   }
 
   const messageReceiver = await MessageReceiver.deploy()
 
-  return { hubBridge, spokeBridges, messageReceiver }
+  return { hubBridge, spokeBridges, feeDistributors, messageReceiver }
 }
 
 async function getSetResultCalldata(result: BigNumberish): Promise<string> {

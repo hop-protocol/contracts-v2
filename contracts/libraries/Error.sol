@@ -10,7 +10,6 @@ error InvalidProof(
     uint256 totalLeaves
 );
 error IncorrectFee(uint256 requiredFee, uint256 msgValue);
-error TransferFailed(address to, uint256 amount);
 error NoBridge(uint256 chainId);
 error InvalidBridgeCaller(address msgSender);
 error InvalidChainId(uint256 chainId);

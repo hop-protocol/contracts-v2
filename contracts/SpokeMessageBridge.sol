@@ -40,6 +40,7 @@ contract SpokeMessageBridge is MessageBridge {
     address private xDomainSender = DEFAULT_XDOMAIN_SENDER;
 
     IHubMessageBridge public hubBridge;
+    address public hubFeeDistributor; // hub bridge and feeDistributor should always be set as pair
     mapping(uint256 => uint256) routeMessageFee;
     mapping(uint256 => uint256) routeMaxBundleMessages;
 
@@ -48,8 +49,13 @@ contract SpokeMessageBridge is MessageBridge {
     // Message nonce
     uint256 public messageNonce = uint256(keccak256(abi.encodePacked(getChainId(), "SpokeMessageBridge v1.0")));
 
-    constructor(IHubMessageBridge _hubBridge, Route[] memory routes) {
+    // Fee collection
+    uint256 public totalPendingFees;
+    uint256 public maxPendingFees; // ToDo: Add setter
+
+    constructor(IHubMessageBridge _hubBridge, address _hubFeeDistributor, Route[] memory routes) {
         hubBridge = _hubBridge;
+        hubFeeDistributor = _hubFeeDistributor;
         for (uint256 i = 0; i < routes.length; i++) {
             // ToDo: require chainId is not 0
             // ToDo: require messageFee is not 0
@@ -112,7 +118,12 @@ contract SpokeMessageBridge is MessageBridge {
         uint256 pendingFees = pendingBundle.fees;
         delete pendingBundleForChainId[toChainId];
 
-        hubBridge.receiveOrForwardMessageBundle{value: pendingFees}(
+        totalPendingFees += pendingFees;
+        if (totalPendingFees >= maxPendingFees) {
+            _flushFees();
+        }
+
+        hubBridge.receiveOrForwardMessageBundle(
             bundleRoot,
             pendingFees,
             toChainId,
@@ -129,5 +140,18 @@ contract SpokeMessageBridge is MessageBridge {
     {
         bytes32 bundleId = keccak256(abi.encodePacked(bundleRoot, getChainId()));
         bundles[bundleId] = ConfirmedBundle(fromChainId, bundleRoot);
+    }
+
+    // Internal
+
+    function _flushFees() internal {
+        // Send fees to l1
+        _sendToHub(totalPendingFees);
+        totalPendingFees = 0;
+    }
+
+    function _sendToHub(uint256 amount) internal virtual {
+        (bool success, ) = hubFeeDistributor.call{value: amount}("");
+        if (!success) revert(); // TransferFailed(to, amount);
     }
 }

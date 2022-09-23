@@ -1,5 +1,5 @@
-// //SPDX-License-Identifier: Unlicense
-// pragma solidity ^0.8.2;
+//SPDX-License-Identifier: Unlicense
+pragma solidity ^0.8.2;
 
 // import "./libraries/Message.sol";
 

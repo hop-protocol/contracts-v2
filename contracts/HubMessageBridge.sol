@@ -2,6 +2,7 @@
 pragma solidity ^0.8.2;
 
 import "./MessageBridge.sol";
+import "./FeeDistributor.sol";
 
 interface ISpokeMessageBridge {
     function receiveMessageBundle(bytes32 bundleRoot, uint256 fromChainId) external payable;
@@ -14,6 +15,7 @@ contract HubMessageBridge is MessageBridge {
     mapping(uint256 => ISpokeMessageBridge) private spokeBridgeForChainId;
     mapping(address => uint256) private chainIdForSpokeBridge;
     mapping(uint256 => uint256) private exitTimeForChainId;
+    mapping(uint256 => FeeDistributor) private feeDistributorForChainId;
     uint256 relayWindow;
 
     /// @dev  Wrapper for sending Hub -> Spoke messages
@@ -38,11 +40,9 @@ contract HubMessageBridge is MessageBridge {
         uint256 commitTime
     )
         external
-        payable
     {
         // ToDo: Nonreentrant
         // ToDo: Require that msg.value == bundleValue + bundleFees
-
         uint256 fromChainId = getChainId(msg.sender);
         if (toChainId == getChainId()) {
             bytes32 bundleId = keccak256(abi.encodePacked(fromChainId, toChainId, bundleRoot));
@@ -62,27 +62,22 @@ contract HubMessageBridge is MessageBridge {
         }
 
         if (relayReward > 0) {
-            transfer(tx.origin, relayReward);
+            FeeDistributor feeDistributor = getFeeDistributor(fromChainId);
+            feeDistributor.payFee(tx.origin, relayReward, bundleFees);
         }
     }
 
-    function transfer(address to, uint256 amount) private {
-        (bool success, ) = to.call{value: amount}("");
-        if (!success) revert TransferFailed(to, amount);
-    }
-
     // Setters
-
-    function setSpokeBridge(uint256 chainId, address spokeBridge, uint256 exitTime) external {
+    function setSpokeBridge(uint256 chainId, address spokeBridge, uint256 exitTime, address payable feeDistributor) external {
         // ToDo: Only owner
-        // ToDo: require chainId is not 0
+        // ToDo: require all are not 0
         chainIdForSpokeBridge[spokeBridge] = chainId;
         spokeBridgeForChainId[chainId] = ISpokeMessageBridge(spokeBridge);
         exitTimeForChainId[chainId] = exitTime;
+        feeDistributorForChainId[chainId] = FeeDistributor(feeDistributor);
     }
 
     // Getters
-
     function getSpokeBridge(uint256 chainId) public view returns (ISpokeMessageBridge) {
         ISpokeMessageBridge bridge = spokeBridgeForChainId[chainId];
         if (address(bridge) == ZERO_ADDRESS) {
@@ -105,5 +100,13 @@ contract HubMessageBridge is MessageBridge {
             revert InvalidChainId(chainId);
         }
         return exitTime;
+    }
+
+    function getFeeDistributor(uint256 chainId) public view returns (FeeDistributor) {
+        FeeDistributor feeDistributor = feeDistributorForChainId[chainId];
+        if (address(feeDistributor) == address(0)) {
+            revert InvalidChainId(chainId);
+        }
+        return feeDistributor;
     }
 }

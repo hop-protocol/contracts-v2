@@ -183,7 +183,7 @@ async function fixture(hubChainId: number, spokeChainIds: number[]) {
 async function getSetResultCalldata(result: BigNumberish): Promise<string> {
   const MessageReceiver = await ethers.getContractFactory('MessageReceiver')
   const message = MessageReceiver.interface.encodeFunctionData('setResult', [
-    RESULT,
+    result,
   ])
   return message
 }

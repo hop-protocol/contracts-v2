@@ -5,6 +5,8 @@ import "./utils/Lib_MerkleTree.sol";
 import "./libraries/Error.sol";
 import "./libraries/Message.sol";
 import "./MessageForwarder.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
 import "hardhat/console.sol"; // ToDo: Remove
 
 interface IHopMessageReceiver {
@@ -22,13 +24,15 @@ struct ConfirmedBundle {
     bytes32 bundleRoot;
 }
 
-abstract contract MessageBridge {
+abstract contract MessageBridge is Ownable {
     using Lib_MerkleTree for bytes32;
     using MessageLibrary for Message;
 
+    /* constants */
     address private constant DEFAULT_XDOMAIN_SENDER = 0x000000000000000000000000000000000000dEaD;
     address private xDomainSender = DEFAULT_XDOMAIN_SENDER;
 
+    /* state */
     mapping(bytes32 => ConfirmedBundle) bundles;
     mapping(bytes32 => bool) relayedMessage;
 

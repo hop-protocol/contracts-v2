@@ -36,33 +36,23 @@ contract SpokeMessageBridge is MessageBridge {
     using Lib_PendingBundle for PendingBundle;
     using MessageLibrary for Message;
 
-    address private constant DEFAULT_XDOMAIN_SENDER = 0x000000000000000000000000000000000000dEaD;
-    address private xDomainSender = DEFAULT_XDOMAIN_SENDER;
-
+    /* config*/
     IHubMessageBridge public hubBridge;
-    address public hubFeeDistributor; // hub bridge and feeDistributor should always be set as pair
+    address public hubFeeDistributor;
+    uint256 public pendingFeeBatchSize; // ToDo: Add manual flush or change name to pendingFeeBatchSize
     mapping(uint256 => uint256) routeMessageFee;
     mapping(uint256 => uint256) routeMaxBundleMessages;
 
+    /* state */
     mapping(uint256 => PendingBundle) public pendingBundleForChainId;
-
-    // Message nonce
+    uint256 public totalPendingFees;
     uint256 public messageNonce = uint256(keccak256(abi.encodePacked(getChainId(), "SpokeMessageBridge v1.0")));
 
-    // Fee collection
-    uint256 public totalPendingFees;
-    uint256 public maxPendingFees; // ToDo: Add setter
-
     constructor(IHubMessageBridge _hubBridge, address _hubFeeDistributor, Route[] memory routes) {
-        hubBridge = _hubBridge;
-        hubFeeDistributor = _hubFeeDistributor;
+        setHomeBridge(_hubBridge, _hubFeeDistributor);
         for (uint256 i = 0; i < routes.length; i++) {
-            // ToDo: require chainId is not 0
-            // ToDo: require messageFee is not 0
-            // ToDo: require maxBundleMessages is not 0
             Route memory route = routes[i];
-            routeMessageFee[route.chainId] = route.messageFee;
-            routeMaxBundleMessages[route.chainId] = route.maxBundleMessages;
+            setRoute(route);
         }
     }
 
@@ -119,8 +109,10 @@ contract SpokeMessageBridge is MessageBridge {
         delete pendingBundleForChainId[toChainId];
 
         totalPendingFees += pendingFees;
-        if (totalPendingFees >= maxPendingFees) {
-            _flushFees();
+        if (totalPendingFees >= pendingFeeBatchSize) {
+            // Send fees to l1
+            _sendToHub(totalPendingFees);
+            totalPendingFees = 0;
         }
 
         hubBridge.receiveOrForwardMessageBundle(
@@ -142,13 +134,32 @@ contract SpokeMessageBridge is MessageBridge {
         bundles[bundleId] = ConfirmedBundle(fromChainId, bundleRoot);
     }
 
-    // Internal
+    /* Setters */
 
-    function _flushFees() internal {
-        // Send fees to l1
-        _sendToHub(totalPendingFees);
-        totalPendingFees = 0;
+    function setHomeBridge(IHubMessageBridge _hubBridge, address _hubFeeDistributor) public onlyOwner {
+        if (address(_hubBridge) == address(0)) revert NoZeroAddress();
+        if (_hubFeeDistributor == address(0)) revert NoZeroAddress();
+
+        hubBridge = _hubBridge;
+        hubFeeDistributor = _hubFeeDistributor;
     }
+
+    // ToDo: Set in constructor
+    /// @notice `pendingFeeBatchSize` of 0 will flush the pending fees for every bundle.
+    function setpendingFeeBatchSize(uint256 _pendingFeeBatchSize) external onlyOwner {
+        pendingFeeBatchSize = _pendingFeeBatchSize;
+    }
+
+    function setRoute(Route memory route) public onlyOwner {
+        if (route.chainId == 0) revert NoZeroChainId();
+        if (route.messageFee == 0) revert NoZeroMessageFee();
+        if (route.maxBundleMessages == 0) revert NoZeroMaxBundleMessages();
+
+        routeMessageFee[route.chainId] = route.messageFee;
+        routeMaxBundleMessages[route.chainId] = route.maxBundleMessages;
+    }
+
+    /* Internal */
 
     function _sendToHub(uint256 amount) internal virtual {
         (bool success, ) = hubFeeDistributor.call{value: amount}("");

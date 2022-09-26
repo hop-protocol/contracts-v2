@@ -7,10 +7,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract FeeDistributor is Ownable {
     error TransferFailed(address to, uint256 amount);
     error OnlyHubBridge(address msgSender);
-    error PendingFeesTooHigh(uint256 pendingAmount, uint256 maxPendingFees);
+    error PendingFeesTooHigh(uint256 pendingAmount, uint256 pendingFeeBatchSize);
     error NoZeroAddress();
     error PublicGoodsBpsTooLow(uint256 publicGoodsBps);
-    error MaxPendingFeesTooLow(uint256 maxPendingFees);
+    error PendingFeeBatchSizeTooLow(uint256 pendingFeeBatchSize);
 
     /* constants */
     uint256 constant BASIS_POINTS = 10_000;
@@ -23,7 +23,7 @@ contract FeeDistributor is Ownable {
 
     uint256 public fullPoolSize;
     uint256 public publicGoodsBps;
-    uint256 public maxPendingFees;
+    uint256 public pendingFeeBatchSize;
 
     /* state */
     uint256 public expectedBalance;
@@ -64,8 +64,8 @@ contract FeeDistributor is Ownable {
     function payFee(address to, uint256 amount, uint256 feesCollected) external onlyHubBridge {
         uint256 balance = getBalance();
         uint256 pendingAmount = expectedBalance + feesCollected - balance;
-        if(pendingAmount > maxPendingFees) {
-            revert PendingFeesTooHigh(pendingAmount, maxPendingFees);
+        if(pendingAmount > pendingFeeBatchSize) {
+            revert PendingFeesTooHigh(pendingAmount, pendingFeeBatchSize);
         }
 
         expectedBalance = expectedBalance + feesCollected - amount;
@@ -109,15 +109,15 @@ contract FeeDistributor is Ownable {
         publicGoodsBps = _publicGoodsBps;
     }
 
-    // @notice When lowering maxPendingFees, the Spoke maxPendingFees should be lowered first and
-    // all fees should be exited before lowering maxPendingFees on the Hub.
-    // @notice When raising maxPendingFees, both the Hub and Spoke maxPendingFees can be set at the
+    // @notice When lowering pendingFeeBatchSize, the Spoke pendingFeeBatchSize should be lowered first and
+    // all fees should be exited before lowering pendingFeeBatchSize on the Hub.
+    // @notice When raising pendingFeeBatchSize, both the Hub and Spoke pendingFeeBatchSize can be set at the
     // same time.
-    function setMaxPendingFees(uint256 _maxPendingFees) external onlyOwner {
+    function setPendingFeeBatchSize(uint256 _pendingFeeBatchSize) external onlyOwner {
         uint256 balance = getBalance();
         uint256 pendingAmount = expectedBalance - balance; // ToDo: Handle balance greater than fee pool
-        if (_maxPendingFees < pendingAmount) revert MaxPendingFeesTooLow(_maxPendingFees);
+        if (_pendingFeeBatchSize < pendingAmount) revert PendingFeeBatchSizeTooLow(_pendingFeeBatchSize);
 
-        maxPendingFees = _maxPendingFees;
+        pendingFeeBatchSize = _pendingFeeBatchSize;
     }
 }

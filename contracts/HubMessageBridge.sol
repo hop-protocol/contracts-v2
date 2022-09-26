@@ -10,13 +10,12 @@ interface ISpokeMessageBridge {
 }
 
 contract HubMessageBridge is MessageBridge {
-    address ZERO_ADDRESS = 0x0000000000000000000000000000000000000000;
-
-    mapping(uint256 => ISpokeMessageBridge) private spokeBridgeForChainId;
+    /* config */
     mapping(address => uint256) private chainIdForSpokeBridge;
+    mapping(uint256 => ISpokeMessageBridge) private spokeBridgeForChainId;
     mapping(uint256 => uint256) private exitTimeForChainId;
     mapping(uint256 => FeeDistributor) private feeDistributorForChainId;
-    uint256 relayWindow;
+    uint256 public relayWindow = 12 hours;
 
     /// @dev  Wrapper for sending Hub -> Spoke messages
     function sendMessage(
@@ -68,19 +67,32 @@ contract HubMessageBridge is MessageBridge {
     }
 
     // Setters
-    function setSpokeBridge(uint256 chainId, address spokeBridge, uint256 exitTime, address payable feeDistributor) external {
-        // ToDo: Only owner
-        // ToDo: require all are not 0
+    function setSpokeBridge(
+        uint256 chainId,
+        address spokeBridge,
+        uint256 exitTime,
+        address payable feeDistributor
+    )
+        external
+        onlyOwner
+    {
+        if (chainId == 0) revert NoZeroChainId();
+
         chainIdForSpokeBridge[spokeBridge] = chainId;
         spokeBridgeForChainId[chainId] = ISpokeMessageBridge(spokeBridge);
         exitTimeForChainId[chainId] = exitTime;
         feeDistributorForChainId[chainId] = FeeDistributor(feeDistributor);
     }
 
+    function setRelayWindow(uint256 _relayWindow) external onlyOwner {
+        if (_relayWindow == 0) revert NoZeroRelayWindow();
+        relayWindow = _relayWindow;
+    }
+
     // Getters
     function getSpokeBridge(uint256 chainId) public view returns (ISpokeMessageBridge) {
         ISpokeMessageBridge bridge = spokeBridgeForChainId[chainId];
-        if (address(bridge) == ZERO_ADDRESS) {
+        if (address(bridge) == address(0)) {
             revert NoBridge(chainId);
         }
         return bridge;

@@ -48,6 +48,13 @@ contract SpokeMessageBridge is MessageBridge {
     uint256 public totalPendingFees;
     uint256 public messageNonce = uint256(keccak256(abi.encodePacked(getChainId(), "SpokeMessageBridge v1.0")));
 
+    modifier onlyHub() {
+        if (msg.sender != address(hubBridge)) {
+            revert NotHubBridge(msg.sender);
+        }
+        _;
+    }
+
     constructor(IHubMessageBridge _hubBridge, address _hubFeeDistributor, Route[] memory routes) {
         setHomeBridge(_hubBridge, _hubFeeDistributor);
         for (uint256 i = 0; i < routes.length; i++) {
@@ -129,14 +136,13 @@ contract SpokeMessageBridge is MessageBridge {
     )
         external
         payable
+        onlyHub
     {
-        // ToDo: Only HubBridge
         bytes32 bundleId = keccak256(abi.encodePacked(bundleRoot, getChainId()));
         bundles[bundleId] = ConfirmedBundle(fromChainId, bundleRoot);
     }
 
-    function forwardMessage(address from, address to, bytes calldata data) external {
-        // ToDo: Only HubBridge
+    function forwardMessage(address from, address to, bytes calldata data) external onlyHub {
         _relayMessage(from, to, data);
     }
 

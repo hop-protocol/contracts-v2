@@ -17,6 +17,7 @@ error InvalidProof(
 error IncorrectFee(uint256 requiredFee, uint256 msgValue);
 error NoBridge(uint256 chainId);
 error InvalidBridgeCaller(address msgSender);
+error NotHubBridge(address msgSender);
 error InvalidChainId(uint256 chainId);
 error NotEnoughFees(uint256 requiredFees, uint256 actualFees);
 

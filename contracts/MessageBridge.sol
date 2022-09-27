@@ -70,13 +70,17 @@ abstract contract MessageBridge is Ownable {
 
         relayedMessage[messageId] = true;
 
-        xDomainSender = message.from;
-        (bool success, ) = message.to.call(message.data);
-        xDomainSender = DEFAULT_XDOMAIN_SENDER;
+        bool success = _relayMessage(message.from, message.to, message.data);
 
         if (success == false) {
             relayedMessage[messageId] = false;
         }
+    }
+
+    function _relayMessage(address from, address to, bytes memory data) internal returns (bool success) {
+        xDomainSender = from;
+        (success, ) = to.call(data);
+        xDomainSender = DEFAULT_XDOMAIN_SENDER;
     }
 
     /**

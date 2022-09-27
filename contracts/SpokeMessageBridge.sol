@@ -130,8 +130,14 @@ contract SpokeMessageBridge is MessageBridge {
         external
         payable
     {
+        // ToDo: Only HubBridge
         bytes32 bundleId = keccak256(abi.encodePacked(bundleRoot, getChainId()));
         bundles[bundleId] = ConfirmedBundle(fromChainId, bundleRoot);
+    }
+
+    function forwardMessage(address from, address to, bytes calldata data) external {
+        // ToDo: Only HubBridge
+        _relayMessage(from, to, data);
     }
 
     /* Setters */

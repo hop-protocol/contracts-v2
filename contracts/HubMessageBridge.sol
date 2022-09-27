@@ -6,7 +6,7 @@ import "./FeeDistributor/FeeDistributor.sol";
 
 interface ISpokeMessageBridge {
     function receiveMessageBundle(bytes32 bundleRoot, uint256 fromChainId) external payable;
-    function forwardMessage(address to, address from, bytes calldata message) external payable;
+    function forwardMessage(address from, address to, bytes calldata data) external;
 }
 
 contract HubMessageBridge is MessageBridge {
@@ -29,7 +29,7 @@ contract HubMessageBridge is MessageBridge {
     {
         ISpokeMessageBridge spokeBridge = getSpokeBridge(toChainId);
 
-        spokeBridge.forwardMessage(to, msg.sender, message);
+        spokeBridge.forwardMessage(msg.sender, to, message);
     }
 
     function receiveOrForwardMessageBundle(

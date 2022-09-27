@@ -2,7 +2,7 @@
 pragma solidity ^0.8.2;
 
 import "./MessageBridge.sol";
-import "./FeeDistributor.sol";
+import "./FeeDistributor/FeeDistributor.sol";
 
 interface ISpokeMessageBridge {
     function receiveMessageBundle(bytes32 bundleRoot, uint256 fromChainId) external payable;

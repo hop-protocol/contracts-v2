@@ -135,7 +135,7 @@ async function fixture(hubChainId: number, spokeChainIds: number[]) {
     'MockSpokeMessageBridge'
   )
   const MessageReceiver = await ethers.getContractFactory('MessageReceiver')
-  const FeeDistributor = await ethers.getContractFactory('FeeDistributor')
+  const FeeDistributor = await ethers.getContractFactory('ETHFeeDistributor')
 
   // Deploy
   const hubBridge = await HubMessageBridge.deploy(hubChainId)

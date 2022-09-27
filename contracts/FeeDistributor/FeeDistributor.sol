@@ -4,7 +4,7 @@ pragma solidity ^0.8.2;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 // Each Spoke has its own FeeDistributor instance
-contract FeeDistributor is Ownable {
+abstract contract FeeDistributor is Ownable {
     error TransferFailed(address to, uint256 amount);
     error OnlyHubBridge(address msgSender);
     error PendingFeesTooHigh(uint256 pendingAmount, uint256 pendingFeeBatchSize);
@@ -52,10 +52,7 @@ contract FeeDistributor is Ownable {
 
     receive() external payable {}
 
-    function transfer(address to, uint256 amount) private {
-        (bool success, ) = to.call{value: amount}("");
-        if (!success) revert TransferFailed(to, amount);
-    }
+    function transfer(address to, uint256 amount) internal virtual;
 
     function getBalance() private view returns (uint256) {
         return address(this).balance;
@@ -64,7 +61,7 @@ contract FeeDistributor is Ownable {
     function payFee(address to, uint256 amount, uint256 feesCollected) external onlyHubBridge {
         uint256 balance = getBalance();
         uint256 pendingAmount = expectedBalance + feesCollected - balance;
-        if(pendingAmount > pendingFeeBatchSize) {
+        if (pendingAmount > pendingFeeBatchSize) {
             revert PendingFeesTooHigh(pendingAmount, pendingFeeBatchSize);
         }
 

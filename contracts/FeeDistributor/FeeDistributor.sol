@@ -5,12 +5,22 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 // Each Spoke has its own FeeDistributor instance
 abstract contract FeeDistributor is Ownable {
+    /* errors */
     error TransferFailed(address to, uint256 amount);
     error OnlyHubBridge(address msgSender);
     error PendingFeesTooHigh(uint256 pendingAmount, uint256 pendingFeeBatchSize);
     error NoZeroAddress();
     error PublicGoodsBpsTooLow(uint256 publicGoodsBps);
     error PendingFeeBatchSizeTooLow(uint256 pendingFeeBatchSize);
+
+    /* events */
+    event FeePaid(address indexed to, uint256 amount, uint256 feesCollected);
+    event ExcessFeesSkimmed(uint256 publicGoodsAmount, uint256 treasuryAmount);
+    event TreasurySet(address indexed treasury);
+    event PublicGoodsSet(address indexed publicGoods);
+    event FullPoolSizeSet(uint256 indexed fullPoolSize);
+    event PublicGoodsBpsSet(uint256 indexed publicGoodsBps);
+    event PendingFeeBatchSizeSet(uint256 indexed pendingFeeBatchSize);
 
     /* constants */
     uint256 constant BASIS_POINTS = 10_000;
@@ -20,7 +30,6 @@ abstract contract FeeDistributor is Ownable {
     /* config */
     address public treasury;
     address public publicGoods;
-
     uint256 public fullPoolSize;
     uint256 public publicGoodsBps;
     uint256 public pendingFeeBatchSize;
@@ -66,6 +75,9 @@ abstract contract FeeDistributor is Ownable {
         }
 
         expectedBalance = expectedBalance + feesCollected - amount;
+
+        emit FeePaid(to, amount, feesCollected);
+
         transfer(to, amount);
     }
 
@@ -76,6 +88,8 @@ abstract contract FeeDistributor is Ownable {
         uint256 treasuryAmount = excessAmount - publicGoodsAmount;
 
         expectedBalance -= excessAmount;
+
+        emit ExcessFeesSkimmed(publicGoodsAmount, treasuryAmount);
 
         transfer(publicGoods, publicGoodsAmount);
         transfer(treasury, treasuryAmount);
@@ -89,21 +103,29 @@ abstract contract FeeDistributor is Ownable {
         if (_treasury == address(0)) revert NoZeroAddress();
 
         treasury = _treasury;
+
+        emit TreasurySet(_treasury);
     }
 
     function setPublicGoods(address _publicGoods) external onlyOwner {
         if (_publicGoods == address(0)) revert NoZeroAddress();
 
         publicGoods = _publicGoods;
+
+        emit PublicGoodsSet(_publicGoods);
     }
 
     function setFullPoolSize(uint256 _fullPoolSize) external onlyOwner {
         fullPoolSize = _fullPoolSize;
+
+        emit FullPoolSizeSet(_fullPoolSize);
     }
 
     function setPublicGoodsBps(uint256 _publicGoodsBps) external onlyOwner {
         if (_publicGoodsBps < minPublicGoodsBps) revert PublicGoodsBpsTooLow(_publicGoodsBps);
         publicGoodsBps = _publicGoodsBps;
+
+        emit PublicGoodsBpsSet(_publicGoodsBps);
     }
 
     // @notice When lowering pendingFeeBatchSize, the Spoke pendingFeeBatchSize should be lowered first and
@@ -116,5 +138,7 @@ abstract contract FeeDistributor is Ownable {
         if (_pendingFeeBatchSize < pendingAmount) revert PendingFeeBatchSizeTooLow(_pendingFeeBatchSize);
 
         pendingFeeBatchSize = _pendingFeeBatchSize;
+
+        emit PendingFeeBatchSizeSet(_pendingFeeBatchSize);
     }
 }

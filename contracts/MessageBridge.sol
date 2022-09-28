@@ -29,7 +29,8 @@ abstract contract MessageBridge is Ownable {
     using MessageLibrary for Message;
 
     /* events */
-    event MessageReverted(bytes32 messageId);
+    event MesssageRelayed(bytes32 indexed messageId, Message message); // ToDo: Consider breaking up message so items can be indexed
+    event MessageReverted(bytes32 indexed messageId, Message message); // ToDo: Consider breaking up message so items can be indexed
 
     /* constants */
     address private constant DEFAULT_XDOMAIN_SENDER = 0x000000000000000000000000000000000000dEaD;
@@ -77,9 +78,11 @@ abstract contract MessageBridge is Ownable {
 
         bool success = _relayMessage(message.fromChainId, message.from, message.to, message.data);
 
-        if (success == false) {
+        if (success) {
+            emit MesssageRelayed(messageId, message);
+        } else {
             relayedMessage[messageId] = false;
-            emit MessageReverted(messageId);
+            emit MessageReverted(messageId, message);
         }
     }
 

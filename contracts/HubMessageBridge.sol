@@ -10,6 +10,11 @@ interface ISpokeMessageBridge {
 }
 
 contract HubMessageBridge is MessageBridge {
+    /* events */
+    event MessageSent(address indexed from, uint256 indexed toChainId, address indexed to, bytes32 dataHash);
+    event BundleReceived(bytes32 indexed bundleId);
+    event BundleForwarded(bytes32 indexed bundleId);
+
     /* config */
     mapping(address => uint256) private chainIdForSpokeBridge;
     mapping(uint256 => ISpokeMessageBridge) private spokeBridgeForChainId;
@@ -21,7 +26,7 @@ contract HubMessageBridge is MessageBridge {
     function sendMessage(
         uint256 toChainId,
         address to,
-        bytes calldata message
+        bytes calldata data
     )
         external
         override
@@ -29,7 +34,9 @@ contract HubMessageBridge is MessageBridge {
     {
         ISpokeMessageBridge spokeBridge = getSpokeBridge(toChainId);
 
-        spokeBridge.forwardMessage(msg.sender, to, message);
+        emit MessageSent(msg.sender, toChainId, to, keccak256(data));
+
+        spokeBridge.forwardMessage(msg.sender, to, data);
     }
 
     function receiveOrForwardMessageBundle(
@@ -43,14 +50,17 @@ contract HubMessageBridge is MessageBridge {
         // ToDo: Nonreentrant
         // ToDo: Require that msg.value == bundleValue + bundleFees
         uint256 fromChainId = getChainId(msg.sender);
+        bytes32 bundleId = keccak256(abi.encodePacked(fromChainId, toChainId, bundleRoot));
         if (toChainId == getChainId()) {
-            bytes32 bundleId = keccak256(abi.encodePacked(fromChainId, toChainId, bundleRoot));
             bundles[bundleId] = ConfirmedBundle(fromChainId, bundleRoot);
+            emit BundleReceived(bundleId);
         } else {
             ISpokeMessageBridge spokeBridge = getSpokeBridge(fromChainId);
             spokeBridge.receiveMessageBundle(bundleRoot, fromChainId);
+            emit BundleForwarded(bundleId);
         }
 
+        // Pay relayer
         uint256 relayWindowStart = commitTime + getSpokeExitTime(fromChainId);
         uint256 relayWindowEnd = relayWindowStart + relayWindow;
         uint256 relayReward = 0;

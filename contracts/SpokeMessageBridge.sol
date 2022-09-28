@@ -36,6 +36,11 @@ contract SpokeMessageBridge is MessageBridge {
     using Lib_PendingBundle for PendingBundle;
     using MessageLibrary for Message;
 
+    /* events */
+    event MesssageFromHubRelayed(address indexed from, address indexed to, bytes32 dataHash);
+    event MessageFromHubReverted(address indexed from, address indexed to, bytes32 dataHash);
+    event SentToHub(uint256 amount);
+
     /* constants */
     uint256 public immutable hubChainId;
 
@@ -147,8 +152,15 @@ contract SpokeMessageBridge is MessageBridge {
         bundles[bundleId] = ConfirmedBundle(fromChainId, bundleRoot);
     }
 
+    /* events */
     function forwardMessage(address from, address to, bytes calldata data) external onlyHub {
-        _relayMessage(hubChainId, from, to, data);
+        bool success = _relayMessage(hubChainId, from, to, data);
+
+        if (success) {
+            emit MesssageFromHubRelayed(from, to, keccak256(data));
+        } else {
+            emit MessageFromHubReverted(from, to, keccak256(data));
+        }
     }
 
     /* Setters */
@@ -177,8 +189,10 @@ contract SpokeMessageBridge is MessageBridge {
     }
 
     /* Internal */
-
     function _sendToHub(uint256 amount) internal virtual {
+
+        emit SentToHub(amount);
+
         (bool success, ) = hubFeeDistributor.call{value: amount}("");
         if (!success) revert(); // TransferFailed(to, amount);
     }

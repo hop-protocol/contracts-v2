@@ -25,10 +25,9 @@ describe('contracts', function () {
     const [deployer, sender, relayer] = await ethers.getSigners()
     const message = await getSetResultCalldata(RESULT)
 
-    const { hubBridge, spokeBridges, feeDistributors, messageReceiver } = await fixture(
-      HUB_CHAIN_ID,
-      [SPOKE_CHAIN_ID]
-    )
+    const { hubBridge, spokeBridges, feeDistributors, messageReceiver } =
+      await fixture(HUB_CHAIN_ID, [SPOKE_CHAIN_ID])
+
     const spokeBridge = spokeBridges[0]
     const feeDistributor = feeDistributors[0]
 
@@ -101,12 +100,22 @@ describe('contracts', function () {
       )
     )
 
-    const res = await messageReceiver.result()
+    const result = await messageReceiver.result()
+    expect(RESULT).to.eq(result)
+
+    const msgSender = await messageReceiver.msgSender()
+    expect(hubBridge.address).to.eq(msgSender)
+
+    const xDomainSender = await messageReceiver.xDomainSender()
+    expect(sender.address).to.eq(xDomainSender)
+
+    const xDomainChainId = await messageReceiver.xDomainChainId()
+    expect(SPOKE_CHAIN_ID).to.eq(xDomainChainId)
+
+    const expectedFeeDistributorBalance = BigNumber.from(MESSAGE_FEE).mul(2)
     const feeDistributorBalance = await provider.getBalance(
       feeDistributor.address
     )
-    expect(res).to.eq(RESULT)
-    const expectedFeeDistributorBalance = BigNumber.from(MESSAGE_FEE).mul(2)
     expect(expectedFeeDistributorBalance).to.eq(feeDistributorBalance)
   })
 })
@@ -134,7 +143,7 @@ async function fixture(hubChainId: number, spokeChainIds: number[]) {
   const SpokeMessageBridge = await ethers.getContractFactory(
     'MockSpokeMessageBridge'
   )
-  const MessageReceiver = await ethers.getContractFactory('MessageReceiver')
+  const MessageReceiver = await ethers.getContractFactory('MockMessageReceiver')
   const FeeDistributor = await ethers.getContractFactory('ETHFeeDistributor')
 
   // Deploy
@@ -152,6 +161,7 @@ async function fixture(hubChainId: number, spokeChainIds: number[]) {
 
     const spokeChainId = spokeChainIds[i]
     const spokeBridge = await SpokeMessageBridge.deploy(
+      HUB_CHAIN_ID,
       hubBridge.address,
       feeDistributor.address,
       [
@@ -175,13 +185,13 @@ async function fixture(hubChainId: number, spokeChainIds: number[]) {
     feeDistributors.push(feeDistributor)
   }
 
-  const messageReceiver = await MessageReceiver.deploy()
+  const messageReceiver = await MessageReceiver.deploy(hubBridge.address)
 
   return { hubBridge, spokeBridges, feeDistributors, messageReceiver }
 }
 
 async function getSetResultCalldata(result: BigNumberish): Promise<string> {
-  const MessageReceiver = await ethers.getContractFactory('MessageReceiver')
+  const MessageReceiver = await ethers.getContractFactory('MockMessageReceiver')
   const message = MessageReceiver.interface.encodeFunctionData('setResult', [
     result,
   ])

@@ -7,12 +7,13 @@ contract MockSpokeMessageBridge is SpokeMessageBridge {
     uint256 public mockChainId;
 
     constructor(
+        uint256 hubChainId,
         IHubMessageBridge hubBridge,
         address hubFeeDistributor,
         Route[] memory routes,
         uint256 _mockChainId
     )
-        SpokeMessageBridge(hubBridge, hubFeeDistributor, routes)
+        SpokeMessageBridge(hubChainId, hubBridge, hubFeeDistributor, routes)
     {
         mockChainId = _mockChainId;
     }

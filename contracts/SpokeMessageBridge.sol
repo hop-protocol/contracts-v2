@@ -36,8 +36,11 @@ contract SpokeMessageBridge is MessageBridge {
     using Lib_PendingBundle for PendingBundle;
     using MessageLibrary for Message;
 
+    /* constants */
+    uint256 public immutable hubChainId;
+
     /* config*/
-    IHubMessageBridge public hubBridge;
+    IHubMessageBridge public hubBridge; // ToDo: Consider making immutable
     address public hubFeeDistributor;
     uint256 public pendingFeeBatchSize; // ToDo: Add manual flush or change name to pendingFeeBatchSize
     mapping(uint256 => uint256) routeMessageFee;
@@ -55,7 +58,9 @@ contract SpokeMessageBridge is MessageBridge {
         _;
     }
 
-    constructor(IHubMessageBridge _hubBridge, address _hubFeeDistributor, Route[] memory routes) {
+    constructor(uint256 _hubChainId, IHubMessageBridge _hubBridge, address _hubFeeDistributor, Route[] memory routes) {
+        if (_hubChainId == 0) revert NoZeroChainId();
+        hubChainId = _hubChainId;
         setHomeBridge(_hubBridge, _hubFeeDistributor);
         for (uint256 i = 0; i < routes.length; i++) {
             Route memory route = routes[i];
@@ -143,7 +148,7 @@ contract SpokeMessageBridge is MessageBridge {
     }
 
     function forwardMessage(address from, address to, bytes calldata data) external onlyHub {
-        _relayMessage(from, to, data);
+        _relayMessage(hubChainId, from, to, data);
     }
 
     /* Setters */

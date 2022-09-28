@@ -28,9 +28,14 @@ abstract contract MessageBridge is Ownable {
     using Lib_MerkleTree for bytes32;
     using MessageLibrary for Message;
 
+    /* events */
+    event MessageReverted(bytes32 messageId);
+
     /* constants */
     address private constant DEFAULT_XDOMAIN_SENDER = 0x000000000000000000000000000000000000dEaD;
     address private xDomainSender = DEFAULT_XDOMAIN_SENDER;
+    uint256 private constant DEFAULT_XDOMAIN_CHAINID = uint256(bytes32(keccak256("Default Hop xDomain Sender")));
+    uint256 private xDomainChainId = DEFAULT_XDOMAIN_CHAINID;
 
     /* state */
     mapping(bytes32 => ConfirmedBundle) bundles;
@@ -70,17 +75,34 @@ abstract contract MessageBridge is Ownable {
 
         relayedMessage[messageId] = true;
 
-        bool success = _relayMessage(message.from, message.to, message.data);
+        bool success = _relayMessage(message.fromChainId, message.from, message.to, message.data);
 
         if (success == false) {
             relayedMessage[messageId] = false;
+            emit MessageReverted(messageId);
         }
     }
 
-    function _relayMessage(address from, address to, bytes memory data) internal returns (bool success) {
+    function _relayMessage(uint256 fromChainId, address from, address to, bytes memory data) internal returns (bool success) {
         xDomainSender = from;
+        xDomainChainId = fromChainId;
         (success, ) = to.call(data);
         xDomainSender = DEFAULT_XDOMAIN_SENDER;
+        xDomainChainId = DEFAULT_XDOMAIN_CHAINID;
+    }
+
+    function getXDomainSender() public view returns (address) {
+        if (xDomainSender == DEFAULT_XDOMAIN_SENDER) {
+            revert XDomainMessengerNotSet();
+        }
+        return xDomainSender;
+    }
+
+    function getXDomainChainId() public view returns (uint256) {
+        if (xDomainChainId == DEFAULT_XDOMAIN_CHAINID) {
+            revert XDomainChainIdNotSet();
+        }
+        return xDomainChainId;
     }
 
     /**

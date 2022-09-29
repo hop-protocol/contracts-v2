@@ -38,7 +38,7 @@ describe('contracts', function () {
     const toAddress = messageReceiver.address
 
     // Send message and commit bundle
-    const messageNonce1 = await spokeBridge.messageNonce()
+    const nonce1 = await spokeBridge.nonce()
     await logGas(
       'sendMessage()',
       spokeBridge
@@ -48,7 +48,7 @@ describe('contracts', function () {
         })
     )
 
-    const messageNonce2 = await spokeBridge.messageNonce()
+    const nonce2 = await spokeBridge.nonce()
     await spokeBridge
       .connect(sender)
       .sendMessage(HUB_CHAIN_ID, toAddress, message, {
@@ -57,17 +57,19 @@ describe('contracts', function () {
 
     // ToDo: Get messageId, bundleId from events
     const messageId1 = getMessageId(
-      messageNonce1,
+      nonce1,
       SPOKE_CHAIN_ID,
       sender.address,
+      HUB_CHAIN_ID,
       toAddress,
       message
     )
 
     const messageId2 = getMessageId(
-      messageNonce2,
+      nonce2,
       SPOKE_CHAIN_ID,
       sender.address,
+      HUB_CHAIN_ID,
       toAddress,
       message
     )
@@ -86,17 +88,17 @@ describe('contracts', function () {
     await logGas(
       'relayMessage()',
       hubBridge.relayMessage(
+        nonce1,
+        SPOKE_CHAIN_ID,
+        sender.address,
+        toAddress,
+        message,
         {
-          nonce: messageNonce1,
-          fromChainId: SPOKE_CHAIN_ID,
-          from: sender.address,
-          to: toAddress,
-          data: message,
-        },
-        bundleId,
-        0,
-        [messageId2],
-        2
+          bundleId,
+          treeIndex: 0,
+          siblings: [messageId2],
+          totalLeaves: 2,
+        }
       )
     )
 
@@ -124,13 +126,14 @@ function getMessageId(
   nonce: BigNumberish,
   fromChainId: BigNumberish,
   from: string,
+  toChainId: BigNumberish,
   to: string,
   message: string
 ) {
   return keccak256(
     abi.encode(
-      ['uint256', 'uint256', 'address', 'address', 'bytes'],
-      [nonce, fromChainId, from, to, message]
+      ['uint256', 'uint256', 'address', 'uint256', 'address', 'bytes'],
+      [nonce, fromChainId, from, toChainId, to, message]
     )
   )
 }

@@ -4,6 +4,8 @@ pragma solidity ^0.8.2;
 import "./MessageBridge.sol";
 import "./utils/Lib_MerkleTree.sol";
 import "./interfaces/ICrossChainSource.sol";
+import "./interfaces/IHubMessageBridge.sol";
+import "./interfaces/ISpokeMessageBridge.sol";
 
 struct PendingBundle {
     bytes32[] messageIds;
@@ -16,16 +18,7 @@ struct Route {
     uint256 maxBundleMessages;
 }
 
-interface IHubMessageBridge {
-    function receiveOrForwardMessageBundle(
-        bytes32 bundleRoot,
-        uint256 bundleFees,
-        uint256 toChainId,
-        uint256 commitTime
-    ) external payable;
-}
-
-contract SpokeMessageBridge is MessageBridge, ICrossChainSource {
+contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
     using Lib_MerkleTree for bytes32;
     using MessageLibrary for Message;
 

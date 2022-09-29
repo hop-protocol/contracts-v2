@@ -5,6 +5,7 @@ import "./utils/Lib_MerkleTree.sol";
 import "./libraries/Error.sol";
 import "./libraries/Message.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./interfaces/ICrossChainSource.sol";
 import "./interfaces/ICrossChainDestination.sol";
 
 import "hardhat/console.sol"; // ToDo: Remove
@@ -31,7 +32,7 @@ struct BundleProof {
     uint256 totalLeaves;
 }
 
-abstract contract MessageBridge is Ownable, ICrossChainDestination {
+abstract contract MessageBridge is Ownable, ICrossChainSource, ICrossChainDestination {
     using Lib_MerkleTree for bytes32;
     using MessageLibrary for Message;
 

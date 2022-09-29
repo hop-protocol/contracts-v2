@@ -3,14 +3,10 @@ pragma solidity ^0.8.2;
 
 import "./MessageBridge.sol";
 import "./FeeDistributor/FeeDistributor.sol";
-import "./interfaces/ICrossChainSource.sol";
+import "./interfaces/IHubMessageBridge.sol";
+import "./interfaces/ISpokeMessageBridge.sol";
 
-interface ISpokeMessageBridge {
-    function receiveMessageBundle(bytes32 bundleRoot, uint256 fromChainId) external payable;
-    function forwardMessage(address from, address to, bytes calldata data) external;
-}
-
-contract HubMessageBridge is MessageBridge, ICrossChainSource {
+contract HubMessageBridge is MessageBridge, IHubMessageBridge {
     using MessageLibrary for Message;
 
     /* events */

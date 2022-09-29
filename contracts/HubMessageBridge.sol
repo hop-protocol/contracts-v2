@@ -3,15 +3,17 @@ pragma solidity ^0.8.2;
 
 import "./MessageBridge.sol";
 import "./FeeDistributor/FeeDistributor.sol";
+import "./interfaces/ICrossChainSource.sol";
 
 interface ISpokeMessageBridge {
     function receiveMessageBundle(bytes32 bundleRoot, uint256 fromChainId) external payable;
     function forwardMessage(address from, address to, bytes calldata data) external;
 }
 
-contract HubMessageBridge is MessageBridge {
+contract HubMessageBridge is MessageBridge, ICrossChainSource {
+    using MessageLibrary for Message;
+
     /* events */
-    event MessageSent(address indexed from, uint256 indexed toChainId, address indexed to, bytes32 dataHash);
     event BundleReceived(bytes32 indexed bundleId);
     event BundleForwarded(bytes32 indexed bundleId);
 
@@ -29,12 +31,32 @@ contract HubMessageBridge is MessageBridge {
         bytes calldata data
     )
         external
-        override
         payable
     {
         ISpokeMessageBridge spokeBridge = getSpokeBridge(toChainId);
 
-        emit MessageSent(msg.sender, toChainId, to, keccak256(data));
+        bytes32 messageId = bytes32(0); // ToDo: L1 -> L2 messageId
+        uint256 nonce = 0; // ToDo: L1 -> L2 nonce
+
+        // ToDo: What is the gas implication of this?
+        // Message memory message = Message(
+        //     nonce,
+        //     getChainId(),
+        //     msg.sender,
+        //     toChainId,
+        //     to,
+        //     data
+        // );
+        // bytes32 messageId = message.getMessageId();
+
+        emit MessageSent(
+            messageId,
+            nonce,
+            msg.sender,
+            toChainId,
+            to,
+            data
+        );
 
         spokeBridge.forwardMessage(msg.sender, to, data);
     }
@@ -49,7 +71,7 @@ contract HubMessageBridge is MessageBridge {
     {
         // ToDo: Nonreentrant
         // ToDo: Require that msg.value == bundleValue + bundleFees
-        uint256 fromChainId = getChainId(msg.sender);
+        uint256 fromChainId = getSpokeChainId(msg.sender);
         bytes32 bundleId = keccak256(abi.encodePacked(fromChainId, toChainId, bundleRoot));
         if (toChainId == getChainId()) {
             bundles[bundleId] = ConfirmedBundle(fromChainId, bundleRoot);
@@ -108,7 +130,7 @@ contract HubMessageBridge is MessageBridge {
         return bridge;
     }
 
-    function getChainId(address bridge) public view returns (uint256) {
+    function getSpokeChainId(address bridge) public view returns (uint256) {
         uint256 chainId = chainIdForSpokeBridge[bridge];
         if (chainId == 0) {
             revert InvalidBridgeCaller(bridge);

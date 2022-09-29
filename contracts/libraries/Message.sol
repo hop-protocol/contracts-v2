@@ -5,6 +5,7 @@ struct Message {
     uint256 nonce;
     uint256 fromChainId;
     address from;
+    uint256 toChainId;
     address to;
     bytes data;
 }
@@ -16,6 +17,7 @@ library MessageLibrary {
                 message.nonce,
                 message.fromChainId,
                 message.from,
+                message.toChainId,
                 message.to,
                 message.data
             )

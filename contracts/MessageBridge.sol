@@ -4,14 +4,14 @@ pragma solidity ^0.8.2;
 import "./utils/Lib_MerkleTree.sol";
 import "./libraries/Error.sol";
 import "./libraries/Message.sol";
-import "./MessageForwarder.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./interfaces/ICrossChainDestination.sol";
 
 import "hardhat/console.sol"; // ToDo: Remove
 
 interface IHopMessageReceiver {
     function receiveMessageBundle(
-        bytes32 bundleRoot,
+        bytes32 root,
         uint256 bundleFees,
         uint256 fromChainId,
         uint256 toChainId,
@@ -21,16 +21,19 @@ interface IHopMessageReceiver {
 
 struct ConfirmedBundle {
     uint256 fromChainId;
-    bytes32 bundleRoot;
+    bytes32 root;
 }
 
-abstract contract MessageBridge is Ownable {
+struct BundleProof {
+    bytes32 bundleId;
+    uint256 treeIndex;
+    bytes32[] siblings;
+    uint256 totalLeaves;
+}
+
+abstract contract MessageBridge is Ownable, ICrossChainDestination {
     using Lib_MerkleTree for bytes32;
     using MessageLibrary for Message;
-
-    /* events */
-    event MesssageRelayed(bytes32 indexed messageId, Message message); // ToDo: Consider breaking up message so items can be indexed
-    event MessageReverted(bytes32 indexed messageId, Message message); // ToDo: Consider breaking up message so items can be indexed
 
     /* constants */
     address private constant DEFAULT_XDOMAIN_SENDER = 0x000000000000000000000000000000000000dEaD;
@@ -42,56 +45,74 @@ abstract contract MessageBridge is Ownable {
     mapping(bytes32 => ConfirmedBundle) bundles;
     mapping(bytes32 => bool) relayedMessage;
 
-    function sendMessage(
-        uint256 toChainId,
-        address to,
-        bytes calldata message
-    ) external virtual payable;
-
     function relayMessage(
-        Message memory message,
-        bytes32 bundleId,
-        uint256 treeIndex,
-        bytes32[] calldata siblings,
-        uint256 totalLeaves
+        uint256 nonce,
+        uint256 fromChainId,
+        address from,
+        address to,
+        bytes calldata data,
+        BundleProof memory bundleProof
     )
         external
     {
-        ConfirmedBundle memory bundle = bundles[bundleId];
-        bytes32 messageId = message.getMessageId();
-        if (bundle.bundleRoot == bytes32(0)) {
-            revert BundleNotFound(bundleId, messageId);
-        }
-
-        bool isProofValid = bundle.bundleRoot.verify(
-            messageId,
-            treeIndex,
-            siblings,
-            totalLeaves
+        Message memory message = Message(
+            nonce,
+            fromChainId,
+            from,
+            getChainId(),
+            to,
+            data
         );
+        bytes32 messageId = message.getMessageId();
 
-        if (!isProofValid) {
-            revert InvalidProof(bundle.bundleRoot, messageId, treeIndex, siblings, totalLeaves);
-        }
+        validateProof(bundleProof, messageId);
 
         relayedMessage[messageId] = true;
 
-        bool success = _relayMessage(message.fromChainId, message.from, message.to, message.data);
+        bool success = _relayMessage(messageId, message.fromChainId, message.from, message.to, message.data);
 
-        if (success) {
-            emit MesssageRelayed(messageId, message);
-        } else {
+        if (!success) {
             relayedMessage[messageId] = false;
-            emit MessageReverted(messageId, message);
         }
     }
 
-    function _relayMessage(uint256 fromChainId, address from, address to, bytes memory data) internal returns (bool success) {
+    function validateProof(BundleProof memory bundleProof, bytes32 messageId) public view {
+        ConfirmedBundle memory bundle = bundles[bundleProof.bundleId];
+
+        if (bundle.root == bytes32(0)) {
+            revert BundleNotFound(bundleProof.bundleId, messageId);
+        }
+
+        bool isProofValid = bundle.root.verify(
+            messageId,
+            bundleProof.treeIndex,
+            bundleProof.siblings,
+            bundleProof.totalLeaves
+        );
+
+        if (!isProofValid) {
+            revert InvalidProof(
+                bundle.root,
+                messageId,
+                bundleProof.treeIndex,
+                bundleProof.siblings,
+                bundleProof.totalLeaves
+            );
+        }
+    }
+
+    function _relayMessage(bytes32 messageId, uint256 fromChainId, address from, address to, bytes memory data) internal returns (bool success) {
         xDomainSender = from;
         xDomainChainId = fromChainId;
         (success, ) = to.call(data);
         xDomainSender = DEFAULT_XDOMAIN_SENDER;
         xDomainChainId = DEFAULT_XDOMAIN_CHAINID;
+
+        if (success) {
+            emit MessageRelayed(messageId, fromChainId, from, to);
+        } else {
+            emit MessageReverted(messageId, fromChainId, from, to);
+        }
     }
 
     function getXDomainSender() public view returns (address) {

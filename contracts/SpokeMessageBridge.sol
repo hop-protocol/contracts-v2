@@ -3,6 +3,7 @@ pragma solidity ^0.8.2;
 
 import "./MessageBridge.sol";
 import "./utils/Lib_MerkleTree.sol";
+import "./interfaces/ICrossChainSource.sol";
 
 struct PendingBundle {
     bytes32[] messageIds;
@@ -15,14 +16,6 @@ struct Route {
     uint256 maxBundleMessages;
 }
 
-library Lib_PendingBundle {
-    using Lib_MerkleTree for bytes32;
-
-    function getBundleRoot(PendingBundle storage pendingBundle) internal view returns (bytes32) {
-        return Lib_MerkleTree.getMerkleRoot(pendingBundle.messageIds);
-    }
-}
-
 interface IHubMessageBridge {
     function receiveOrForwardMessageBundle(
         bytes32 bundleRoot,
@@ -32,14 +25,12 @@ interface IHubMessageBridge {
     ) external payable;
 }
 
-contract SpokeMessageBridge is MessageBridge {
-    using Lib_PendingBundle for PendingBundle;
+contract SpokeMessageBridge is MessageBridge, ICrossChainSource {
+    using Lib_MerkleTree for bytes32;
     using MessageLibrary for Message;
 
     /* events */
-    event MesssageFromHubRelayed(address indexed from, address indexed to, bytes32 dataHash);
-    event MessageFromHubReverted(address indexed from, address indexed to, bytes32 dataHash);
-    event SentToHub(uint256 amount);
+    event FeesSentToHub(uint256 amount);
 
     /* constants */
     uint256 public immutable hubChainId;
@@ -54,7 +45,7 @@ contract SpokeMessageBridge is MessageBridge {
     /* state */
     mapping(uint256 => PendingBundle) public pendingBundleForChainId;
     uint256 public totalPendingFees;
-    uint256 public messageNonce = uint256(keccak256(abi.encodePacked(getChainId(), "SpokeMessageBridge v1.0")));
+    uint256 public nonce = uint256(keccak256(abi.encodePacked(getChainId(), "SpokeMessageBridge v1.0")));
 
     modifier onlyHub() {
         if (msg.sender != address(hubBridge)) {
@@ -79,7 +70,6 @@ contract SpokeMessageBridge is MessageBridge {
         bytes calldata data
     )
         external
-        override
         payable
     {
         uint256 messageFee = routeMessageFee[toChainId];
@@ -89,18 +79,21 @@ contract SpokeMessageBridge is MessageBridge {
         uint256 fromChainId = getChainId();
 
         Message memory message = Message(
-            messageNonce,
+            nonce,
             fromChainId,
             msg.sender,
+            toChainId,
             to,
             data
         );
-        messageNonce++;
+        nonce++;
 
         bytes32 messageId = message.getMessageId();
         PendingBundle storage pendingBundle = pendingBundleForChainId[toChainId];
         pendingBundle.messageIds.push(messageId);
         pendingBundle.fees = pendingBundle.fees + messageFee;
+
+        emit MessageSent(messageId, nonce, msg.sender, toChainId, to, data);
 
         uint256 maxBundleMessages = routeMaxBundleMessages[toChainId];
         if (pendingBundle.messageIds.length == maxBundleMessages) {
@@ -121,14 +114,14 @@ contract SpokeMessageBridge is MessageBridge {
 
     function _commitMessageBundle(uint256 toChainId) private {
         PendingBundle storage pendingBundle = pendingBundleForChainId[toChainId];
-        bytes32 bundleRoot = pendingBundle.getBundleRoot();
+        bytes32 bundleRoot = Lib_MerkleTree.getMerkleRoot(pendingBundle.messageIds);
         uint256 pendingFees = pendingBundle.fees;
         delete pendingBundleForChainId[toChainId];
 
         totalPendingFees += pendingFees;
         if (totalPendingFees >= pendingFeeBatchSize) {
             // Send fees to l1
-            _sendToHub(totalPendingFees);
+            _sendFeesToHub(totalPendingFees);
             totalPendingFees = 0;
         }
 
@@ -154,13 +147,8 @@ contract SpokeMessageBridge is MessageBridge {
 
     /* events */
     function forwardMessage(address from, address to, bytes calldata data) external onlyHub {
-        bool success = _relayMessage(hubChainId, from, to, data);
-
-        if (success) {
-            emit MesssageFromHubRelayed(from, to, keccak256(data));
-        } else {
-            emit MessageFromHubReverted(from, to, keccak256(data));
-        }
+        bytes32 messageId = bytes32(0); // ToDo: L1 -> L2 message id
+        _relayMessage(messageId, hubChainId, from, to, data);
     }
 
     /* Setters */
@@ -189,9 +177,9 @@ contract SpokeMessageBridge is MessageBridge {
     }
 
     /* Internal */
-    function _sendToHub(uint256 amount) internal virtual {
+    function _sendFeesToHub(uint256 amount) internal virtual {
 
-        emit SentToHub(amount);
+        emit FeesSentToHub(amount);
 
         (bool success, ) = hubFeeDistributor.call{value: amount}("");
         if (!success) revert(); // TransferFailed(to, amount);

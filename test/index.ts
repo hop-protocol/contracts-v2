@@ -1,30 +1,30 @@
 import { expect, use } from 'chai'
-import { ContractTransaction, BigNumberish } from 'ethers'
+import { ContractTransaction, BigNumber, BigNumberish, Signer, providers } from 'ethers'
 import { ethers } from 'hardhat'
-import type {
-  SpokeMessageBridge as ISpokeMessageBridge,
-  FeeDistributor as IFeeDistributor
-} from '../typechain'
-
-const { BigNumber, provider } = ethers
+import {
+  ONE_WEEK,
+  HUB_CHAIN_ID,
+  SPOKE_CHAIN_ID,
+  RESULT,
+  MESSAGE_FEE,
+  MAX_BUNDLE_MESSAGES,
+  TREASURY,
+  PUBLIC_GOODS,
+  MIN_PUBLIC_GOODS_BPS,
+  FULL_POOL_SIZE,
+} from './constants'
+import Bridge, { SpokeBridge, HubBridge } from './Bridge'
+type Provider = providers.Provider
+const { provider } = ethers
 const { solidityKeccak256, keccak256, defaultAbiCoder: abi } = ethers.utils
-
-const ONE_WEEK = 604800
-const HUB_CHAIN_ID = 1111
-const SPOKE_CHAIN_ID = 1112
-const RESULT = 12345
-const MESSAGE_FEE = 100
-const MAX_BUNDLE_MESSAGES = 2
-const TREASURY = '0x1111000000000000000000000000000000001111'
-const PUBLIC_GOODS = '0x2222000000000000000000000000000000002222'
-const MIN_PUBLIC_GOODS_BPS = 100_000
-const FULL_POOL_SIZE = 100000
+import fixture from './fixture'
 
 describe('contracts', function () {
   it('Should call contract Spoke to Hub', async function () {
     const [deployer, sender, relayer] = await ethers.getSigners()
-    const message = await getSetResultCalldata(RESULT)
+    const data = await getSetResultCalldata(RESULT)
 
+    const {} = await fixture(HUB_CHAIN_ID, [SPOKE_CHAIN_ID])
     const { hubBridge, spokeBridges, feeDistributors, messageReceiver } =
       await fixture(HUB_CHAIN_ID, [SPOKE_CHAIN_ID])
 
@@ -35,44 +35,20 @@ describe('contracts', function () {
     console.log(`Spoke Bridge: ${spokeBridge.address}`)
     console.log(`Message Receiver: ${messageReceiver.address}`)
 
-    const toAddress = messageReceiver.address
-
     // Send message and commit bundle
-    const nonce1 = await spokeBridge.nonce()
-    await logGas(
-      'sendMessage()',
-      spokeBridge
-        .connect(sender)
-        .sendMessage(HUB_CHAIN_ID, toAddress, message, {
-          value: MESSAGE_FEE,
-        })
-    )
+    const fromChainId = SPOKE_CHAIN_ID
+    const fromAddress = sender.address
+    const toChainId = HUB_CHAIN_ID
+    const toAddress = messageReceiver.address
+    const messageFee = MESSAGE_FEE
 
-    const nonce2 = await spokeBridge.nonce()
-    await spokeBridge
+    const { messageId: messageId1, nonce: nonce1 } = await spokeBridge
       .connect(sender)
-      .sendMessage(HUB_CHAIN_ID, toAddress, message, {
-        value: MESSAGE_FEE,
-      })
+      .sendMessage(toChainId, toAddress, data)
 
-    // ToDo: Get messageId, bundleId from events
-    const messageId1 = getMessageId(
-      nonce1,
-      SPOKE_CHAIN_ID,
-      sender.address,
-      HUB_CHAIN_ID,
-      toAddress,
-      message
-    )
-
-    const messageId2 = getMessageId(
-      nonce2,
-      SPOKE_CHAIN_ID,
-      sender.address,
-      HUB_CHAIN_ID,
-      toAddress,
-      message
-    )
+    const { messageId: messageId2 } = await spokeBridge
+      .connect(sender)
+      .sendMessage(toChainId, toAddress, data)
 
     const bundleRoot = solidityKeccak256(
       ['bytes32', 'bytes32'],
@@ -81,26 +57,25 @@ describe('contracts', function () {
 
     const bundleId = solidityKeccak256(
       ['uint256', 'uint256', 'bytes32'],
-      [SPOKE_CHAIN_ID, HUB_CHAIN_ID, bundleRoot]
+      [fromChainId, toChainId, bundleRoot]
     )
 
     // Relay message
-    await logGas(
-      'relayMessage()',
-      hubBridge.relayMessage(
-        nonce1,
-        SPOKE_CHAIN_ID,
-        sender.address,
-        toAddress,
-        message,
-        {
-          bundleId,
-          treeIndex: 0,
-          siblings: [messageId2],
-          totalLeaves: 2,
-        }
-      )
+    const tx = await hubBridge.relayMessage(
+      nonce1,
+      fromChainId,
+      sender.address,
+      toAddress,
+      data,
+      {
+        bundleId,
+        treeIndex: 0,
+        siblings: [messageId2],
+        totalLeaves: 2,
+      }
     )
+
+    await logGas('relayMessage()', tx)
 
     const result = await messageReceiver.result()
     expect(RESULT).to.eq(result)
@@ -138,61 +113,6 @@ function getMessageId(
   )
 }
 
-async function fixture(hubChainId: number, spokeChainIds: number[]) {
-  // Factories
-  const HubMessageBridge = await ethers.getContractFactory(
-    'MockHubMessageBridge'
-  )
-  const SpokeMessageBridge = await ethers.getContractFactory(
-    'MockSpokeMessageBridge'
-  )
-  const MessageReceiver = await ethers.getContractFactory('MockMessageReceiver')
-  const FeeDistributor = await ethers.getContractFactory('ETHFeeDistributor')
-
-  // Deploy
-  const hubBridge = await HubMessageBridge.deploy(hubChainId)
-  const spokeBridges: ISpokeMessageBridge[] = []
-  const feeDistributors: IFeeDistributor[] = []
-  for (let i = 0; i < spokeChainIds.length; i++) {
-    const feeDistributor = await FeeDistributor.deploy(
-      hubBridge.address,
-      TREASURY,
-      PUBLIC_GOODS,
-      MIN_PUBLIC_GOODS_BPS,
-      FULL_POOL_SIZE
-    )
-
-    const spokeChainId = spokeChainIds[i]
-    const spokeBridge = await SpokeMessageBridge.deploy(
-      HUB_CHAIN_ID,
-      hubBridge.address,
-      feeDistributor.address,
-      [
-        {
-          chainId: hubChainId,
-          messageFee: MESSAGE_FEE,
-          maxBundleMessages: MAX_BUNDLE_MESSAGES,
-        },
-      ],
-      SPOKE_CHAIN_ID
-    )
-
-    await hubBridge.setSpokeBridge(
-      spokeChainId,
-      spokeBridge.address,
-      ONE_WEEK,
-      feeDistributor.address
-    )
-
-    spokeBridges.push(spokeBridge)
-    feeDistributors.push(feeDistributor)
-  }
-
-  const messageReceiver = await MessageReceiver.deploy(hubBridge.address)
-
-  return { hubBridge, spokeBridges, feeDistributors, messageReceiver }
-}
-
 async function getSetResultCalldata(result: BigNumberish): Promise<string> {
   const MessageReceiver = await ethers.getContractFactory('MockMessageReceiver')
   const message = MessageReceiver.interface.encodeFunctionData('setResult', [
@@ -203,9 +123,8 @@ async function getSetResultCalldata(result: BigNumberish): Promise<string> {
 
 async function logGas(
   txName: string,
-  txPromise: Promise<ContractTransaction>
+  tx: ContractTransaction
 ): Promise<ContractTransaction> {
-  const tx = await txPromise
   const receipt = await tx.wait()
   const gasUsed = receipt.cumulativeGasUsed
   const { calldataBytes, calldataCost } = getCalldataStats(tx.data)

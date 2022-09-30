@@ -47,7 +47,12 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
         _;
     }
 
-    constructor(uint256 _hubChainId, IHubMessageBridge _hubBridge, address _hubFeeDistributor, Route[] memory routes) {
+    constructor(
+        uint256 _hubChainId, 
+        IHubMessageBridge _hubBridge, 
+        address _hubFeeDistributor, 
+        Route[] memory routes
+    ) {
         if (_hubChainId == 0) revert NoZeroChainId();
         hubChainId = _hubChainId;
         setHomeBridge(_hubBridge, _hubFeeDistributor);
@@ -86,7 +91,7 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
         pendingBundle.messageIds.push(messageId);
         pendingBundle.fees = pendingBundle.fees + messageFee;
 
-        emit MessageSent(messageId, nonce, msg.sender, toChainId, to, data);
+        emit MessageSent(messageId, message.nonce, msg.sender, toChainId, to, data);
 
         uint256 maxBundleMessages = routeMaxBundleMessages[toChainId];
         if (pendingBundle.messageIds.length == maxBundleMessages) {

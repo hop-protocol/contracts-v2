@@ -43,8 +43,8 @@ abstract contract MessageBridge is Ownable, ICrossChainSource, ICrossChainDestin
     uint256 private xDomainChainId = DEFAULT_XDOMAIN_CHAINID;
 
     /* state */
-    mapping(bytes32 => ConfirmedBundle) bundles;
-    mapping(bytes32 => bool) relayedMessage;
+    mapping(bytes32 => ConfirmedBundle) public bundles;
+    mapping(bytes32 => bool) public relayedMessage;
 
     function relayMessage(
         uint256 nonce,
@@ -116,18 +116,18 @@ abstract contract MessageBridge is Ownable, ICrossChainSource, ICrossChainDestin
         }
     }
 
-    function getXDomainSender() public view returns (address) {
-        if (xDomainSender == DEFAULT_XDOMAIN_SENDER) {
-            revert XDomainMessengerNotSet();
-        }
-        return xDomainSender;
-    }
-
     function getXDomainChainId() public view returns (uint256) {
         if (xDomainChainId == DEFAULT_XDOMAIN_CHAINID) {
             revert XDomainChainIdNotSet();
         }
         return xDomainChainId;
+    }
+
+    function getXDomainSender() public view returns (address) {
+        if (xDomainSender == DEFAULT_XDOMAIN_SENDER) {
+            revert XDomainMessengerNotSet();
+        }
+        return xDomainSender;
     }
 
     /**

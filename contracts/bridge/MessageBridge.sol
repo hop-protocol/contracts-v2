@@ -1,12 +1,12 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.2;
 
-import "./utils/Lib_MerkleTree.sol";
-import "./libraries/Error.sol";
-import "./libraries/Message.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./interfaces/ICrossChainSource.sol";
-import "./interfaces/ICrossChainDestination.sol";
+import "../utils/Lib_MerkleTree.sol";
+import "../libraries/Error.sol";
+import "../libraries/Message.sol";
+import "../interfaces/ICrossChainSource.sol";
+import "../interfaces/ICrossChainDestination.sol";
 
 import "hardhat/console.sol"; // ToDo: Remove
 

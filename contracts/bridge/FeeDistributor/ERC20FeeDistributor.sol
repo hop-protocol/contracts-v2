@@ -1,14 +1,14 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.2;
 
-import "./FeeDistributor.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "./FeeDistributor.sol";
 
 contract ERC20FeeDistributor is FeeDistributor {
     using SafeERC20 for IERC20;
 
-    IERC20 feeToken;
+    IERC20 public feeToken;
 
     constructor(
         address _hubBridge,

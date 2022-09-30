@@ -24,7 +24,6 @@ describe('contracts', function () {
     const [deployer, sender, relayer] = await ethers.getSigners()
     const data = await getSetResultCalldata(RESULT)
 
-    const {} = await fixture(HUB_CHAIN_ID, [SPOKE_CHAIN_ID])
     const { hubBridge, spokeBridges, feeDistributors, messageReceiver } =
       await fixture(HUB_CHAIN_ID, [SPOKE_CHAIN_ID])
 

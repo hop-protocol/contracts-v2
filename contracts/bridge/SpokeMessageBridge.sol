@@ -2,10 +2,10 @@
 pragma solidity ^0.8.2;
 
 import "./MessageBridge.sol";
-import "./utils/Lib_MerkleTree.sol";
-import "./interfaces/ICrossChainSource.sol";
-import "./interfaces/IHubMessageBridge.sol";
-import "./interfaces/ISpokeMessageBridge.sol";
+import "../utils/Lib_MerkleTree.sol";
+import "../interfaces/ICrossChainSource.sol";
+import "../interfaces/IHubMessageBridge.sol";
+import "../interfaces/ISpokeMessageBridge.sol";
 
 struct PendingBundle {
     bytes32[] messageIds;
@@ -32,8 +32,8 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
     IHubMessageBridge public hubBridge; // ToDo: Consider making immutable
     address public hubFeeDistributor;
     uint256 public pendingFeeBatchSize; // ToDo: Add manual flush or change name to pendingFeeBatchSize
-    mapping(uint256 => uint256) routeMessageFee;
-    mapping(uint256 => uint256) routeMaxBundleMessages;
+    mapping(uint256 => uint256) public routeMessageFee;
+    mapping(uint256 => uint256) public routeMaxBundleMessages;
 
     /* state */
     mapping(uint256 => PendingBundle) public pendingBundleForChainId;

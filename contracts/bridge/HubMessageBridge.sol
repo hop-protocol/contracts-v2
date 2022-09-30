@@ -3,8 +3,8 @@ pragma solidity ^0.8.2;
 
 import "./MessageBridge.sol";
 import "./FeeDistributor/FeeDistributor.sol";
-import "./interfaces/IHubMessageBridge.sol";
-import "./interfaces/ISpokeMessageBridge.sol";
+import "../interfaces/IHubMessageBridge.sol";
+import "../interfaces/ISpokeMessageBridge.sol";
 
 contract HubMessageBridge is MessageBridge, IHubMessageBridge {
     using MessageLibrary for Message;

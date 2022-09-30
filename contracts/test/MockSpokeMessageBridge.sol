@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.2;
 
-import "../SpokeMessageBridge.sol";
+import "../bridge/SpokeMessageBridge.sol";
 
 contract MockSpokeMessageBridge is SpokeMessageBridge {
     uint256 public mockChainId;

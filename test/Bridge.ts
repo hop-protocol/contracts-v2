@@ -1,4 +1,4 @@
-import { BigNumber, BigNumberish, Signer, providers } from 'ethers'
+import { providers, BigNumber, BigNumberish, Signer, BytesLike } from 'ethers'
 import { ethers } from 'hardhat'
 import type {
   FeeDistributor as IFeeDistributor,
@@ -9,8 +9,7 @@ import type {
 import { 
   ONE_WEEK,
   HUB_CHAIN_ID,
-  SPOKE_CHAIN_ID,
-  RESULT,
+  DEFAULT_RESULT,
   MESSAGE_FEE,
   MAX_BUNDLE_MESSAGES,
   TREASURY,
@@ -52,7 +51,7 @@ export default class Bridge {
     this.bridge = _bridge
   }
 
-  async sendMessage(toChainId: BigNumberish, to: string, data: string) {
+  async sendMessage(toChainId: BigNumberish, to: string, data: BytesLike) {
     const bridge = this.bridge
 
     const tx = await bridge.sendMessage(toChainId, to, data, {
@@ -66,7 +65,8 @@ export default class Bridge {
 
     if (!messageSentEvent?.args) throw new Error('No MessageSent event found')
 
-    const event = {
+    return {
+      tx,
       messageId: messageSentEvent.args.messageId as string,
       nonce: messageSentEvent.args.nonce as BigNumber,
       from: messageSentEvent.args.from as string,
@@ -74,8 +74,6 @@ export default class Bridge {
       to: messageSentEvent.args.to as string,
       data: messageSentEvent.args.data as string,
     }
-
-    return event
   }
 
   static getRandomChainId(): BigNumberish {

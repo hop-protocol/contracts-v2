@@ -4,8 +4,11 @@ import { ethers } from 'hardhat'
 import {
   ONE_WEEK,
   HUB_CHAIN_ID,
-  SPOKE_CHAIN_ID,
-  RESULT,
+  SPOKE_CHAIN_ID_0,
+  SPOKE_CHAIN_ID_1,
+  DEFAULT_RESULT,
+  DEFAULT_FROM_CHAIN_ID,
+  DEFAULT_TO_CHAIN_ID,
   MESSAGE_FEE,
   MAX_BUNDLE_MESSAGES,
   TREASURY,
@@ -17,68 +20,50 @@ import Bridge, { SpokeBridge, HubBridge } from './Bridge'
 type Provider = providers.Provider
 const { provider } = ethers
 const { solidityKeccak256, keccak256, defaultAbiCoder: abi } = ethers.utils
-import fixture from './fixture'
+import Fixture from './FixtureClass'
+import { getMessageId, getSetResultCalldata, getBundleRoot, getBundleId } from './utils'
 
 describe('MessageBridge', function () {
   describe('sendMessage', function () {
     it('Should call contract Spoke to Hub', async function () {
       const [deployer, sender, relayer] = await ethers.getSigners()
-      const data = await getSetResultCalldata(RESULT)
+      const data = await getSetResultCalldata(DEFAULT_RESULT)
 
-      const { hubBridge, spokeBridges, feeDistributors, messageReceiver } =
-        await fixture(HUB_CHAIN_ID, [SPOKE_CHAIN_ID])
+      const { fixture, hubBridge, spokeBridges, feeDistributors } =
+        await Fixture.deploy(HUB_CHAIN_ID, [SPOKE_CHAIN_ID_0, SPOKE_CHAIN_ID_1])
 
-      const spokeBridge = spokeBridges[0]
-      const feeDistributor = feeDistributors[0]
+      const { messageId: messageId0, nonce: nonce0 } =
+        await fixture.sendMessage(sender)
+      const { messageId: messageId1 } = await fixture.sendMessage(sender)
 
-      console.log(`Hub Bridge: ${hubBridge.address}`)
-      console.log(`Spoke Bridge: ${spokeBridge.address}`)
-      console.log(`Message Receiver: ${messageReceiver.address}`)
+      const messageIds = [messageId0, messageId1]
+      const bundleRoot = getBundleRoot(messageIds)
+      const bundleId = fixture.getBundleId(bundleRoot)
 
-      // Send message and commit bundle
-      const fromChainId = SPOKE_CHAIN_ID
-      const fromAddress = sender.address
-      const toChainId = HUB_CHAIN_ID
-      const toAddress = messageReceiver.address
-      const messageFee = MESSAGE_FEE
-
-      const { messageId: messageId1, nonce: nonce1 } = await spokeBridge
-        .connect(sender)
-        .sendMessage(toChainId, toAddress, data)
-
-      const { messageId: messageId2 } = await spokeBridge
-        .connect(sender)
-        .sendMessage(toChainId, toAddress, data)
-
-      const bundleRoot = solidityKeccak256(
-        ['bytes32', 'bytes32'],
-        [messageId1, messageId2]
-      )
-
-      const bundleId = solidityKeccak256(
-        ['uint256', 'uint256', 'bytes32'],
-        [fromChainId, toChainId, bundleRoot]
-      )
-
+      // const { tx } = fixture.relayMessage(messageId0)
       // Relay message
+      const messageReceiver = fixture.getMessageReceiver()
       const tx = await hubBridge.relayMessage(
-        nonce1,
-        fromChainId,
+        nonce0,
+        DEFAULT_FROM_CHAIN_ID,
         sender.address,
-        toAddress,
+        messageReceiver.address,
         data,
         {
           bundleId,
           treeIndex: 0,
-          siblings: [messageId2],
+          siblings: [messageId1],
           totalLeaves: 2,
         }
       )
 
       await logGas('relayMessage()', tx)
 
+      // const messageReceiver = fixture.getMessageReceiver()
+      const feeDistributor = fixture.getFeeDistributor()
+
       const result = await messageReceiver.result()
-      expect(RESULT).to.eq(result)
+      expect(DEFAULT_RESULT).to.eq(result)
 
       const msgSender = await messageReceiver.msgSender()
       expect(hubBridge.address).to.eq(msgSender)
@@ -87,7 +72,7 @@ describe('MessageBridge', function () {
       expect(sender.address).to.eq(xDomainSender)
 
       const xDomainChainId = await messageReceiver.xDomainChainId()
-      expect(SPOKE_CHAIN_ID).to.eq(xDomainChainId)
+      expect(DEFAULT_FROM_CHAIN_ID).to.eq(xDomainChainId)
 
       const expectedFeeDistributorBalance = BigNumber.from(MESSAGE_FEE).mul(2)
       const feeDistributorBalance = await provider.getBalance(
@@ -145,29 +130,29 @@ describe('MessageBridge', function () {
   })
 })
 
-function getMessageId(
-  nonce: BigNumberish,
-  fromChainId: BigNumberish,
-  from: string,
-  toChainId: BigNumberish,
-  to: string,
-  message: string
-) {
-  return keccak256(
-    abi.encode(
-      ['uint256', 'uint256', 'address', 'uint256', 'address', 'bytes'],
-      [nonce, fromChainId, from, toChainId, to, message]
-    )
-  )
-}
+// function getMessageId(
+//   nonce: BigNumberish,
+//   fromChainId: BigNumberish,
+//   from: string,
+//   toChainId: BigNumberish,
+//   to: string,
+//   message: string
+// ) {
+//   return keccak256(
+//     abi.encode(
+//       ['uint256', 'uint256', 'address', 'uint256', 'address', 'bytes'],
+//       [nonce, fromChainId, from, toChainId, to, message]
+//     )
+//   )
+// }
 
-async function getSetResultCalldata(result: BigNumberish): Promise<string> {
-  const MessageReceiver = await ethers.getContractFactory('MockMessageReceiver')
-  const message = MessageReceiver.interface.encodeFunctionData('setResult', [
-    result,
-  ])
-  return message
-}
+// async function getSetResultCalldata(result: BigNumberish): Promise<string> {
+//   const MessageReceiver = await ethers.getContractFactory('MockMessageReceiver')
+//   const message = MessageReceiver.interface.encodeFunctionData('setResult', [
+//     result,
+//   ])
+//   return message
+// }
 
 async function logGas(
   txName: string,

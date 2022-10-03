@@ -59,20 +59,39 @@ export default class Bridge {
     })
 
     const receipt = await tx.wait()
+
     const messageSentEvent = receipt.events?.find(
       e => e.event === 'MessageSent'
     )
-
     if (!messageSentEvent?.args) throw new Error('No MessageSent event found')
-
-    return {
-      tx,
+    const messageSent = {
       messageId: messageSentEvent.args.messageId as string,
       nonce: messageSentEvent.args.nonce as BigNumber,
       from: messageSentEvent.args.from as string,
       toChainId: messageSentEvent.args.toChainId as BigNumber,
       to: messageSentEvent.args.to as string,
       data: messageSentEvent.args.data as string,
+    }
+
+    const bundleCommittedEvent = receipt.events?.find(
+      e => e.event === 'BundleCommitted'
+    )
+
+    let bundleCommitted
+    if (bundleCommittedEvent?.args) {
+      bundleCommitted = {
+        bundleId: bundleCommittedEvent.args.bundleId as string,
+        bundleRoot: bundleCommittedEvent.args.bundleRoot as string,
+        bundleFees: bundleCommittedEvent.args.bundleFees as BigNumber,
+        toChainId: bundleCommittedEvent.args.toChainId as BigNumber,
+        commitTime: bundleCommittedEvent.args.commitTime as BigNumber,
+      }
+    }
+
+    return {
+      tx,
+      messageSent,
+      bundleCommitted,
     }
   }
 

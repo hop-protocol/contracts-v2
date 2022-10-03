@@ -24,6 +24,13 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
 
     /* events */
     event FeesSentToHub(uint256 amount);
+    event BundleCommitted(
+        bytes32 bundleId,
+        bytes32 bundleRoot,
+        uint256 bundleFees,
+        uint256 toChainId,
+        uint256 commitTime
+    );
 
     /* constants */
     uint256 public immutable hubChainId;
@@ -117,10 +124,11 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
         delete pendingBundleForChainId[toChainId];
 
         totalPendingFees += pendingFees;
-        if (totalPendingFees >= pendingFeeBatchSize) {
+        uint256 _totalPendingFees = totalPendingFees;
+        if (_totalPendingFees >= pendingFeeBatchSize) {
             // Send fees to l1
-            _sendFeesToHub(totalPendingFees);
             totalPendingFees = 0;
+            _sendFeesToHub(_totalPendingFees);
         }
 
         hubBridge.receiveOrForwardMessageBundle(
@@ -129,6 +137,9 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
             toChainId,
             block.timestamp
         );
+
+        bytes32 bundleId = getBundleId(getChainId(), toChainId, bundleRoot);
+        emit BundleCommitted(bundleId, bundleRoot, pendingFees, toChainId, block.timestamp);
     }
 
     function receiveMessageBundle(
@@ -139,7 +150,7 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
         payable
         onlyHub
     {
-        bytes32 bundleId = keccak256(abi.encodePacked(bundleRoot, getChainId()));
+        bytes32 bundleId = getBundleId(fromChainId, getChainId(), bundleRoot);
         bundles[bundleId] = ConfirmedBundle(fromChainId, bundleRoot);
     }
 

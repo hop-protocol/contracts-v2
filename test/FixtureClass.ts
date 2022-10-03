@@ -35,7 +35,49 @@ export type Defaults =  {
   data: string
 }
 
+class Message {
+  nonce: BigNumber
+  fromChainId: BigNumber
+  from: string
+  toChainId: BigNumber
+  to: string
+  data: BytesLike
+
+  constructor(
+    _nonce: BigNumberish,
+    _fromChainId: BigNumberish,
+    _from: string,
+    _toChainId: BigNumberish,
+    _to: string,
+    _data: BytesLike
+  ) {
+    this.nonce = BigNumber.from(_nonce)
+    this.fromChainId = BigNumber.from(_fromChainId)
+    this.from = _from
+    this.toChainId = BigNumber.from(_toChainId)
+    this.to = _to
+    this.data = _data
+  }
+
+  getMessageId() {
+    return keccak256(
+      abi.encode(
+        ['uint256', 'uint256', 'address', 'uint256', 'address', 'bytes'],
+        [
+          this.nonce,
+          this.fromChainId,
+          this.from,
+          this.toChainId,
+          this.to,
+          this.data,
+        ]
+      )
+    )
+  }
+}
+
 class Fixture {
+  // static state
   hubChainId: BigNumber
   hubBridge: HubBridge
   spokeChainIds: BigNumber[]
@@ -44,6 +86,21 @@ class Fixture {
   messageReceivers: { [key: string]: IMessageReceiver }
   feeDistributors: { [key: string]: IFeeDistributor }
   defaults: Defaults
+  
+  // dynamic state
+  messageIds: string[]
+  messages: { [key: string]: Message }
+  messageIdsToBundleIds: { [key: string]: string }
+  bundleIds: string[]
+  bundles: { [key: string]: {
+    bundleId: string
+    messageIds: string[]
+    bundleRoot: string
+    fromChainId: BigNumber
+    toChainId: BigNumber
+    bundleFees: BigNumber
+  } }
+
 
   constructor(
     _hubChainId: BigNumber,
@@ -84,6 +141,12 @@ class Fixture {
     this.feeDistributors = feeDistributors
 
     this.defaults = _defaults
+
+    this.messageIds = []
+    this.messages = {}
+    this.messageIdsToBundleIds = {}
+    this.bundleIds = []
+    this.bundles = {}
   }
 
   static async deploy(
@@ -179,23 +242,93 @@ class Fixture {
     const res = await bridge
       .connect(fromSigner)
       .sendMessage(toChainId, to, data)
+    const { messageSent, bundleCommitted } = res
 
-    const expectedMessageId = getMessageId(
-      res.nonce,
+    const message = new Message(
+      messageSent.nonce,
       fromChainId,
       from,
       toChainId,
       to,
       data
     )
+    const expectedMessageId = message.getMessageId()
 
-    expect(expectedMessageId).to.eq(res.messageId)
-    expect(from.toLowerCase()).to.eq(res.from.toLowerCase())
-    expect(toChainId).to.eq(res.toChainId)
-    expect(to.toLowerCase()).to.eq(res.to.toLowerCase())
-    expect(data.toString().toLowerCase()).to.eq(res.data.toLowerCase())
+    expect(expectedMessageId).to.eq(messageSent.messageId)
+    expect(from.toLowerCase()).to.eq(messageSent.from.toLowerCase())
+    expect(toChainId).to.eq(messageSent.toChainId)
+    expect(to.toLowerCase()).to.eq(messageSent.to.toLowerCase())
+    expect(data.toString().toLowerCase()).to.eq(messageSent.data.toLowerCase())
+
+    this.messageIds.push(messageSent.messageId)
+    this.messages[messageSent.messageId] = message
+
+    if (bundleCommitted) {
+      const bundleId = bundleCommitted.bundleId
+      this.bundleIds.push(bundleId)
+      this.bundles[bundleId] = {
+        fromChainId: BigNumber.from(fromChainId),
+        messageIds: this.messageIds,
+        ...bundleCommitted,
+      }
+
+      this.messageIds.forEach(messageId => {
+        this.messageIdsToBundleIds[messageId] = bundleId
+      })
+
+      this.messageIds = []
+    }
 
     return res
+  }
+
+  async relayMessage(
+    messageId: string,
+    signer?: Signer,
+    overrides?: Partial<{
+      nonce: BigNumberish
+      fromChainId: BigNumberish
+      from: string
+      toChainId: BigNumberish
+      to: string
+      data: string
+      bundleId: string
+      treeIndex: BigNumberish
+      siblings: string[]
+      totalLeaves: BigNumberish
+    }>
+  ) {
+    const message = this.messages[messageId]
+    if (!message) throw new Error('Message for messageId not found')
+    const storedBundleId = this.messageIdsToBundleIds[messageId]
+    if (!storedBundleId) throw new Error('Bundle for messageId not found')
+    const storedBundle = this.bundles[storedBundleId]
+    if (!storedBundle) throw new Error('Bundle for messageId not found')
+
+    const nonce = overrides?.nonce ?? message.nonce
+    const fromChainId = overrides?.fromChainId ?? message.fromChainId
+    const from = overrides?.from ?? message.from
+    const toChainId = overrides?.toChainId ?? message.toChainId
+    const to = overrides?.to ?? message.to
+    const data = overrides?.data ?? message.data
+    const bundleId = overrides?.bundleId ?? storedBundle.bundleId
+    const treeIndex = overrides?.treeIndex ?? 0 // ToDo: get actual Merkle data
+    const siblings = overrides?.siblings ?? [storedBundle.messageIds[1]] // ToDo: get actual Merkle data
+    const totalLeaves = overrides?.totalLeaves ?? 2 // ToDo: get actual Merkle data
+
+    let bridge = this.bridges[toChainId.toString()]
+    if (signer) {
+      bridge = bridge.connect(signer)
+    }
+
+    const tx = await bridge.relayMessage(nonce, fromChainId, from, to, data, {
+      bundleId,
+      treeIndex,
+      siblings,
+      totalLeaves,
+    })
+
+    return { tx }
   }
 
   getMessageReceiver(chainId?: BigNumberish) {
@@ -208,16 +341,15 @@ class Fixture {
     return this.feeDistributors[chainId.toString()]
   }
 
-  getBundleId(
-    bundleRoot: string,
-    overrides?: {
-      fromChainId: BigNumberish
-      toChainId: BigNumberish
-    }
-  ) {
-    const fromChainId = overrides?.fromChainId ?? this.defaults.fromChainId
-    const toChainId = overrides?.toChainId ?? this.defaults.toChainId
-    return getBundleId(bundleRoot, fromChainId, toChainId)
+  getBundle(messageId: string) {
+    const message = this.messages[messageId]
+    if (!message) throw new Error('Message for messageId not found')
+    const storedBundleId = this.messageIdsToBundleIds[messageId]
+    if (!storedBundleId) throw new Error('Bundle for messageId not found')
+    const storedBundle = this.bundles[storedBundleId]
+    if (!storedBundle) throw new Error('Bundle for messageId not found')
+
+    return storedBundle
   }
 }
 

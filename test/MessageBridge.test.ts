@@ -29,38 +29,23 @@ describe('MessageBridge', function () {
       const [deployer, sender, relayer] = await ethers.getSigners()
       const data = await getSetResultCalldata(DEFAULT_RESULT)
 
-      const { fixture, hubBridge, spokeBridges, feeDistributors } =
-        await Fixture.deploy(HUB_CHAIN_ID, [SPOKE_CHAIN_ID_0, SPOKE_CHAIN_ID_1])
+      const { fixture, hubBridge } = await Fixture.deploy(HUB_CHAIN_ID, [
+        SPOKE_CHAIN_ID_0,
+        SPOKE_CHAIN_ID_1,
+      ])
 
-      const { messageId: messageId0, nonce: nonce0 } =
-        await fixture.sendMessage(sender)
-      const { messageId: messageId1 } = await fixture.sendMessage(sender)
+      const {
+        tx: sendTx,
+        messageSent: { messageId: messageId0 },
+      } = await fixture.sendMessage(sender)
+      await logGas('sendMessage()', sendTx)
 
-      const messageIds = [messageId0, messageId1]
-      const bundleRoot = getBundleRoot(messageIds)
-      const bundleId = fixture.getBundleId(bundleRoot)
+      await fixture.sendMessage(sender)
 
-      // const { tx } = fixture.relayMessage(messageId0)
-      // Relay message
+      const { tx: relayTx } = await fixture.relayMessage(messageId0)
+      await logGas('relayMessage()', relayTx)
+
       const messageReceiver = fixture.getMessageReceiver()
-      const tx = await hubBridge.relayMessage(
-        nonce0,
-        DEFAULT_FROM_CHAIN_ID,
-        sender.address,
-        messageReceiver.address,
-        data,
-        {
-          bundleId,
-          treeIndex: 0,
-          siblings: [messageId1],
-          totalLeaves: 2,
-        }
-      )
-
-      await logGas('relayMessage()', tx)
-
-      // const messageReceiver = fixture.getMessageReceiver()
-      const feeDistributor = fixture.getFeeDistributor()
 
       const result = await messageReceiver.result()
       expect(DEFAULT_RESULT).to.eq(result)
@@ -74,6 +59,7 @@ describe('MessageBridge', function () {
       const xDomainChainId = await messageReceiver.xDomainChainId()
       expect(DEFAULT_FROM_CHAIN_ID).to.eq(xDomainChainId)
 
+      const feeDistributor = fixture.getFeeDistributor()
       const expectedFeeDistributorBalance = BigNumber.from(MESSAGE_FEE).mul(2)
       const feeDistributorBalance = await provider.getBalance(
         feeDistributor.address

@@ -81,7 +81,7 @@ abstract contract MessageBridge is Ownable, ICrossChainSource, ICrossChainDestin
         ConfirmedBundle memory bundle = bundles[bundleProof.bundleId];
 
         if (bundle.root == bytes32(0)) {
-            revert BundleNotFound(bundleProof.bundleId, messageId);
+            revert BundleNotFound(bundleProof.bundleId);
         }
 
         bool isProofValid = bundle.root.verify(
@@ -128,6 +128,10 @@ abstract contract MessageBridge is Ownable, ICrossChainSource, ICrossChainDestin
             revert XDomainMessengerNotSet();
         }
         return xDomainSender;
+    }
+
+    function getBundleId(uint256 fromChainId, uint256 toChainId, bytes32 bundleRoot) public pure returns (bytes32) {
+        return keccak256(abi.encodePacked(fromChainId, toChainId, bundleRoot));
     }
 
     /**

@@ -69,12 +69,13 @@ contract HubMessageBridge is MessageBridge, IHubMessageBridge {
         // ToDo: Require that msg.value == bundleValue + bundleFees
         // ToDo: Only Spoke
         uint256 fromChainId = getSpokeChainId(msg.sender);
-        bytes32 bundleId = keccak256(abi.encodePacked(fromChainId, toChainId, bundleRoot));
+        bytes32 bundleId = getBundleId(fromChainId, toChainId, bundleRoot);
+
         if (toChainId == getChainId()) {
             bundles[bundleId] = ConfirmedBundle(fromChainId, bundleRoot);
             emit BundleReceived(bundleId);
         } else {
-            ISpokeMessageBridge spokeBridge = getSpokeBridge(fromChainId);
+            ISpokeMessageBridge spokeBridge = getSpokeBridge(toChainId);
             spokeBridge.receiveMessageBundle(bundleRoot, fromChainId);
             emit BundleForwarded(bundleId);
         }

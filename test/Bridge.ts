@@ -4,11 +4,13 @@ import type {
   FeeDistributor as IFeeDistributor,
   MessageBridge as IMessageBridge,
   SpokeMessageBridge as ISpokeMessageBridge,
-  HubMessageBridge as IHubMessageBridge
+  HubMessageBridge as IHubMessageBridge,
 } from '../typechain'
 import { 
   ONE_WEEK,
   HUB_CHAIN_ID,
+  SPOKE_CHAIN_ID_0,
+  SPOKE_CHAIN_ID_1,
   DEFAULT_RESULT,
   MESSAGE_FEE,
   MAX_BUNDLE_MESSAGES,
@@ -128,6 +130,16 @@ export class SpokeBridge extends Bridge {
     const defaultRoutes = [
       {
         chainId: HUB_CHAIN_ID,
+        messageFee: MESSAGE_FEE,
+        maxBundleMessages: MAX_BUNDLE_MESSAGES,
+      },
+      {
+        chainId: SPOKE_CHAIN_ID_0,
+        messageFee: MESSAGE_FEE,
+        maxBundleMessages: MAX_BUNDLE_MESSAGES,
+      },
+      {
+        chainId: SPOKE_CHAIN_ID_1,
         messageFee: MESSAGE_FEE,
         maxBundleMessages: MAX_BUNDLE_MESSAGES,
       },

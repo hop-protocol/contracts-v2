@@ -15,6 +15,7 @@ import {
   PUBLIC_GOODS,
   MIN_PUBLIC_GOODS_BPS,
   FULL_POOL_SIZE,
+  ARBITRARY_EOA,
 } from './constants'
 import Bridge, { SpokeBridge, HubBridge } from './Bridge'
 type Provider = providers.Provider
@@ -40,7 +41,7 @@ describe('MessageBridge Gas Profile', function () {
     const {
       tx: sendTx,
       messageSent: { messageId: messageId0 },
-    } = await fixture.sendMessage(sender)
+    } = await fixture.sendMessage(sender, { to: ARBITRARY_EOA })
     await logGas('sendMessage()', sendTx)
 
     const { tx: sendAndCommitTx } = await fixture.sendMessage(sender)
@@ -59,10 +60,10 @@ describe('MessageBridge Gas Profile', function () {
     const {
       tx: sendTx,
       messageSent: { messageId: messageId0 },
-    } = await fixture.sendMessage(sender)
+    } = await fixture.sendMessage(sender, { to: ARBITRARY_EOA })
     await logGas('sendMessage()', sendTx)
 
-    const { tx: sendAndCommitTx } = await fixture.sendMessage(sender)
+    const { tx: sendAndCommitTx } = await fixture.sendMessage(sender, { to: ARBITRARY_EOA })
     // await logGas('sendMessage() with commit', sendAndCommitTx)
 
     const { tx: relayTx } = await fixture.relayMessage(messageId0)
@@ -85,10 +86,10 @@ describe('MessageBridge Gas Profile', function () {
     const {
       tx: sendTx,
       messageSent: { messageId: messageId0 },
-    } = await fixture.sendMessage(sender)
+    } = await fixture.sendMessage(sender, { to: ARBITRARY_EOA })
     await logGas('sendMessage()', sendTx)
 
-    const { tx: sendAndCommitTx } = await fixture.sendMessage(sender)
+    const { tx: sendAndCommitTx } = await fixture.sendMessage(sender, { to: ARBITRARY_EOA })
     // await logGas('sendMessage() with commit', sendAndCommitTx)
 
     const { tx: relayTx } = await fixture.relayMessage(messageId0)

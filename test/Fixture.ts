@@ -223,12 +223,12 @@ class Fixture {
 
   async sendMessage(
     fromSigner: Signer,
-    overrides?: {
+    overrides?: Partial<{
       fromChainId: BigNumberish
       toChainId: BigNumberish
       to: string
       data: BytesLike
-    }
+    }>
   ) {
     const fromChainId = overrides?.fromChainId ?? this.defaults.fromChainId
     const from = await fromSigner.getAddress()

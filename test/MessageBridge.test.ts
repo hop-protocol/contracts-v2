@@ -38,12 +38,10 @@ describe('MessageBridge', function () {
         tx: sendTx,
         messageSent: { messageId: messageId0 },
       } = await fixture.sendMessage(sender)
-      await logGas('sendMessage()', sendTx)
 
       await fixture.sendMessage(sender)
 
       const { tx: relayTx } = await fixture.relayMessage(messageId0)
-      await logGas('relayMessage()', relayTx)
 
       const messageReceiver = fixture.getMessageReceiver()
 
@@ -115,44 +113,6 @@ describe('MessageBridge', function () {
     it('Should return the chainId', async function () {})
   })
 })
-
-// function getMessageId(
-//   nonce: BigNumberish,
-//   fromChainId: BigNumberish,
-//   from: string,
-//   toChainId: BigNumberish,
-//   to: string,
-//   message: string
-// ) {
-//   return keccak256(
-//     abi.encode(
-//       ['uint256', 'uint256', 'address', 'uint256', 'address', 'bytes'],
-//       [nonce, fromChainId, from, toChainId, to, message]
-//     )
-//   )
-// }
-
-// async function getSetResultCalldata(result: BigNumberish): Promise<string> {
-//   const MessageReceiver = await ethers.getContractFactory('MockMessageReceiver')
-//   const message = MessageReceiver.interface.encodeFunctionData('setResult', [
-//     result,
-//   ])
-//   return message
-// }
-
-async function logGas(
-  txName: string,
-  tx: ContractTransaction
-): Promise<ContractTransaction> {
-  const receipt = await tx.wait()
-  const gasUsed = receipt.cumulativeGasUsed
-  const { calldataBytes, calldataCost } = getCalldataStats(tx.data)
-  console.log(`    ${txName}
-      gasUsed: ${gasUsed.toString()}
-      calldataCost: ${calldataCost}
-      calldataBytes: ${calldataBytes}`)
-  return tx
-}
 
 function getCalldataStats(calldata: string) {
   let data = calldata

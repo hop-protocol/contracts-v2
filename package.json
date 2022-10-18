@@ -5,7 +5,8 @@
   "author": "Hop Team (@HopProtocol)",
   "license": "MIT",
   "scripts": {
-    "test": "npx hardhat test",
+    "test": "npx hardhat test test/MessageBridge.test.ts",
+    "gas-profile": "npx hardhat test test/gas.test.ts",
     "compile": "npx hardhat compile",
     "chain": "npx hardhat node",
     "deploy": "npx hardhat run scripts/deploy.ts",

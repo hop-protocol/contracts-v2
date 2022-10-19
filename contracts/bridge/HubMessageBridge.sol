@@ -14,6 +14,7 @@ contract HubMessageBridge is MessageBridge, IHubMessageBridge {
     event BundleForwarded(bytes32 indexed bundleId);
 
     /* config */
+    uint256 messageNonce;
     mapping(address => uint256) private chainIdForSpokeBridge;
     mapping(uint256 => ISpokeMessageBridge) private spokeBridgeForChainId;
     mapping(uint256 => uint256) private exitTimeForChainId;
@@ -31,19 +32,8 @@ contract HubMessageBridge is MessageBridge, IHubMessageBridge {
     {
         ISpokeMessageBridge spokeBridge = getSpokeBridge(toChainId);
 
-        bytes32 messageId = bytes32(0); // ToDo: L1 -> L2 messageId
-        uint256 nonce = 0; // ToDo: L1 -> L2 nonce
-
-        // ToDo: What is the gas implication of this?
-        // Message memory message = Message(
-        //     nonce,
-        //     getChainId(),
-        //     msg.sender,
-        //     toChainId,
-        //     to,
-        //     data
-        // );
-        // bytes32 messageId = message.getMessageId();
+        bytes32 messageId = getMessageId(messageNonce, msg.sender, toChainId, to, data);
+        messageNonce++;
 
         emit MessageSent(
             messageId,
@@ -54,6 +44,20 @@ contract HubMessageBridge is MessageBridge, IHubMessageBridge {
         );
 
         spokeBridge.forwardMessage(msg.sender, to, data);
+    }
+
+    function getMessageId(
+        uint256 nonce,
+        address from,
+        uint256 toChainId,
+        address to,
+        bytes calldata data
+    )
+        public
+        view
+        returns (bytes32)
+    {
+        return keccak256(abi.encode(getChainId(), from, toChainId, to, data));
     }
 
     function receiveOrForwardMessageBundle(

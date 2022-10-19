@@ -88,7 +88,7 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
         bytes32[] storage pendingMessageIds = pendingMessageIdsForChainId[toChainId];
 
         uint256 treeIndex = pendingMessageIds.length;
-        Message memory message = Message(
+        bytes32 messageId = getMessageId(
             pendingBundleId,
             treeIndex,
             fromChainId,
@@ -98,7 +98,6 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
             data
         );
 
-        bytes32 messageId = message.getMessageId();
         pendingMessageIds.push(messageId);
         pendingFeesForChainId[toChainId] += messageFee;
 
@@ -205,12 +204,38 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
     }
 
     /* Getters */
+    function getMessageId(
+        bytes32 bundleId,
+        uint256 treeIndex,
+        uint256 fromChainId,
+        address from,
+        uint256 toChainId,
+        address to,
+        bytes calldata data
+    )
+        public
+        pure
+        returns (bytes32)
+    {
+        return keccak256(
+            abi.encode(
+                bundleId,
+                treeIndex,
+                fromChainId,
+                from,
+                toChainId,
+                to,
+                data
+            )
+        );
+    }
+
+    /* Internal */
     function _setPendingBundleId(uint256 toChainId) private {
         uint256 pendingBundleNonce = bundleNonceForChainId[toChainId];
         pendingBundleIdForChainId[toChainId] = keccak256(abi.encodePacked("SpokeMessageBridge v1.0", getChainId(), toChainId, pendingBundleNonce)); // ToDo: Replace with EIP 712
     }
 
-    /* Internal */
     function _sendFeesToHub(uint256 amount) internal virtual {
 
         emit FeesSentToHub(amount);

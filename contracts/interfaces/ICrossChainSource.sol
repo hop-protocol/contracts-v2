@@ -3,10 +3,9 @@ pragma solidity ^0.8.2;
 
 interface ICrossChainSource {
     event MessageSent(
-        bytes32 messageId,
-        uint256 nonce,
-        address from,
-        uint256 toChainId,
+        bytes32 indexed messageId,
+        address indexed from,
+        uint256 indexed toChainId,
         address to,
         bytes data
     );

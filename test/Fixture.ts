@@ -36,7 +36,8 @@ export type Defaults =  {
 }
 
 class Message {
-  nonce: BigNumber
+  bundleId: string
+  treeIndex: BigNumber
   fromChainId: BigNumber
   from: string
   toChainId: BigNumber
@@ -44,14 +45,16 @@ class Message {
   data: BytesLike
 
   constructor(
-    _nonce: BigNumberish,
+    _bundleId: string,
+    _treeIndex: BigNumberish,
     _fromChainId: BigNumberish,
     _from: string,
     _toChainId: BigNumberish,
     _to: string,
     _data: BytesLike
   ) {
-    this.nonce = BigNumber.from(_nonce)
+    this.bundleId = _bundleId
+    this.treeIndex = BigNumber.from(_treeIndex)
     this.fromChainId = BigNumber.from(_fromChainId)
     this.from = _from
     this.toChainId = BigNumber.from(_toChainId)
@@ -62,9 +65,18 @@ class Message {
   getMessageId() {
     return keccak256(
       abi.encode(
-        ['uint256', 'uint256', 'address', 'uint256', 'address', 'bytes'],
         [
-          this.nonce,
+          'bytes32',
+          'uint256',
+          'uint256',
+          'address',
+          'uint256',
+          'address',
+          'bytes',
+        ],
+        [
+          this.bundleId,
+          this.treeIndex,
           this.fromChainId,
           this.from,
           this.toChainId,
@@ -86,7 +98,7 @@ class Fixture {
   messageReceivers: { [key: string]: IMessageReceiver }
   feeDistributors: { [key: string]: IFeeDistributor }
   defaults: Defaults
-  
+
   // dynamic state
   messageIds: string[]
   messages: { [key: string]: Message }
@@ -100,7 +112,6 @@ class Fixture {
     toChainId: BigNumber
     bundleFees: BigNumber
   } }
-
 
   constructor(
     _hubChainId: BigNumber,
@@ -242,10 +253,13 @@ class Fixture {
     const res = await bridge
       .connect(fromSigner)
       .sendMessage(toChainId, to, data)
-    const { messageSent, bundleCommitted } = res
+    const { messageSent, messageBundled, bundleCommitted } = res
+    const bundleId = messageBundled?.bundleId ?? '0x0000000000000000000000000000000000000000000000000000000000000000'
+    const treeIndex = messageBundled?.treeIndex ?? '0'
 
     const message = new Message(
-      messageSent.nonce,
+      bundleId,
+      treeIndex,
       fromChainId,
       from,
       toChainId,
@@ -286,7 +300,6 @@ class Fixture {
     messageId: string,
     signer?: Signer,
     overrides?: Partial<{
-      nonce: BigNumberish
       fromChainId: BigNumberish
       from: string
       toChainId: BigNumberish
@@ -305,7 +318,6 @@ class Fixture {
     const storedBundle = this.bundles[storedBundleId]
     if (!storedBundle) throw new Error('Bundle for messageId not found')
 
-    const nonce = overrides?.nonce ?? message.nonce
     const fromChainId = overrides?.fromChainId ?? message.fromChainId
     const from = overrides?.from ?? message.from
     const toChainId = overrides?.toChainId ?? message.toChainId
@@ -321,7 +333,7 @@ class Fixture {
       bridge = bridge.connect(signer)
     }
 
-    const tx = await bridge.relayMessage(nonce, fromChainId, from, to, data, {
+    const tx = await bridge.relayMessage(fromChainId, from, to, data, {
       bundleId,
       treeIndex,
       siblings,

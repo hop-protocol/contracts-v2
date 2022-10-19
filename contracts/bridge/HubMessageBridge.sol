@@ -47,7 +47,6 @@ contract HubMessageBridge is MessageBridge, IHubMessageBridge {
 
         emit MessageSent(
             messageId,
-            nonce,
             msg.sender,
             toChainId,
             to,
@@ -58,6 +57,7 @@ contract HubMessageBridge is MessageBridge, IHubMessageBridge {
     }
 
     function receiveOrForwardMessageBundle(
+        bytes32 bundleId,
         bytes32 bundleRoot,
         uint256 bundleFees,
         uint256 toChainId,
@@ -69,14 +69,13 @@ contract HubMessageBridge is MessageBridge, IHubMessageBridge {
         // ToDo: Require that msg.value == bundleValue + bundleFees
         // ToDo: Only Spoke
         uint256 fromChainId = getSpokeChainId(msg.sender);
-        bytes32 bundleId = getBundleId(fromChainId, toChainId, bundleRoot);
 
         if (toChainId == getChainId()) {
-            bundles[bundleId] = ConfirmedBundle(fromChainId, bundleRoot);
-            emit BundleReceived(bundleId);
+            bundles[bundleId] = ConfirmedBundle(bundleRoot, fromChainId);
+            emit BundleReceived(bundleId); // ToDO: Add additional data to event
         } else {
             ISpokeMessageBridge spokeBridge = getSpokeBridge(toChainId);
-            spokeBridge.receiveMessageBundle(bundleRoot, fromChainId);
+            spokeBridge.receiveMessageBundle(bundleId, bundleRoot, fromChainId);
             emit BundleForwarded(bundleId);
         }
 

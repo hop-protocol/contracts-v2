@@ -7,11 +7,6 @@ import "../interfaces/ICrossChainSource.sol";
 import "../interfaces/IHubMessageBridge.sol";
 import "../interfaces/ISpokeMessageBridge.sol";
 
-struct PendingBundle {
-    bytes32[] messageIds;
-    uint256 fees;
-}
-
 struct Route {
     uint256 chainId;
     uint256 messageFee;
@@ -24,6 +19,11 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
 
     /* events */
     event FeesSentToHub(uint256 amount);
+    event MessageBundled(
+        bytes32 indexed bundleId,
+        uint256 indexed treeIndex,
+        bytes32 indexed messageId
+    );
     event BundleCommitted(
         bytes32 bundleId,
         bytes32 bundleRoot,
@@ -43,9 +43,11 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
     mapping(uint256 => uint256) public routeMaxBundleMessages;
 
     /* state */
-    mapping(uint256 => PendingBundle) public pendingBundleForChainId;
-    uint256 public totalPendingFees;
-    uint256 public nonce = uint256(keccak256(abi.encodePacked(getChainId(), "SpokeMessageBridge v1.0")));
+    mapping(uint256 => uint256) public bundleNonceForChainId;
+    mapping(uint256 => bytes32) public pendingBundleIdForChainId;
+    mapping(uint256 => bytes32[]) public pendingMessageIdsForChainId;
+    mapping(uint256 => uint256) public pendingFeesForChainId;
+    uint256 public totalFeesForHub;
 
     modifier onlyHub() {
         if (msg.sender != address(hubBridge)) {
@@ -82,67 +84,84 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
             revert IncorrectFee(messageFee, msg.value);
         }
         uint256 fromChainId = getChainId();
+        bytes32 pendingBundleId = pendingBundleIdForChainId[toChainId];
+        bytes32[] storage pendingMessageIds = pendingMessageIdsForChainId[toChainId];
 
+        uint256 treeIndex = pendingMessageIds.length;
         Message memory message = Message(
-            nonce,
+            pendingBundleId,
+            treeIndex,
             fromChainId,
             msg.sender,
             toChainId,
             to,
             data
         );
-        nonce++;
 
         bytes32 messageId = message.getMessageId();
-        PendingBundle storage pendingBundle = pendingBundleForChainId[toChainId];
-        pendingBundle.messageIds.push(messageId);
-        pendingBundle.fees = pendingBundle.fees + messageFee;
+        pendingMessageIds.push(messageId);
+        pendingFeesForChainId[toChainId] += messageFee;
 
-        emit MessageSent(messageId, message.nonce, msg.sender, toChainId, to, data);
+        emit MessageBundled(pendingBundleId, treeIndex, messageId);
+        emit MessageSent(messageId, msg.sender, toChainId, to, data);
 
         uint256 maxBundleMessages = routeMaxBundleMessages[toChainId];
-        if (pendingBundle.messageIds.length == maxBundleMessages) {
-            _commitMessageBundle(toChainId);
+        if (pendingMessageIds.length >= maxBundleMessages) {
+            _commitPendingBundle(toChainId);
         }
     }
 
-    function commitMessageBundle(uint256 toChainId) external payable {
-        uint256 totalFees = pendingBundleForChainId[toChainId].fees + msg.value;
+    function commitPendingBundle(uint256 toChainId) external payable {
+        if (pendingMessageIdsForChainId[toChainId].length == 0) revert NoPendingBundle();
+
+        uint256 totalFees = pendingFeesForChainId[toChainId] + msg.value;
         uint256 messageFee = routeMessageFee[toChainId];
         uint256 numMessages = routeMaxBundleMessages[toChainId];
         uint256 fullBundleFee = messageFee * numMessages;
         if (fullBundleFee > totalFees) {
             revert NotEnoughFees(fullBundleFee, totalFees);
         }
-        _commitMessageBundle(toChainId);
+        _commitPendingBundle(toChainId);
     }
 
-    function _commitMessageBundle(uint256 toChainId) private {
-        PendingBundle storage pendingBundle = pendingBundleForChainId[toChainId];
-        bytes32 bundleRoot = Lib_MerkleTree.getMerkleRoot(pendingBundle.messageIds);
-        uint256 pendingFees = pendingBundle.fees;
-        delete pendingBundleForChainId[toChainId];
-
-        totalPendingFees += pendingFees;
-        uint256 _totalPendingFees = totalPendingFees;
-        if (_totalPendingFees >= pendingFeeBatchSize) {
-            // Send fees to l1
-            totalPendingFees = 0;
-            _sendFeesToHub(_totalPendingFees);
+    function _commitPendingBundle(uint256 toChainId) private {
+        bytes32[] storage pendingMessageIds = pendingMessageIdsForChainId[toChainId];
+        if (pendingMessageIds.length == 0) {
+            return;
         }
 
+        bytes32 bundleId = pendingBundleIdForChainId[toChainId];
+        bytes32 bundleRoot = Lib_MerkleTree.getMerkleRoot(pendingMessageIds);
+        uint256 bundleFees = pendingFeesForChainId[toChainId];
+
+        // New pending bundle 
+        bundleNonceForChainId[toChainId]++;
+        delete pendingMessageIdsForChainId[toChainId];
+        pendingFeesForChainId[toChainId] = 0;
+        _setPendingBundleId(toChainId);
+
+        emit BundleCommitted(bundleId, bundleRoot, bundleFees, toChainId, block.timestamp);
+
         hubBridge.receiveOrForwardMessageBundle(
+            bundleId,
             bundleRoot,
-            pendingFees,
+            bundleFees,
             toChainId,
             block.timestamp
         );
 
-        bytes32 bundleId = getBundleId(getChainId(), toChainId, bundleRoot);
-        emit BundleCommitted(bundleId, bundleRoot, pendingFees, toChainId, block.timestamp);
+        // Collect fees
+        totalFeesForHub += bundleFees;
+        uint256 _totalFeesForHub = totalFeesForHub;
+        if (_totalFeesForHub >= pendingFeeBatchSize) {
+            // Send fees to l1
+            totalFeesForHub = 0;
+            _sendFeesToHub(_totalFeesForHub);
+        }
     }
 
     function receiveMessageBundle(
+        bytes32 bundleId,
         bytes32 bundleRoot,
         uint256 fromChainId
     )
@@ -150,8 +169,7 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
         payable
         onlyHub
     {
-        bytes32 bundleId = getBundleId(fromChainId, getChainId(), bundleRoot);
-        bundles[bundleId] = ConfirmedBundle(fromChainId, bundleRoot);
+        bundles[bundleId] = ConfirmedBundle(bundleRoot, fromChainId);
     }
 
     function forwardMessage(address from, address to, bytes calldata data) external onlyHub {
@@ -180,8 +198,16 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
         if (route.messageFee == 0) revert NoZeroMessageFee();
         if (route.maxBundleMessages == 0) revert NoZeroMaxBundleMessages();
 
+        _commitPendingBundle(route.chainId);
+        _setPendingBundleId(route.chainId);
         routeMessageFee[route.chainId] = route.messageFee;
         routeMaxBundleMessages[route.chainId] = route.maxBundleMessages;
+    }
+
+    /* Getters */
+    function _setPendingBundleId(uint256 toChainId) private {
+        uint256 pendingBundleNonce = bundleNonceForChainId[toChainId];
+        pendingBundleIdForChainId[toChainId] = keccak256(abi.encodePacked("SpokeMessageBridge v1.0", getChainId(), toChainId, pendingBundleNonce)); // ToDo: Replace with EIP 712
     }
 
     /* Internal */

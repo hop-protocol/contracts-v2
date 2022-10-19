@@ -10,19 +10,9 @@ import "../interfaces/ICrossChainDestination.sol";
 
 import "hardhat/console.sol"; // ToDo: Remove
 
-interface IHopMessageReceiver {
-    function receiveMessageBundle(
-        bytes32 root,
-        uint256 bundleFees,
-        uint256 fromChainId,
-        uint256 toChainId,
-        uint256 commitTime
-    ) external payable;
-}
-
 struct ConfirmedBundle {
-    uint256 fromChainId;
     bytes32 root;
+    uint256 fromChainId;
 }
 
 struct BundleProof {
@@ -47,7 +37,6 @@ abstract contract MessageBridge is Ownable, ICrossChainSource, ICrossChainDestin
     mapping(bytes32 => bool) public relayedMessage;
 
     function relayMessage(
-        uint256 nonce,
         uint256 fromChainId,
         address from,
         address to,
@@ -57,7 +46,8 @@ abstract contract MessageBridge is Ownable, ICrossChainSource, ICrossChainDestin
         external
     {
         Message memory message = Message(
-            nonce,
+            bundleProof.bundleId,
+            bundleProof.treeIndex,
             fromChainId,
             from,
             getChainId(),

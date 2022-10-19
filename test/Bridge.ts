@@ -68,17 +68,27 @@ export default class Bridge {
     if (!messageSentEvent?.args) throw new Error('No MessageSent event found')
     const messageSent = {
       messageId: messageSentEvent.args.messageId as string,
-      nonce: messageSentEvent.args.nonce as BigNumber,
       from: messageSentEvent.args.from as string,
       toChainId: messageSentEvent.args.toChainId as BigNumber,
       to: messageSentEvent.args.to as string,
       data: messageSentEvent.args.data as string,
     }
 
+    const messageBundledEvent = receipt.events?.find(
+      e => e.event === 'MessageBundled'
+    )
+    let messageBundled
+    if (messageBundledEvent?.args) {
+      messageBundled = {
+        bundleId: messageBundledEvent.args.bundleId as string,
+        treeIndex: messageBundledEvent.args.treeIndex as BigNumber,
+        messageId: messageBundledEvent.args.messageId as string,
+      }
+    }
+
     const bundleCommittedEvent = receipt.events?.find(
       e => e.event === 'BundleCommitted'
     )
-
     let bundleCommitted
     if (bundleCommittedEvent?.args) {
       bundleCommitted = {
@@ -93,6 +103,7 @@ export default class Bridge {
     return {
       tx,
       messageSent,
+      messageBundled,
       bundleCommitted,
     }
   }
@@ -104,10 +115,6 @@ export default class Bridge {
 
 export class SpokeBridge extends Bridge {
   bridge: ISpokeMessageBridge
-
-  get nonce() {
-    return this.bridge.nonce
-  }
 
   constructor(_bridge: ISpokeMessageBridge) {
     super(_bridge)

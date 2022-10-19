@@ -2,7 +2,8 @@
 pragma solidity ^0.8.2;
 
 struct Message {
-    uint256 nonce;
+    bytes32 bundleId;
+    uint256 treeIndex;
     uint256 fromChainId;
     address from;
     uint256 toChainId;
@@ -14,7 +15,8 @@ library MessageLibrary {
     function getMessageId(Message memory message) internal pure returns (bytes32) {
         return keccak256(
             abi.encode(
-                message.nonce,
+                message.bundleId,
+                message.treeIndex,
                 message.fromChainId,
                 message.from,
                 message.toChainId,

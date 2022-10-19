@@ -22,4 +22,5 @@ error InvalidChainId(uint256 chainId);
 error NotEnoughFees(uint256 requiredFees, uint256 actualFees);
 error XDomainMessengerNotSet();
 error XDomainChainIdNotSet();
+error NoPendingBundle();
 

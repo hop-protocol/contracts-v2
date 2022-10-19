@@ -26,7 +26,6 @@ import {
   getMessageId,
   getSetResultCalldata,
   getBundleRoot,
-  getBundleId,
 } from './utils'
 
 export type Defaults =  {

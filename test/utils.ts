@@ -49,14 +49,3 @@ export function getBundleRoot(messageIds: string[]) {
 
   return bundleRoot
 }
-
-export function getBundleId(
-  bundleRoot: string,
-  fromChainId: BigNumberish,
-  toChainId: BigNumberish
-) {
-  return solidityKeccak256(
-    ['uint256', 'uint256', 'bytes32'],
-    [fromChainId, toChainId, bundleRoot]
-  )
-}

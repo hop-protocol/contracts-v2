@@ -120,10 +120,6 @@ abstract contract MessageBridge is Ownable, ICrossChainSource, ICrossChainDestin
         return xDomainSender;
     }
 
-    function getBundleId(uint256 fromChainId, uint256 toChainId, bytes32 bundleRoot) public pure returns (bytes32) {
-        return keccak256(abi.encodePacked(fromChainId, toChainId, bundleRoot));
-    }
-
     /**
      * @notice getChainId can be overridden by subclasses if needed for compatibility or testing purposes.
      * @dev Get the current chainId

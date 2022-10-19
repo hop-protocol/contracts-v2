@@ -22,7 +22,7 @@ type Provider = providers.Provider
 const { provider } = ethers
 const { solidityKeccak256, keccak256, defaultAbiCoder: abi } = ethers.utils
 import Fixture from './Fixture'
-import { getMessageId, getSetResultCalldata, getBundleRoot, getBundleId } from './utils'
+import { getMessageId, getSetResultCalldata, getBundleRoot } from './utils'
 
 describe('MessageBridge Gas Profile', function () {
   it('Should sendMessage L1 -> L2', async function () {

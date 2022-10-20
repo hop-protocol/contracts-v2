@@ -2,6 +2,7 @@
 pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import "../utils/Lib_MerkleTree.sol";
 import "../libraries/Error.sol";
 import "../libraries/Message.sol";
@@ -22,7 +23,7 @@ struct BundleProof {
     uint256 totalLeaves;
 }
 
-abstract contract MessageBridge is Ownable, ICrossChainSource, ICrossChainDestination {
+abstract contract MessageBridge is Ownable, EIP712, ICrossChainSource, ICrossChainDestination {
     using Lib_MerkleTree for bytes32;
     using MessageLibrary for Message;
 
@@ -35,6 +36,8 @@ abstract contract MessageBridge is Ownable, ICrossChainSource, ICrossChainDestin
     /* state */
     mapping(bytes32 => ConfirmedBundle) public bundles;
     mapping(bytes32 => bool) public relayedMessage;
+
+    constructor() EIP712("MessageBridge", "1") {}
 
     function relayMessage(
         uint256 fromChainId,

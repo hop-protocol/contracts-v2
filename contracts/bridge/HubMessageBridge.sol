@@ -46,14 +46,8 @@ contract HubMessageBridge is MessageBridge, IHubMessageBridge {
         spokeBridge.forwardMessage(msg.sender, to, data);
     }
 
-    function getMessageId(
-        uint256 nonce
-    )
-        public
-        pure
-        returns (bytes32)
-    {
-        return keccak256(abi.encode(nonce)); // ToDO: Maybe EIP712
+    function getMessageId(uint256 nonce) public view returns (bytes32) {
+        return keccak256(abi.encode(_domainSeparatorV4(), nonce));
     }
 
     function receiveOrForwardMessageBundle(

@@ -43,7 +43,6 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
     mapping(uint256 => uint256) public routeMaxBundleMessages;
 
     /* state */
-    mapping(uint256 => uint256) public bundleNonceForChainId;
     mapping(uint256 => bytes32) public pendingBundleIdForChainId;
     mapping(uint256 => bytes32[]) public pendingMessageIdsForChainId;
     mapping(uint256 => uint256) public pendingFeesForChainId;
@@ -138,11 +137,10 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
         bytes32 bundleRoot = Lib_MerkleTree.getMerkleRoot(pendingMessageIds);
         uint256 bundleFees = pendingFeesForChainId[toChainId];
 
-        // New pending bundle 
-        bundleNonceForChainId[toChainId]++;
+        // New pending bundle
+        pendingBundleIdForChainId[toChainId] = bytes32(uint256(pendingBundleIdForChainId[toChainId]) + 1);
         delete pendingMessageIdsForChainId[toChainId];
         pendingFeesForChainId[toChainId] = 0;
-        _setPendingBundleId(toChainId);
 
         emit BundleCommitted(bundleId, bundleRoot, bundleFees, toChainId, block.timestamp);
 
@@ -202,8 +200,10 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
         if (route.messageFee == 0) revert NoZeroMessageFee();
         if (route.maxBundleMessages == 0) revert NoZeroMaxBundleMessages();
 
+        if (pendingBundleIdForChainId[route.chainId] == 0) {
+            pendingBundleIdForChainId[route.chainId] = initialBundleIdForChainId(route.chainId);
+        }
         _commitPendingBundle(route.chainId);
-        _setPendingBundleId(route.chainId);
         routeMessageFee[route.chainId] = route.messageFee;
         routeMaxBundleMessages[route.chainId] = route.maxBundleMessages;
     }
@@ -235,14 +235,12 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
         );
     }
 
-    /* Internal */
-    function _setPendingBundleId(uint256 toChainId) private {
-        uint256 pendingBundleNonce = bundleNonceForChainId[toChainId];
-        pendingBundleIdForChainId[toChainId] = keccak256(abi.encodePacked("SpokeMessageBridge v1.0", getChainId(), toChainId, pendingBundleNonce)); // ToDo: Replace with EIP 712
+    function initialBundleIdForChainId(uint256 toChainId) public view returns (bytes32) {
+        return keccak256(abi.encodePacked(_domainSeparatorV4(), toChainId));
     }
 
+    /* Internal */
     function _sendFeesToHub(uint256 amount) internal virtual {
-
         emit FeesSentToHub(amount);
 
         (bool success, ) = hubFeeDistributor.call{value: amount}("");

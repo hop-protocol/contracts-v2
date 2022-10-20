@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import "../utils/Lib_MerkleTree.sol";
 import "../libraries/Error.sol";
-import "../libraries/Message.sol";
 import "../interfaces/ICrossChainSource.sol";
 import "../interfaces/ICrossChainDestination.sol";
 
@@ -25,7 +24,6 @@ struct BundleProof {
 
 abstract contract MessageBridge is Ownable, EIP712, ICrossChainSource, ICrossChainDestination {
     using Lib_MerkleTree for bytes32;
-    using MessageLibrary for Message;
 
     /* constants */
     address private constant DEFAULT_XDOMAIN_SENDER = 0x000000000000000000000000000000000000dEaD;
@@ -48,7 +46,7 @@ abstract contract MessageBridge is Ownable, EIP712, ICrossChainSource, ICrossCha
     )
         external
     {
-        Message memory message = Message(
+        bytes32 messageId = getSpokeMessageId(
             bundleProof.bundleId,
             bundleProof.treeIndex,
             fromChainId,
@@ -57,7 +55,6 @@ abstract contract MessageBridge is Ownable, EIP712, ICrossChainSource, ICrossCha
             to,
             data
         );
-        bytes32 messageId = message.getMessageId(); // ToDO: Remove Message lib
 
         validateProof(bundleProof, messageId);
         if (relayedMessage[messageId] == true) {
@@ -70,7 +67,7 @@ abstract contract MessageBridge is Ownable, EIP712, ICrossChainSource, ICrossCha
 
         relayedMessage[messageId] = true; // ToDo: 15k gas saving for doing with with bitmap
 
-        bool success = _relayMessage(messageId, message.fromChainId, message.from, message.to, message.data);
+        bool success = _relayMessage(messageId, fromChainId, from, to, data);
 
         if (!success) {
             relayedMessage[messageId] = false;
@@ -130,6 +127,32 @@ abstract contract MessageBridge is Ownable, EIP712, ICrossChainSource, ICrossCha
             revert XDomainMessengerNotSet();
         }
         return xDomainSender;
+    }
+
+    function getSpokeMessageId(
+        bytes32 bundleId,
+        uint256 treeIndex,
+        uint256 fromChainId,
+        address from,
+        uint256 toChainId,
+        address to,
+        bytes calldata data
+    )
+        public
+        pure
+        returns (bytes32)
+    {
+        return keccak256(
+            abi.encode(
+                bundleId,
+                treeIndex,
+                fromChainId,
+                from,
+                toChainId,
+                to,
+                data
+            )
+        );
     }
 
     /**

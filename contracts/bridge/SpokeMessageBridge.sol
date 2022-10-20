@@ -15,7 +15,6 @@ struct Route {
 
 contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
     using Lib_MerkleTree for bytes32;
-    using MessageLibrary for Message;
 
     /* events */
     event FeesSentToHub(uint256 amount);
@@ -93,7 +92,7 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
         bytes32[] storage pendingMessageIds = pendingMessageIdsForChainId[toChainId];
 
         uint256 treeIndex = pendingMessageIds.length;
-        bytes32 messageId = getMessageId(
+        bytes32 messageId = getSpokeMessageId(
             pendingBundleId,
             treeIndex,
             fromChainId,
@@ -201,7 +200,7 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
         if (route.maxBundleMessages == 0) revert NoZeroMaxBundleMessages();
 
         if (pendingBundleIdForChainId[route.chainId] == 0) {
-            pendingBundleIdForChainId[route.chainId] = initialBundleIdForChainId(route.chainId);
+            pendingBundleIdForChainId[route.chainId] = initialBundleId(route.chainId);
         }
         _commitPendingBundle(route.chainId);
         routeMessageFee[route.chainId] = route.messageFee;
@@ -209,33 +208,7 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
     }
 
     /* Getters */
-    function getMessageId(
-        bytes32 bundleId,
-        uint256 treeIndex,
-        uint256 fromChainId,
-        address from,
-        uint256 toChainId,
-        address to,
-        bytes calldata data
-    )
-        public
-        pure
-        returns (bytes32)
-    {
-        return keccak256(
-            abi.encode(
-                bundleId,
-                treeIndex,
-                fromChainId,
-                from,
-                toChainId,
-                to,
-                data
-            )
-        );
-    }
-
-    function initialBundleIdForChainId(uint256 toChainId) public view returns (bytes32) {
+    function initialBundleId(uint256 toChainId) public view returns (bytes32) {
         return keccak256(abi.encodePacked(_domainSeparatorV4(), toChainId));
     }
 

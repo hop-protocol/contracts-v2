@@ -7,8 +7,6 @@ import "../interfaces/IHubMessageBridge.sol";
 import "../interfaces/ISpokeMessageBridge.sol";
 
 contract HubMessageBridge is MessageBridge, IHubMessageBridge {
-    using MessageLibrary for Message;
-
     /* events */
     event BundleReceived(bytes32 indexed bundleId);
     event BundleForwarded(bytes32 indexed bundleId);
@@ -32,7 +30,7 @@ contract HubMessageBridge is MessageBridge, IHubMessageBridge {
     {
         ISpokeMessageBridge spokeBridge = getSpokeBridge(toChainId);
 
-        bytes32 messageId = getMessageId(messageNonce);
+        bytes32 messageId = getHubMessageId(messageNonce);
         messageNonce++;
 
         emit MessageSent(
@@ -46,7 +44,7 @@ contract HubMessageBridge is MessageBridge, IHubMessageBridge {
         spokeBridge.forwardMessage(msg.sender, to, data);
     }
 
-    function getMessageId(uint256 nonce) public view returns (bytes32) {
+    function getHubMessageId(uint256 nonce) public view returns (bytes32) {
         return keccak256(abi.encode(_domainSeparatorV4(), nonce));
     }
 

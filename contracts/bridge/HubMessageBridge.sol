@@ -32,7 +32,7 @@ contract HubMessageBridge is MessageBridge, IHubMessageBridge {
     {
         ISpokeMessageBridge spokeBridge = getSpokeBridge(toChainId);
 
-        bytes32 messageId = getMessageId(messageNonce, msg.sender, toChainId, to, data);
+        bytes32 messageId = getMessageId(messageNonce);
         messageNonce++;
 
         emit MessageSent(
@@ -47,17 +47,13 @@ contract HubMessageBridge is MessageBridge, IHubMessageBridge {
     }
 
     function getMessageId(
-        uint256 nonce,
-        address from,
-        uint256 toChainId,
-        address to,
-        bytes calldata data
+        uint256 nonce
     )
         public
-        view
+        pure
         returns (bytes32)
     {
-        return keccak256(abi.encode(getChainId(), from, toChainId, to, data));
+        return keccak256(abi.encode(nonce)); // ToDO: Maybe EIP712
     }
 
     function receiveOrForwardMessageBundle(
@@ -69,9 +65,6 @@ contract HubMessageBridge is MessageBridge, IHubMessageBridge {
     )
         external
     {
-        // ToDo: Nonreentrant
-        // ToDo: Require that msg.value == bundleValue + bundleFees
-        // ToDo: Only Spoke
         uint256 fromChainId = getSpokeChainId(msg.sender);
 
         if (toChainId == getChainId()) {
@@ -110,6 +103,9 @@ contract HubMessageBridge is MessageBridge, IHubMessageBridge {
         onlyOwner
     {
         if (chainId == 0) revert NoZeroChainId();
+        if (spokeBridge == address(0)) revert NoZeroAddress(); 
+        if (exitTime == 0) revert NoZeroExitTime();
+        if (feeDistributor == address(0)) revert NoZeroAddress(); 
 
         chainIdForSpokeBridge[spokeBridge] = chainId;
         spokeBridgeForChainId[chainId] = ISpokeMessageBridge(spokeBridge);
@@ -126,7 +122,7 @@ contract HubMessageBridge is MessageBridge, IHubMessageBridge {
     function getSpokeBridge(uint256 chainId) public view returns (ISpokeMessageBridge) {
         ISpokeMessageBridge bridge = spokeBridgeForChainId[chainId];
         if (address(bridge) == address(0)) {
-            revert NoBridge(chainId);
+            revert InvalidRoute(chainId);
         }
         return bridge;
     }

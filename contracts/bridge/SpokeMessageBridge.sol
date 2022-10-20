@@ -38,7 +38,7 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
     /* config*/
     IHubMessageBridge public hubBridge; // ToDo: Consider making immutable
     address public hubFeeDistributor;
-    uint256 public pendingFeeBatchSize; // ToDo: Add manual flush or change name to pendingFeeBatchSize
+    uint256 public pendingFeeBatchSize;
     mapping(uint256 => uint256) public routeMessageFee;
     mapping(uint256 => uint256) public routeMaxBundleMessages;
 
@@ -79,10 +79,16 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
         external
         payable
     {
+        uint256 maxBundleMessages = routeMaxBundleMessages[toChainId];
+        if (maxBundleMessages == 0) {
+            revert InvalidRoute(toChainId);
+        }
+
         uint256 messageFee = routeMessageFee[toChainId];
         if (messageFee != msg.value) {
             revert IncorrectFee(messageFee, msg.value);
         }
+
         uint256 fromChainId = getChainId();
         bytes32 pendingBundleId = pendingBundleIdForChainId[toChainId];
         bytes32[] storage pendingMessageIds = pendingMessageIdsForChainId[toChainId];
@@ -104,7 +110,6 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
         emit MessageBundled(pendingBundleId, treeIndex, messageId);
         emit MessageSent(messageId, msg.sender, toChainId, to, data);
 
-        uint256 maxBundleMessages = routeMaxBundleMessages[toChainId];
         if (pendingMessageIds.length >= maxBundleMessages) {
             _commitPendingBundle(toChainId);
         }

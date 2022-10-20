@@ -28,8 +28,8 @@ abstract contract MessageBridge is Ownable, ICrossChainSource, ICrossChainDestin
 
     /* constants */
     address private constant DEFAULT_XDOMAIN_SENDER = 0x000000000000000000000000000000000000dEaD;
-    address private xDomainSender = DEFAULT_XDOMAIN_SENDER;
     uint256 private constant DEFAULT_XDOMAIN_CHAINID = uint256(bytes32(keccak256("Default Hop xDomain Sender")));
+    address private xDomainSender = DEFAULT_XDOMAIN_SENDER;
     uint256 private xDomainChainId = DEFAULT_XDOMAIN_CHAINID;
 
     /* state */
@@ -54,11 +54,18 @@ abstract contract MessageBridge is Ownable, ICrossChainSource, ICrossChainDestin
             to,
             data
         );
-        bytes32 messageId = message.getMessageId();
+        bytes32 messageId = message.getMessageId(); // ToDO: Remove Message lib
 
         validateProof(bundleProof, messageId);
+        if (relayedMessage[messageId] == true) {
+            revert MessageIsSpent(
+                bundleProof.bundleId,
+                bundleProof.treeIndex,
+                messageId
+            );
+        }
 
-        relayedMessage[messageId] = true;
+        relayedMessage[messageId] = true; // ToDo: 15k gas saving for doing with with bitmap
 
         bool success = _relayMessage(messageId, message.fromChainId, message.from, message.to, message.data);
 
@@ -93,6 +100,8 @@ abstract contract MessageBridge is Ownable, ICrossChainSource, ICrossChainDestin
     }
 
     function _relayMessage(bytes32 messageId, uint256 fromChainId, address from, address to, bytes memory data) internal returns (bool success) {
+        // ToDo: Add call blacklist
+
         xDomainSender = from;
         xDomainChainId = fromChainId;
         (success, ) = to.call(data);

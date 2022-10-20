@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import "../utils/Lib_MerkleTree.sol";
 import "../libraries/Error.sol";
+import "../libraries/Bitmap.sol";
 import "../interfaces/ICrossChainSource.sol";
 import "../interfaces/ICrossChainDestination.sol";
 
@@ -24,6 +25,7 @@ struct BundleProof {
 
 abstract contract MessageBridge is Ownable, EIP712, ICrossChainSource, ICrossChainDestination {
     using Lib_MerkleTree for bytes32;
+    using BitmapLibrary for Bitmap;
 
     /* constants */
     address private constant DEFAULT_XDOMAIN_SENDER = 0x000000000000000000000000000000000000dEaD;
@@ -34,6 +36,7 @@ abstract contract MessageBridge is Ownable, EIP712, ICrossChainSource, ICrossCha
     /* state */
     mapping(bytes32 => ConfirmedBundle) public bundles;
     mapping(bytes32 => bool) public relayedMessage;
+    mapping(bytes32 => Bitmap) private spentMessagesForBundleId;
 
     constructor() EIP712("MessageBridge", "1") {}
 
@@ -57,21 +60,21 @@ abstract contract MessageBridge is Ownable, EIP712, ICrossChainSource, ICrossCha
         );
 
         validateProof(bundleProof, messageId);
-        if (relayedMessage[messageId] == true) {
-            revert MessageIsSpent(
-                bundleProof.bundleId,
-                bundleProof.treeIndex,
-                messageId
-            );
-        }
-
-        relayedMessage[messageId] = true; // ToDo: 15k gas saving for doing with with bitmap
+        Bitmap storage spentMessages = spentMessagesForBundleId[bundleProof.bundleId];
 
         bool success = _relayMessage(messageId, fromChainId, from, to, data);
 
         if (!success) {
             relayedMessage[messageId] = false;
         }
+    }
+
+    function _setTrue(Bitmap storage bitmap, uint256 chunkIndex, bytes32 bitmapChunk, uint256 bitOffset) private {
+        bitmap._bitmap[chunkIndex] = (bitmapChunk | bytes32(1 << bitOffset));
+    }
+
+    function _isTrue(bytes32 bitmapChunk, uint256 bitOffset) private pure returns (bool) {
+        return ((bitmapChunk >> bitOffset) & bytes32(uint256(1))) != bytes32(0);
     }
 
     function validateProof(BundleProof memory bundleProof, bytes32 messageId) public view {

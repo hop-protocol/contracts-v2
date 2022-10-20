@@ -63,11 +63,17 @@ describe('MessageBridge Gas Profile', function () {
     } = await fixture.sendMessage(sender, { to: ARBITRARY_EOA })
     await logGas('sendMessage()', sendTx)
 
-    const { tx: sendAndCommitTx } = await fixture.sendMessage(sender, { to: ARBITRARY_EOA })
+    const {
+      tx: sendAndCommitTx,
+      messageSent: { messageId: messageId1 },
+    } = await fixture.sendMessage(sender, { to: ARBITRARY_EOA })
     // await logGas('sendMessage() with commit', sendAndCommitTx)
 
-    const { tx: relayTx } = await fixture.relayMessage(messageId0)
-    await logGas('relayMessage()', relayTx)
+    const { tx: relayTx0 } = await fixture.relayMessage(messageId0)
+    await logGas('relayMessage() 0', relayTx0)
+
+    const { tx: relayTx1 } = await fixture.relayMessage(messageId1, undefined, { treeIndex: 1 })
+    await logGas('relayMessage() 1', relayTx1)
   })
 
   it('Should sendMessage L2 -> L2', async function () {
@@ -89,11 +95,17 @@ describe('MessageBridge Gas Profile', function () {
     } = await fixture.sendMessage(sender, { to: ARBITRARY_EOA })
     await logGas('sendMessage()', sendTx)
 
-    const { tx: sendAndCommitTx } = await fixture.sendMessage(sender, { to: ARBITRARY_EOA })
+    const {
+      tx: sendAndCommitTx,
+      messageSent: { messageId: messageId1 },
+    } = await fixture.sendMessage(sender, { to: ARBITRARY_EOA })
     // await logGas('sendMessage() with commit', sendAndCommitTx)
 
-    const { tx: relayTx } = await fixture.relayMessage(messageId0)
-    await logGas('relayMessage()', relayTx)
+    const { tx: relayTx0 } = await fixture.relayMessage(messageId0)
+    await logGas('relayMessage()', relayTx0)
+
+    const { tx: relayTx1 } = await fixture.relayMessage(messageId1)
+    await logGas('relayMessage()', relayTx1)
   })
 })
 

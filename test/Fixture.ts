@@ -1,6 +1,7 @@
 import { expect } from 'chai'
 import { BigNumber, BigNumberish, Signer, BytesLike } from 'ethers'
 import { ethers } from 'hardhat'
+import { MerkleTree } from 'merkletreejs'
 const { solidityKeccak256, keccak256, defaultAbiCoder: abi } = ethers.utils
 import type {
   MockMessageReceiver as IMessageReceiver,
@@ -323,9 +324,25 @@ class Fixture {
     const to = overrides?.to ?? message.to
     const data = overrides?.data ?? message.data
     const bundleId = overrides?.bundleId ?? storedBundle.bundleId
-    const treeIndex = overrides?.treeIndex ?? 0 // ToDo: get actual Merkle data
-    const siblings = overrides?.siblings ?? [storedBundle.messageIds[1]] // ToDo: get actual Merkle data
-    const totalLeaves = overrides?.totalLeaves ?? 2 // ToDo: get actual Merkle data
+
+    const tree = new MerkleTree(storedBundle.messageIds)
+    const proof = tree
+      .getProof(messageId)
+      .map(node => '0x' + node.data.toString('hex'))
+
+    const treeIndex =
+      overrides?.treeIndex ?? storedBundle.messageIds.indexOf(messageId)
+    const siblings = overrides?.siblings ?? proof
+
+    // function roundUpPowersOfTwo(num: number) {
+    //   let pow = 1
+    //   while(num < pow) {
+    //     pow *= 2
+    //   }
+    //   return pow
+    // }
+
+    const totalLeaves = overrides?.totalLeaves ?? storedBundle.messageIds.length // ToDo: Is this needed? roundUpPowersOfTwo(storedBundle.messageIds.length)
 
     let bridge = this.bridges[toChainId.toString()]
     if (signer) {

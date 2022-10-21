@@ -62,8 +62,9 @@ abstract contract MessageBridge is Ownable, EIP712, ICrossChainSource, ICrossCha
 
         validateProof(bundleProof, messageId);
         Bitmap storage spentMessages = spentMessagesForBundleId[bundleProof.bundleId];
+        spentMessages.switchTrue(bundleProof.treeIndex);
 
-        bool success = _relayMessage(messageId, fromChainId, from, to, data); // ToDo: Inlining this save 434 gas, any solution?
+        bool success = _relayMessage(messageId, fromChainId, from, to, data); // ToDo: Inlining this saves 434 gas, any solution?
 
         if (!success) {
             relayedMessage[messageId] = false;

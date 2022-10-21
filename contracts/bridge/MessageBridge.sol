@@ -63,7 +63,7 @@ abstract contract MessageBridge is Ownable, EIP712, ICrossChainSource, ICrossCha
         validateProof(bundleProof, messageId);
         Bitmap storage spentMessages = spentMessagesForBundleId[bundleProof.bundleId];
 
-        bool success = _relayMessage(messageId, fromChainId, from, to, data);
+        bool success = _relayMessage(messageId, fromChainId, from, to, data); // ToDo: Inlining this save 434 gas, any solution?
 
         if (!success) {
             relayedMessage[messageId] = false;

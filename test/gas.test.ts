@@ -38,6 +38,9 @@ describe('MessageBridge Gas Profile', function () {
       }
     )
 
+    await fixture.sendMessage(sender)
+    await fixture.sendMessage(sender)
+
     const {
       tx: sendTx,
       messageSent: { messageId: messageId0 },
@@ -57,6 +60,9 @@ describe('MessageBridge Gas Profile', function () {
       SPOKE_CHAIN_ID_1,
     ])
 
+    await fixture.sendMessage(sender)
+    await fixture.sendMessage(sender)
+
     const {
       tx: sendTx,
       messageSent: { messageId: messageId0 },
@@ -70,10 +76,10 @@ describe('MessageBridge Gas Profile', function () {
     // await logGas('sendMessage() with commit', sendAndCommitTx)
 
     const { tx: relayTx0 } = await fixture.relayMessage(messageId0)
-    await logGas('relayMessage() 0', relayTx0)
+    await logGas('relayMessage()', relayTx0)
 
     const { tx: relayTx1 } = await fixture.relayMessage(messageId1, undefined, { treeIndex: 1 })
-    await logGas('relayMessage() 1', relayTx1)
+    // await logGas('relayMessage()', relayTx1)
   })
 
   it('Should sendMessage L2 -> L2', async function () {
@@ -88,6 +94,9 @@ describe('MessageBridge Gas Profile', function () {
         toChainId: SPOKE_CHAIN_ID_1,
       }
     )
+
+    await fixture.sendMessage(sender)
+    await fixture.sendMessage(sender)
 
     const {
       tx: sendTx,
@@ -105,7 +114,7 @@ describe('MessageBridge Gas Profile', function () {
     await logGas('relayMessage()', relayTx0)
 
     const { tx: relayTx1 } = await fixture.relayMessage(messageId1)
-    await logGas('relayMessage()', relayTx1)
+    // await logGas('relayMessage()', relayTx1)
   })
 })
 

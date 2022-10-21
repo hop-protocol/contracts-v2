@@ -138,7 +138,11 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
 
         // New pending bundle
         pendingBundleIdForChainId[toChainId] = bytes32(uint256(pendingBundleIdForChainId[toChainId]) + 1);
-        delete pendingMessageIdsForChainId[toChainId];
+        // ToDo: Revisit after further consideration. Leaving array slots dirty saves 17,000 per message
+        // delete pendingMessageIdsForChainId[toChainId];
+        assembly {
+            sstore(pendingMessageIds.slot, 0)
+        }
         pendingFeesForChainId[toChainId] = 0;
 
         emit BundleCommitted(bundleId, bundleRoot, bundleFees, toChainId, block.timestamp);

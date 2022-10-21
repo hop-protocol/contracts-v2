@@ -35,7 +35,7 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
     uint256 public immutable hubChainId;
 
     /* config*/
-    IHubMessageBridge public hubBridge; // ToDo: Consider making immutable
+    IHubMessageBridge public hubBridge;
     address public hubFeeDistributor;
     uint256 public pendingFeeBatchSize;
     mapping(uint256 => uint256) public routeMessageFee;
@@ -62,7 +62,7 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
     ) {
         if (_hubChainId == 0) revert NoZeroChainId();
         hubChainId = _hubChainId;
-        setHomeBridge(_hubBridge, _hubFeeDistributor);
+        setHubBridge(_hubBridge, _hubFeeDistributor);
         for (uint256 i = 0; i < routes.length; i++) {
             Route memory route = routes[i];
             setRoute(route);
@@ -180,10 +180,12 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
 
     /* Setters */
 
-    function setHomeBridge(IHubMessageBridge _hubBridge, address _hubFeeDistributor) public onlyOwner {
+    function setHubBridge(IHubMessageBridge _hubBridge, address _hubFeeDistributor) public onlyOwner {
         if (address(_hubBridge) == address(0)) revert NoZeroAddress();
         if (_hubFeeDistributor == address(0)) revert NoZeroAddress();
 
+        noMessageList[address(_hubBridge)] = true;
+        noMessageList[address(_hubFeeDistributor)] = true;
         hubBridge = _hubBridge;
         hubFeeDistributor = _hubFeeDistributor;
     }

@@ -99,6 +99,7 @@ contract HubMessageBridge is MessageBridge, IHubMessageBridge {
         if (exitTime == 0) revert NoZeroExitTime();
         if (feeDistributor == address(0)) revert NoZeroAddress(); 
 
+        noMessageList[spokeBridge] = true;
         chainIdForSpokeBridge[spokeBridge] = chainId;
         spokeBridgeForChainId[chainId] = ISpokeMessageBridge(spokeBridge);
         exitTimeForChainId[chainId] = exitTime;

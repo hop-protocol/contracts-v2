@@ -25,3 +25,4 @@ error XDomainMessengerNotSet();
 error XDomainChainIdNotSet();
 error NoPendingBundle();
 error MessageIsSpent(bytes32 bundleId, uint256 treeIndex, bytes32 messageId);
+error CannotMessageAddress(address to);

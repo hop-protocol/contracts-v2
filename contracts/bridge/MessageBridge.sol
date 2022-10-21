@@ -34,6 +34,7 @@ abstract contract MessageBridge is Ownable, EIP712, ICrossChainSource, ICrossCha
     uint256 private xDomainChainId = DEFAULT_XDOMAIN_CHAINID;
 
     /* state */
+    mapping(address => bool) public noMessageList;
     mapping(bytes32 => ConfirmedBundle) public bundles;
     mapping(bytes32 => bool) public relayedMessage;
     mapping(bytes32 => Bitmap) private spentMessagesForBundleId;
@@ -103,7 +104,7 @@ abstract contract MessageBridge is Ownable, EIP712, ICrossChainSource, ICrossCha
     }
 
     function _relayMessage(bytes32 messageId, uint256 fromChainId, address from, address to, bytes memory data) internal returns (bool success) {
-        // ToDo: Add call blacklist
+        if (noMessageList[to]) revert CannotMessageAddress(to);
 
         xDomainSender = from;
         xDomainChainId = fromChainId;

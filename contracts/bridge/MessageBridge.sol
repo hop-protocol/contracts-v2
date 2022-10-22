@@ -62,7 +62,7 @@ abstract contract MessageBridge is Ownable, EIP712, ICrossChainSource, ICrossCha
 
         validateProof(bundleProof, messageId);
         Bitmap storage spentMessages = spentMessagesForBundleId[bundleProof.bundleId];
-        spentMessages.switchTrue(bundleProof.treeIndex);
+        spentMessages.switchTrue(bundleProof.treeIndex); // Reverts if already true
 
         bool success = _relayMessage(messageId, fromChainId, from, to, data); // ToDo: Inlining this saves 434 gas, any solution?
 

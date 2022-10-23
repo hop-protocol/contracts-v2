@@ -29,13 +29,34 @@ const accounts =
 
 const config: HardhatUserConfig = {
   solidity:{
-    version: "0.8.9",
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 500000
-      }
-    }
+    compilers: [
+      {
+        version: '0.8.9',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 500000,
+          },
+        },
+      },{
+        version: '0.7.6',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 500000,
+          },
+        },
+      },
+      {
+        version: '0.6.12',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 500000,
+          },
+        },
+      },
+    ],
   },
   networks: {
     hardhat: {

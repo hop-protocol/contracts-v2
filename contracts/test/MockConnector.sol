@@ -19,15 +19,7 @@ contract MockConnector is Connector {
         pendingMessage = msg.data;
     }
 
-    function _verifySender() internal view override {
-        if (msg.sender != counterpart) revert InvalidSender(msg.sender);
-    }
-
-    function _isCrossChain() internal view override returns (bool) {
-        return msg.sender == counterpart;
-    }
-    
-    function _crossChainSender() internal view override returns (address) {
-        return msg.sender;
+    function _verifyCrossDomainSender() internal view override {
+        if (msg.sender != counterpart) revert NotCounterpart();
     }
 }

@@ -2,11 +2,9 @@
 
 pragma solidity ^0.8.2;
 
-import "@openzeppelin/contracts/crosschain/CrossChainEnabled.sol";
+error NotCounterpart();
 
-error InvalidSender(address msgSender);
-
-abstract contract Connector is CrossChainEnabled {
+abstract contract Connector {
     address public target;
     address public counterpart;
 
@@ -18,7 +16,7 @@ abstract contract Connector is CrossChainEnabled {
         if (msg.sender == target) {
             _forwardCrossDomainMessage();
         } else {
-            _verifySender();
+            _verifyCrossDomainSender();
 
             (bool success,) = target.call(msg.data);
             require(success, "CNR: Failed to forward message");
@@ -34,9 +32,9 @@ abstract contract Connector is CrossChainEnabled {
         counterpart = _counterpart;
     }
 
-    function _verifySender() onlyCrossChainSender(counterpart) internal virtual {}
-
     /* ========== Virtual functions ========== */
 
     function _forwardCrossDomainMessage() internal virtual;
+
+    function _verifyCrossDomainSender() internal virtual;
 }

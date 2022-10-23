@@ -1,19 +1,34 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
-import "@openzeppelin/contracts/crosschain/polygon/CrossChainEnabledPolygonChild.sol";
+import "../polygon/tunnel/FxBaseRootTunnel.sol";
 import "./Connector.sol";
 
-contract L1PolygonConnector is Connector, CrossChainEnabledPolygonChild {
+contract L1ArbitrumConnector is Connector, FxBaseRootTunnel {
+    address public fxRootTunnel;
+
     constructor(
         address target,
-        address bridge
+        address _checkpointManager,
+        address _fxRoot,
+        address _fxChildTunnel
     )
         Connector(target)
-        CrossChainEnabledPolygonChild(bridge)
-    {}
+        FxBaseRootTunnel(_checkpointManager, _fxRoot)
+    {
+        setFxChildTunnel(_fxChildTunnel);
+    }
 
     function _forwardCrossDomainMessage() internal override {
-        // ToDo
+        _sendMessageToChild(msg.data);
+    }
+
+    function _verifyCrossDomainSender() internal override pure {
+        revert NotCounterpart();
+    }
+
+    function _processMessageFromChild(bytes memory message) internal override {
+        (bool success,) = target.call(message);
+        require(success, "CNR: Failed to forward message");
     }
 }

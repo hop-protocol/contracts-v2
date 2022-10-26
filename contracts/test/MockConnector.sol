@@ -4,6 +4,7 @@ pragma solidity ^0.8.2;
 import "../connectors/Connector.sol";
 
 error MockRelayFailed();
+error NoPendingMessage();
 
 contract MockConnector is Connector {
     bytes public pendingMessage;
@@ -11,8 +12,13 @@ contract MockConnector is Connector {
     constructor(address target) Connector(target) {}
 
     function relay() public {
-        (bool success,) = counterpart.call(pendingMessage);
-        if (!success) revert MockRelayFailed();
+        bytes memory _pendingMessage = pendingMessage;
+        if (_pendingMessage.length == 0) revert NoPendingMessage();
+        (bool success, bytes memory res) = counterpart.call(_pendingMessage);
+        if(!success) {
+            // Bubble up error message
+            assembly { revert(add(res,0x20), res) }
+        }
     }
 
     function _forwardCrossDomainMessage() internal override {
@@ -20,6 +26,7 @@ contract MockConnector is Connector {
     }
 
     function _verifyCrossDomainSender() internal view override {
+        console.log(msg.sender);
         if (msg.sender != counterpart) revert NotCounterpart();
     }
 }

@@ -2,6 +2,8 @@
 
 pragma solidity ^0.8.2;
 
+import "hardhat/console.sol";
+
 error NotCounterpart();
 
 abstract contract Connector {
@@ -18,8 +20,11 @@ abstract contract Connector {
         } else {
             _verifyCrossDomainSender();
 
-            (bool success,) = target.call(msg.data);
-            require(success, "CNR: Failed to forward message");
+            (bool success, bytes memory res) = target.call(msg.data);
+            if(!success) {
+                // Bubble up error message
+                assembly { revert(add(res,0x20), res) }
+            }
         }
     }
 
@@ -27,7 +32,7 @@ abstract contract Connector {
      * @dev Sets the counterpart
      * @param _counterpart The new bridge connector address
      */
-    function setCounterpartAddress(address _counterpart) external {
+    function setCounterpart(address _counterpart) external {
         require(counterpart == address(0), "CNR: Connector address has already been set");
         counterpart = _counterpart;
     }

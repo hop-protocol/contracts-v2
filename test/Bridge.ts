@@ -116,6 +116,10 @@ export default class Bridge {
 export class SpokeBridge extends Bridge {
   bridge: ISpokeMessageBridge
 
+  get setHubBridge() {
+    return this.bridge.setHubBridge
+  }
+
   constructor(_bridge: ISpokeMessageBridge) {
     super(_bridge)
     this.bridge = _bridge
@@ -123,8 +127,6 @@ export class SpokeBridge extends Bridge {
 
   static async deploy(
     hubChainId: BigNumberish,
-    hubBridge: HubBridge,
-    hubFeeDistributor: IFeeDistributor,
     overrides: Partial<{
       routes: Route[]
       chainId: BigNumberish
@@ -160,8 +162,6 @@ export class SpokeBridge extends Bridge {
 
     const spokeMessageBridge = await SpokeMessageBridge.deploy(
       hubChainId,
-      hubBridge.address,
-      hubFeeDistributor.address,
       fullParams.routes,
       fullParams.chainId
     )

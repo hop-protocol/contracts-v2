@@ -134,6 +134,10 @@ abstract contract MessageBridge is Ownable, EIP712, ICrossChainSource, ICrossCha
         return xDomainSender;
     }
 
+    function getXDomainData() public view returns (uint256, address) {
+        return (getXDomainChainId(), getXDomainSender());
+    }
+
     function getSpokeMessageId(
         bytes32 bundleId,
         uint256 treeIndex,

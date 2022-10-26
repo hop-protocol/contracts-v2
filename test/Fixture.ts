@@ -7,6 +7,7 @@ import type {
   MockMessageReceiver as IMessageReceiver,
   SpokeMessageBridge as ISpokeMessageBridge,
   FeeDistributor as IFeeDistributor,
+  MockConnector as IMockConnector,
 } from '../typechain'
 import Bridge, { HubBridge, SpokeBridge } from './Bridge'
 import {
@@ -95,8 +96,10 @@ class Fixture {
   spokeChainIds: BigNumber[]
   spokeBridges: SpokeBridge[]
   bridges: { [key: string]: Bridge }
-  messageReceivers: { [key: string]: IMessageReceiver }
   feeDistributors: { [key: string]: IFeeDistributor }
+  hubConnectors: { [key: string]: IMockConnector }
+  spokeConnectors: { [key: string]: IMockConnector }
+  messageReceivers: { [key: string]: IMessageReceiver }
   defaults: Defaults
 
   // dynamic state
@@ -104,14 +107,16 @@ class Fixture {
   messages: { [key: string]: Message }
   messageIdsToBundleIds: { [key: string]: string }
   bundleIds: string[]
-  bundles: { [key: string]: {
-    bundleId: string
-    messageIds: string[]
-    bundleRoot: string
-    fromChainId: BigNumber
-    toChainId: BigNumber
-    bundleFees: BigNumber
-  } }
+  bundles: {
+    [key: string]: {
+      bundleId: string
+      messageIds: string[]
+      bundleRoot: string
+      fromChainId: BigNumber
+      toChainId: BigNumber
+      bundleFees: BigNumber
+    }
+  }
 
   constructor(
     _hubChainId: BigNumber,
@@ -120,6 +125,8 @@ class Fixture {
     _spokeChainIds: BigNumber[],
     _spokeBridges: SpokeBridge[],
     _feeDistributors: IFeeDistributor[],
+    _hubConnectors: IMockConnector[],
+    _spokeConnectors: IMockConnector[],
     _spokeMessageReceivers: IMessageReceiver[],
     _defaults: Defaults
   ) {
@@ -135,21 +142,26 @@ class Fixture {
     const bridges: { [key: string]: Bridge } = {
       [_hubChainId.toString()]: _hubBridge,
     }
+    const feeDistributors: { [key: string]: IFeeDistributor } = {}
+    const hubConnectors: { [key: string]: IMockConnector } = {}
+    const spokeConnectors: { [key: string]: IMockConnector } = {}
     const messageReceivers = {
       [_hubChainId.toString()]: _hubMessageReceiver,
     }
 
-    const feeDistributors: { [key: string]: IFeeDistributor } = {}
-
     for (let i = 0; i < _spokeChainIds.length; i++) {
       const spokeChainId = _spokeChainIds[i].toString()
       bridges[spokeChainId] = _spokeBridges[i]
-      messageReceivers[spokeChainId] = _spokeMessageReceivers[i]
       feeDistributors[spokeChainId] = _feeDistributors[i]
+      hubConnectors[spokeChainId] = _hubConnectors[i]
+      spokeConnectors[spokeChainId] = _spokeConnectors[i]
+      messageReceivers[spokeChainId] = _spokeMessageReceivers[i]
     }
     this.bridges = bridges
-    this.messageReceivers = messageReceivers
     this.feeDistributors = feeDistributors
+    this.hubConnectors = hubConnectors
+    this.spokeConnectors = spokeConnectors
+    this.messageReceivers = messageReceivers
 
     this.defaults = _defaults
 
@@ -173,14 +185,23 @@ class Fixture {
       'MockMessageReceiver'
     )
     const FeeDistributor = await ethers.getContractFactory('ETHFeeDistributor')
+    const Connector = await ethers.getContractFactory('MockConnector')
 
     const hubBridge = await HubBridge.deploy({ chainId: hubChainId })
     const hubMessageReceiver = await MessageReceiver.deploy(hubBridge.address)
 
     const spokeBridges: SpokeBridge[] = []
     const feeDistributors: IFeeDistributor[] = []
+    const hubConnectors: IMockConnector[] = []
+    const spokeConnectors: IMockConnector[] = []
     const spokeMessageReceivers: IMessageReceiver[] = []
     for (let i = 0; i < spokeChainIds.length; i++) {
+      const spokeChainId = spokeChainIds[i]
+      const spokeBridge = await SpokeBridge.deploy(hubChainId, {
+        chainId: spokeChainId,
+      })
+      spokeBridges.push(spokeBridge)
+
       const feeDistributor = await FeeDistributor.deploy(
         hubBridge.address,
         TREASURY,
@@ -190,21 +211,21 @@ class Fixture {
       )
       feeDistributors.push(feeDistributor)
 
-      const spokeChainId = spokeChainIds[i]
-      const spokeBridge = await SpokeBridge.deploy(
-        hubChainId,
-        hubBridge,
-        feeDistributor,
-        { chainId: spokeChainId }
-      )
-      spokeBridges.push(spokeBridge)
+      // Deploy spoke and hub connectors here
+      const hubConnector = await Connector.deploy(hubBridge.address)
+      const spokeConnector = await Connector.deploy(spokeBridge.address)
+      await hubConnector.setCounterpart(spokeConnector.address)
+      await spokeConnector.setCounterpart(hubConnector.address)
+      hubConnectors.push(hubConnector)
+      spokeConnectors.push(spokeConnector)
 
       await hubBridge.setSpokeBridge(
         spokeChainId,
-        spokeBridge.address,
+        hubConnector.address,
         ONE_WEEK,
         feeDistributor.address
       )
+      spokeBridge.setHubBridge(spokeConnector.address, feeDistributor.address)
 
       const messageReceiver = await MessageReceiver.deploy(hubBridge.address)
       spokeMessageReceivers.push(messageReceiver)
@@ -225,6 +246,8 @@ class Fixture {
       spokeChainIds,
       spokeBridges,
       feeDistributors,
+      hubConnectors,
+      spokeConnectors,
       spokeMessageReceivers,
       defaults
     )
@@ -254,7 +277,9 @@ class Fixture {
       .connect(fromSigner)
       .sendMessage(toChainId, to, data)
     const { messageSent, messageBundled, bundleCommitted } = res
-    const bundleId = messageBundled?.bundleId ?? '0x0000000000000000000000000000000000000000000000000000000000000000'
+    const bundleId =
+      messageBundled?.bundleId ??
+      '0x0000000000000000000000000000000000000000000000000000000000000000'
     const treeIndex = messageBundled?.treeIndex ?? '0'
 
     const message = new Message(
@@ -268,7 +293,7 @@ class Fixture {
     )
     const expectedMessageId = message.getMessageId()
 
-    // expect(expectedMessageId).to.eq(messageSent.messageId)
+    expect(expectedMessageId).to.eq(messageSent.messageId)
     expect(from.toLowerCase()).to.eq(messageSent.from.toLowerCase())
     expect(toChainId).to.eq(messageSent.toChainId)
     expect(to.toLowerCase()).to.eq(messageSent.to.toLowerCase())
@@ -291,9 +316,29 @@ class Fixture {
       })
 
       this.messageIds = []
+
+      // optionally exit the bundle here
+      const txs = await this.relayMessages(fromChainId, toChainId)
+      if (txs.length === 0) throw new Error('No messages relayed')
+      const relayTx = txs[0]
+      const relayReceipt = await relayTx.wait()
+      // ToDo: Check event data from relayReceipt
     }
 
     return res
+  }
+
+  async relayMessages(fromChainId: BigNumberish, toChainId: BigNumberish) {
+    // ToDO: Relay all messages
+    let connector: IMockConnector;
+    if (this.hubChainId.eq(fromChainId)) {
+      connector = this.hubConnectors[toChainId.toString()]
+    } else {
+      connector = this.spokeConnectors[fromChainId.toString()]
+    }
+    if (!connector) throw new Error(`No connector found for chain id ${toChainId.toString()}`)
+    const tx = await connector.relay()
+    return [tx]
   }
 
   async relayMessage(

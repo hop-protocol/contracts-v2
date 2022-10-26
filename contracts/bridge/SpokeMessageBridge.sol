@@ -59,14 +59,11 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
     }
 
     constructor(
-        uint256 _hubChainId, 
-        IHubMessageBridge _hubBridge, 
-        address _hubFeeDistributor, 
+        uint256 _hubChainId,
         Route[] memory routes
     ) {
         if (_hubChainId == 0) revert NoZeroChainId();
         hubChainId = _hubChainId;
-        setHubBridge(_hubBridge, _hubFeeDistributor);
         for (uint256 i = 0; i < routes.length; i++) {
             Route memory route = routes[i];
             setRoute(route);

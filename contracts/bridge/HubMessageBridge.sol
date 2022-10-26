@@ -12,7 +12,7 @@ contract HubMessageBridge is MessageBridge, IHubMessageBridge {
     event BundleForwarded(bytes32 indexed bundleId);
 
     /* config */
-    uint256 messageNonce;
+    uint256 public messageNonce;
     mapping(address => uint256) private chainIdForSpokeBridge;
     mapping(uint256 => ISpokeMessageBridge) private spokeBridgeForChainId;
     mapping(uint256 => uint256) private exitTimeForChainId;

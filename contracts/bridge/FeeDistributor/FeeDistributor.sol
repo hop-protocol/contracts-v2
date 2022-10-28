@@ -10,8 +10,9 @@ abstract contract FeeDistributor is Ownable {
     error OnlyHubBridge(address msgSender);
     error PendingFeesTooHigh(uint256 pendingAmount, uint256 pendingFeeBatchSize);
     error NoZeroAddress();
-    error PublicGoodsBpsTooLow(uint256 publicGoodsBps);
+    error InvalidPublicGoodsBps(uint256 publicGoodsBps);
     error PendingFeeBatchSizeTooLow(uint256 pendingFeeBatchSize);
+    error PoolNotFull(uint256 poolSize, uint256 fullPoolSize);
 
     /* events */
     event FeePaid(address indexed to, uint256 amount, uint256 feesCollected);
@@ -24,6 +25,7 @@ abstract contract FeeDistributor is Ownable {
 
     /* constants */
     uint256 constant BASIS_POINTS = 10_000;
+    uint256 constant ONE_HUNDRED_PERCENT_BPS = 1_000_000;
     address public immutable hubBridge;
     uint256 public immutable minPublicGoodsBps;
 
@@ -82,8 +84,9 @@ abstract contract FeeDistributor is Ownable {
     }
 
     function skimExcessFees() external onlyOwner {
-        uint256 balance = getBalance();
-        uint256 excessAmount = balance - fullPoolSize; // ToDo: Add error message
+        uint256 poolSize = getBalance();
+        if (poolSize < fullPoolSize) revert PoolNotFull(poolSize, fullPoolSize);
+        uint256 excessAmount = poolSize - fullPoolSize;
         uint256 publicGoodsAmount = excessAmount * publicGoodsBps / BASIS_POINTS;
         uint256 treasuryAmount = excessAmount - publicGoodsAmount;
 
@@ -122,7 +125,9 @@ abstract contract FeeDistributor is Ownable {
     }
 
     function setPublicGoodsBps(uint256 _publicGoodsBps) external onlyOwner {
-        if (_publicGoodsBps < minPublicGoodsBps) revert PublicGoodsBpsTooLow(_publicGoodsBps);
+        if (_publicGoodsBps < minPublicGoodsBps || _publicGoodsBps > ONE_HUNDRED_PERCENT_BPS) {
+            revert InvalidPublicGoodsBps(_publicGoodsBps);
+        }
         publicGoodsBps = _publicGoodsBps;
 
         emit PublicGoodsBpsSet(_publicGoodsBps);

@@ -10,16 +10,19 @@ import { ethers } from 'hardhat'
 import { MerkleTree } from 'merkletreejs'
 const { solidityKeccak256, keccak256, defaultAbiCoder: abi } = ethers.utils
 import type {
-  MockMessageReceiver as IMessageReceiver,
   SpokeMessageBridge as ISpokeMessageBridge,
+  HubMessageBridge as IHubMessageBridge,
+  MessageBridge as IMessageBridge,
+  MockMessageReceiver as IMessageReceiver,
   FeeDistributor as IFeeDistributor,
   MockConnector as IMockConnector,
 } from '../typechain'
-import Bridge, { HubBridge, SpokeBridge } from './Bridge'
+
 import {
   ONE_WEEK,
   HUB_CHAIN_ID,
   SPOKE_CHAIN_ID_0,
+  SPOKE_CHAIN_ID_1,
   MESSAGE_FEE,
   MAX_BUNDLE_MESSAGES,
   TREASURY,
@@ -28,17 +31,22 @@ import {
   FULL_POOL_SIZE,
   DEFAULT_FROM_CHAIN_ID,
   DEFAULT_TO_CHAIN_ID,
-  DEFAULT_RESULT
+  DEFAULT_RESULT,
 } from './constants'
-import {
-  getSetResultCalldata,
-  getBundleRoot,
-} from './utils'
+import { getSetResultCalldata, getBundleRoot } from './utils'
 
 export type Defaults =  {
   fromChainId: BigNumber
   toChainId: BigNumber
   data: string
+}
+
+export type Options = Partial<{ shouldLogGas: boolean }>
+
+type Route = {
+  chainId: BigNumberish
+  messageFee: BigNumberish
+  maxBundleMessages: BigNumberish
 }
 
 class Message {
@@ -98,10 +106,10 @@ class Message {
 class Fixture {
   // static state
   hubChainId: BigNumber
-  hubBridge: HubBridge
+  hubBridge: IHubMessageBridge
   spokeChainIds: BigNumber[]
-  spokeBridges: SpokeBridge[]
-  bridges: { [key: string]: Bridge }
+  spokeBridges: ISpokeMessageBridge[]
+  bridges: { [key: string]: IMessageBridge }
   feeDistributors: { [key: string]: IFeeDistributor }
   hubConnectors: { [key: string]: IMockConnector }
   spokeConnectors: { [key: string]: IMockConnector }
@@ -126,10 +134,10 @@ class Fixture {
 
   constructor(
     _hubChainId: BigNumber,
-    _hubBridge: HubBridge,
+    _hubBridge: IHubMessageBridge,
     _hubMessageReceiver: IMessageReceiver,
     _spokeChainIds: BigNumber[],
-    _spokeBridges: SpokeBridge[],
+    _spokeBridges: ISpokeMessageBridge[],
     _feeDistributors: IFeeDistributor[],
     _hubConnectors: IMockConnector[],
     _spokeConnectors: IMockConnector[],
@@ -145,7 +153,7 @@ class Fixture {
     this.spokeChainIds = _spokeChainIds
     this.spokeBridges = _spokeBridges
 
-    const bridges: { [key: string]: Bridge } = {
+    const bridges: { [key: string]: IMessageBridge } = {
       [_hubChainId.toString()]: _hubBridge,
     }
     const feeDistributors: { [key: string]: IFeeDistributor } = {}
@@ -193,19 +201,17 @@ class Fixture {
     const FeeDistributor = await ethers.getContractFactory('ETHFeeDistributor')
     const Connector = await ethers.getContractFactory('MockConnector')
 
-    const hubBridge = await HubBridge.deploy({ chainId: hubChainId })
+    const hubBridge = await this.deployHubBridge(hubChainId)
     const hubMessageReceiver = await MessageReceiver.deploy(hubBridge.address)
 
-    const spokeBridges: SpokeBridge[] = []
+    const spokeBridges: ISpokeMessageBridge[] = []
     const feeDistributors: IFeeDistributor[] = []
     const hubConnectors: IMockConnector[] = []
     const spokeConnectors: IMockConnector[] = []
     const spokeMessageReceivers: IMessageReceiver[] = []
     for (let i = 0; i < spokeChainIds.length; i++) {
       const spokeChainId = spokeChainIds[i]
-      const spokeBridge = await SpokeBridge.deploy(hubChainId, {
-        chainId: spokeChainId,
-      })
+      const spokeBridge = await this.deploySpokeBridge(hubChainId, spokeChainId)
       spokeBridges.push(spokeBridge)
 
       const feeDistributor = await FeeDistributor.deploy(
@@ -261,6 +267,43 @@ class Fixture {
     return { fixture, hubBridge, spokeBridges, feeDistributors }
   }
 
+  static async deployHubBridge(chainId: BigNumberish) {
+    const HubMessageBridge = await ethers.getContractFactory(
+      'MockHubMessageBridge'
+    )
+
+    return HubMessageBridge.deploy(chainId)
+  }
+
+  static async deploySpokeBridge(
+    hubChainId: BigNumberish,
+    spokeChainId: BigNumberish
+  ) {
+    const SpokeMessageBridge = await ethers.getContractFactory(
+      'MockSpokeMessageBridge'
+    )
+
+    const defaultRoutes = [
+      {
+        chainId: HUB_CHAIN_ID,
+        messageFee: MESSAGE_FEE,
+        maxBundleMessages: MAX_BUNDLE_MESSAGES,
+      },
+      {
+        chainId: SPOKE_CHAIN_ID_0,
+        messageFee: MESSAGE_FEE,
+        maxBundleMessages: MAX_BUNDLE_MESSAGES,
+      },
+      {
+        chainId: SPOKE_CHAIN_ID_1,
+        messageFee: MESSAGE_FEE,
+        maxBundleMessages: MAX_BUNDLE_MESSAGES,
+      },
+    ]
+
+    return SpokeMessageBridge.deploy(hubChainId, defaultRoutes, spokeChainId)
+  }
+
   async sendMessage(
     fromSigner: Signer,
     overrides?: Partial<{
@@ -279,10 +322,14 @@ class Fixture {
 
     const bridge = this.bridges[fromChainId.toString()]
     // ToDo: check nonce
-    const res = await bridge
+    const tx = await bridge
       .connect(fromSigner)
-      .sendMessage(toChainId, to, data)
-    const { messageSent, messageBundled, bundleCommitted } = res
+      .sendMessage(toChainId, to, data, {
+        value: MESSAGE_FEE,
+      })
+    const { messageSent, messageBundled, bundleCommitted } =
+      await this.getSendMessageEvents(tx)
+
     const bundleId =
       messageBundled?.bundleId ??
       '0x0000000000000000000000000000000000000000000000000000000000000000'
@@ -307,6 +354,8 @@ class Fixture {
     this.messageIds.push(messageSent.messageId)
     this.messages[messageSent.messageId] = message
 
+    let firstConnectionTx
+    let secondConnectionTx
     if (bundleCommitted) {
       const bundleId = bundleCommitted.bundleId
       this.bundleIds.push(bundleId)
@@ -323,12 +372,72 @@ class Fixture {
       this.messageIds = []
 
       // optionally exit the bundle here
-      const {firstConnectionTx, secondConnectionTx} = await this.relayBundleMessages(fromChainId, toChainId)
+      const connectionTxs = await this.relayBundleMessages(
+        fromChainId,
+        toChainId
+      )
+      firstConnectionTx = connectionTxs.firstConnectionTx
+      secondConnectionTx = connectionTxs.secondConnectionTx
       if (!firstConnectionTx) throw new Error('No messages relayed')
       // ToDo: Check event data from relayReceipt
     }
 
-    return res
+    return {
+      tx,
+      firstConnectionTx,
+      secondConnectionTx,
+      messageSent,
+      messageBundled,
+      bundleCommitted,
+    }
+  }
+
+  async getSendMessageEvents(tx: ContractTransaction) {
+    const receipt = await tx.wait()
+
+    const messageSentEvent = receipt.events?.find(
+      e => e.event === 'MessageSent'
+    )
+    if (!messageSentEvent?.args) throw new Error('No MessageSent event found')
+    const messageSent = {
+      messageId: messageSentEvent.args.messageId as string,
+      from: messageSentEvent.args.from as string,
+      toChainId: messageSentEvent.args.toChainId as BigNumber,
+      to: messageSentEvent.args.to as string,
+      data: messageSentEvent.args.data as string,
+    }
+
+    const messageBundledEvent = receipt.events?.find(
+      e => e.event === 'MessageBundled'
+    )
+    let messageBundled
+    if (messageBundledEvent?.args) {
+      messageBundled = {
+        bundleId: messageBundledEvent.args.bundleId as string,
+        treeIndex: messageBundledEvent.args.treeIndex as BigNumber,
+        messageId: messageBundledEvent.args.messageId as string,
+      }
+    }
+
+    const bundleCommittedEvent = receipt.events?.find(
+      e => e.event === 'BundleCommitted'
+    )
+    let bundleCommitted
+    if (bundleCommittedEvent?.args) {
+      bundleCommitted = {
+        bundleId: bundleCommittedEvent.args.bundleId as string,
+        bundleRoot: bundleCommittedEvent.args.bundleRoot as string,
+        bundleFees: bundleCommittedEvent.args.bundleFees as BigNumber,
+        toChainId: bundleCommittedEvent.args.toChainId as BigNumber,
+        commitTime: bundleCommittedEvent.args.commitTime as BigNumber,
+      }
+    }
+
+    return {
+      messageSent,
+      messageBundled,
+      bundleCommitted,
+    }
   }
 
   async relayBundleMessages(
@@ -349,18 +458,18 @@ class Fixture {
       }
     }
 
-    const firstConnectionTx = await this._relayBundleMessages(firstConnector)
+    const firstConnectionTx = await this._relayBundleMessage(firstConnector)
     let secondConnectionTx
     if (secondConnector) {
-      secondConnectionTx = await this._relayBundleMessages(secondConnector)
+      secondConnectionTx = await this._relayBundleMessage(secondConnector)
     }
     return { firstConnectionTx, secondConnectionTx }
   }
 
-  async _relayBundleMessages(connector: IMockConnector) {
+  async _relayBundleMessage(connector: IMockConnector) {
     if (!connector) throw new Error('No connector found')
     const tx = await connector.relay()
-    return [tx]
+    return tx
   }
 
   async relayMessage(

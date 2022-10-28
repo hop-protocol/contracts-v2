@@ -16,7 +16,7 @@ import type {
   MockMessageReceiver as IMessageReceiver,
   FeeDistributor as IFeeDistributor,
   MockConnector as IMockConnector,
-} from '../typechain'
+} from '../../typechain'
 
 import {
   ONE_WEEK,
@@ -32,8 +32,10 @@ import {
   DEFAULT_FROM_CHAIN_ID,
   DEFAULT_TO_CHAIN_ID,
   DEFAULT_RESULT,
-} from './constants'
-import { getSetResultCalldata, getBundleRoot } from './utils'
+} from '../constants'
+import { getSetResultCalldata, getBundleRoot } from '../utils'
+import SpokeMessage from './SpokeMessage'
+import deployFixture from './deployFixture'
 
 export type Defaults =  {
   fromChainId: BigNumber
@@ -42,66 +44,6 @@ export type Defaults =  {
 }
 
 export type Options = Partial<{ shouldLogGas: boolean }>
-
-type Route = {
-  chainId: BigNumberish
-  messageFee: BigNumberish
-  maxBundleMessages: BigNumberish
-}
-
-class Message {
-  bundleId: string
-  treeIndex: BigNumber
-  fromChainId: BigNumber
-  from: string
-  toChainId: BigNumber
-  to: string
-  data: BytesLike
-
-  constructor(
-    _bundleId: string,
-    _treeIndex: BigNumberish,
-    _fromChainId: BigNumberish,
-    _from: string,
-    _toChainId: BigNumberish,
-    _to: string,
-    _data: BytesLike
-  ) {
-    this.bundleId = _bundleId
-    this.treeIndex = BigNumber.from(_treeIndex)
-    this.fromChainId = BigNumber.from(_fromChainId)
-    this.from = _from
-    this.toChainId = BigNumber.from(_toChainId)
-    this.to = _to
-    this.data = _data
-  }
-
-  getMessageId() {
-    // ToDo: Handle hubMessageId or remove
-    return keccak256(
-      abi.encode(
-        [
-          'bytes32',
-          'uint256',
-          'uint256',
-          'address',
-          'uint256',
-          'address',
-          'bytes',
-        ],
-        [
-          this.bundleId,
-          this.treeIndex,
-          this.fromChainId,
-          this.from,
-          this.toChainId,
-          this.to,
-          this.data,
-        ]
-      )
-    )
-  }
-}
 
 class Fixture {
   // static state
@@ -118,7 +60,7 @@ class Fixture {
 
   // dynamic state
   messageIds: string[]
-  messages: { [key: string]: Message }
+  messages: { [key: string]: SpokeMessage }
   messageIdsToBundleIds: { [key: string]: string }
   bundleIds: string[]
   bundles: {
@@ -191,117 +133,7 @@ class Fixture {
     _spokeChainIds: BigNumberish[],
     _defaults: Partial<Defaults> = {}
   ) {
-    const hubChainId = BigNumber.from(_hubChainId)
-    const spokeChainIds = _spokeChainIds.map(n => BigNumber.from(n))
-
-    // Factories
-    const MessageReceiver = await ethers.getContractFactory(
-      'MockMessageReceiver'
-    )
-    const FeeDistributor = await ethers.getContractFactory('ETHFeeDistributor')
-    const Connector = await ethers.getContractFactory('MockConnector')
-
-    const hubBridge = await this.deployHubBridge(hubChainId)
-    const hubMessageReceiver = await MessageReceiver.deploy(hubBridge.address)
-
-    const spokeBridges: ISpokeMessageBridge[] = []
-    const feeDistributors: IFeeDistributor[] = []
-    const hubConnectors: IMockConnector[] = []
-    const spokeConnectors: IMockConnector[] = []
-    const spokeMessageReceivers: IMessageReceiver[] = []
-    for (let i = 0; i < spokeChainIds.length; i++) {
-      const spokeChainId = spokeChainIds[i]
-      const spokeBridge = await this.deploySpokeBridge(hubChainId, spokeChainId)
-      spokeBridges.push(spokeBridge)
-
-      const feeDistributor = await FeeDistributor.deploy(
-        hubBridge.address,
-        TREASURY,
-        PUBLIC_GOODS,
-        MIN_PUBLIC_GOODS_BPS,
-        FULL_POOL_SIZE
-      )
-      feeDistributors.push(feeDistributor)
-
-      // Deploy spoke and hub connectors here
-      const hubConnector = await Connector.deploy(hubBridge.address)
-      const spokeConnector = await Connector.deploy(spokeBridge.address)
-      await hubConnector.setCounterpart(spokeConnector.address)
-      await spokeConnector.setCounterpart(hubConnector.address)
-      hubConnectors.push(hubConnector)
-      spokeConnectors.push(spokeConnector)
-
-      await hubBridge.setSpokeBridge(
-        spokeChainId,
-        hubConnector.address,
-        ONE_WEEK,
-        feeDistributor.address
-      )
-      spokeBridge.setHubBridge(spokeConnector.address, feeDistributor.address)
-
-      const messageReceiver = await MessageReceiver.deploy(hubBridge.address)
-      spokeMessageReceivers.push(messageReceiver)
-    }
-
-    const defaultDefaults: Defaults = {
-      fromChainId: DEFAULT_FROM_CHAIN_ID,
-      toChainId: DEFAULT_TO_CHAIN_ID,
-      data: await getSetResultCalldata(DEFAULT_RESULT),
-    }
-
-    const defaults = Object.assign(defaultDefaults, _defaults)
-
-    const fixture = new Fixture(
-      hubChainId,
-      hubBridge,
-      hubMessageReceiver,
-      spokeChainIds,
-      spokeBridges,
-      feeDistributors,
-      hubConnectors,
-      spokeConnectors,
-      spokeMessageReceivers,
-      defaults
-    )
-
-    return { fixture, hubBridge, spokeBridges, feeDistributors }
-  }
-
-  static async deployHubBridge(chainId: BigNumberish) {
-    const HubMessageBridge = await ethers.getContractFactory(
-      'MockHubMessageBridge'
-    )
-
-    return HubMessageBridge.deploy(chainId)
-  }
-
-  static async deploySpokeBridge(
-    hubChainId: BigNumberish,
-    spokeChainId: BigNumberish
-  ) {
-    const SpokeMessageBridge = await ethers.getContractFactory(
-      'MockSpokeMessageBridge'
-    )
-
-    const defaultRoutes = [
-      {
-        chainId: HUB_CHAIN_ID,
-        messageFee: MESSAGE_FEE,
-        maxBundleMessages: MAX_BUNDLE_MESSAGES,
-      },
-      {
-        chainId: SPOKE_CHAIN_ID_0,
-        messageFee: MESSAGE_FEE,
-        maxBundleMessages: MAX_BUNDLE_MESSAGES,
-      },
-      {
-        chainId: SPOKE_CHAIN_ID_1,
-        messageFee: MESSAGE_FEE,
-        maxBundleMessages: MAX_BUNDLE_MESSAGES,
-      },
-    ]
-
-    return SpokeMessageBridge.deploy(hubChainId, defaultRoutes, spokeChainId)
+    return deployFixture(_hubChainId, _spokeChainIds, _defaults)
   }
 
   async sendMessage(
@@ -321,7 +153,7 @@ class Fixture {
     const data = overrides?.data ?? this.defaults.data
 
     const bridge = this.bridges[fromChainId.toString()]
-    // ToDo: check nonce
+
     const tx = await bridge
       .connect(fromSigner)
       .sendMessage(toChainId, to, data, {
@@ -330,29 +162,32 @@ class Fixture {
     const { messageSent, messageBundled, bundleCommitted } =
       await this.getSendMessageEvents(tx)
 
-    const bundleId =
-      messageBundled?.bundleId ??
-      '0x0000000000000000000000000000000000000000000000000000000000000000'
-    const treeIndex = messageBundled?.treeIndex ?? '0'
+    if (messageBundled) {
+      const bundleId = messageBundled?.bundleId
+      const treeIndex = messageBundled?.treeIndex
+      if (!bundleId || !treeIndex) {
+        throw new Error('Missing MessageBundled event data')
+      }
 
-    const message = new Message(
-      bundleId,
-      treeIndex,
-      fromChainId,
-      from,
-      toChainId,
-      to,
-      data
-    )
+      const message = new SpokeMessage(
+        bundleId,
+        treeIndex,
+        fromChainId,
+        from,
+        toChainId,
+        to,
+        data
+      )
 
-    expect(messageSent.messageId).to.eq(messageSent.messageId)
+      expect(message.getMessageId()).to.eq(messageSent.messageId)
+      this.messageIds.push(messageSent.messageId)
+      this.messages[messageSent.messageId] = message
+    }
+
     expect(from.toLowerCase()).to.eq(messageSent.from.toLowerCase())
     expect(toChainId).to.eq(messageSent.toChainId)
     expect(to.toLowerCase()).to.eq(messageSent.to.toLowerCase())
     expect(data.toString().toLowerCase()).to.eq(messageSent.data.toLowerCase())
-
-    this.messageIds.push(messageSent.messageId)
-    this.messages[messageSent.messageId] = message
 
     let firstConnectionTx
     let secondConnectionTx

@@ -1,5 +1,11 @@
 import { expect } from 'chai'
-import { BigNumber, BigNumberish, Signer, BytesLike } from 'ethers'
+import {
+  BigNumber,
+  BigNumberish,
+  Signer,
+  BytesLike,
+  ContractTransaction,
+} from 'ethers'
 import { ethers } from 'hardhat'
 import { MerkleTree } from 'merkletreejs'
 const { solidityKeccak256, keccak256, defaultAbiCoder: abi } = ethers.utils
@@ -25,7 +31,6 @@ import {
   DEFAULT_RESULT
 } from './constants'
 import {
-  getMessageId,
   getSetResultCalldata,
   getBundleRoot,
 } from './utils'
@@ -64,6 +69,7 @@ class Message {
   }
 
   getMessageId() {
+    // ToDo: Handle hubMessageId or remove
     return keccak256(
       abi.encode(
         [
@@ -291,9 +297,8 @@ class Fixture {
       to,
       data
     )
-    const expectedMessageId = message.getMessageId()
 
-    expect(expectedMessageId).to.eq(messageSent.messageId)
+    expect(messageSent.messageId).to.eq(messageSent.messageId)
     expect(from.toLowerCase()).to.eq(messageSent.from.toLowerCase())
     expect(toChainId).to.eq(messageSent.toChainId)
     expect(to.toLowerCase()).to.eq(messageSent.to.toLowerCase())
@@ -318,25 +323,42 @@ class Fixture {
       this.messageIds = []
 
       // optionally exit the bundle here
-      const txs = await this.relayMessages(fromChainId, toChainId)
-      if (txs.length === 0) throw new Error('No messages relayed')
-      const relayTx = txs[0]
-      const relayReceipt = await relayTx.wait()
+      const {firstConnectionTx, secondConnectionTx} = await this.relayBundleMessages(fromChainId, toChainId)
+      if (!firstConnectionTx) throw new Error('No messages relayed')
       // ToDo: Check event data from relayReceipt
     }
 
     return res
   }
 
-  async relayMessages(fromChainId: BigNumberish, toChainId: BigNumberish) {
+  async relayBundleMessages(
+    fromChainId: BigNumberish,
+    toChainId: BigNumberish
+  ) {
     // ToDO: Relay all messages
-    let connector: IMockConnector;
+    fromChainId = fromChainId.toString()
+    toChainId = toChainId.toString()
+    let firstConnector: IMockConnector | undefined
+    let secondConnector: IMockConnector | undefined
     if (this.hubChainId.eq(fromChainId)) {
-      connector = this.hubConnectors[toChainId.toString()]
+      firstConnector = this.hubConnectors[toChainId]
     } else {
-      connector = this.spokeConnectors[fromChainId.toString()]
+      firstConnector = this.spokeConnectors[fromChainId]
+      if (!this.hubChainId.eq(toChainId)) {
+        secondConnector = this.hubConnectors[toChainId]
+      }
     }
-    if (!connector) throw new Error(`No connector found for chain id ${toChainId.toString()}`)
+
+    const firstConnectionTx = await this._relayBundleMessages(firstConnector)
+    let secondConnectionTx
+    if (secondConnector) {
+      secondConnectionTx = await this._relayBundleMessages(secondConnector)
+    }
+    return { firstConnectionTx, secondConnectionTx }
+  }
+
+  async _relayBundleMessages(connector: IMockConnector) {
+    if (!connector) throw new Error('No connector found')
     const tx = await connector.relay()
     return [tx]
   }

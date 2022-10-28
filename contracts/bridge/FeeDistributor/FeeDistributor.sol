@@ -37,7 +37,7 @@ abstract contract FeeDistributor is Ownable {
     uint256 public pendingFeeBatchSize;
 
     /* state */
-    uint256 public expectedBalance;
+    uint256 public virtualBalance;
 
     modifier onlyHubBridge() {
         if (msg.sender != hubBridge) {
@@ -71,12 +71,12 @@ abstract contract FeeDistributor is Ownable {
 
     function payFee(address to, uint256 amount, uint256 feesCollected) external onlyHubBridge {
         uint256 balance = getBalance();
-        uint256 pendingAmount = expectedBalance + feesCollected - balance;
+        uint256 pendingAmount = virtualBalance + feesCollected - balance;
         if (pendingAmount > pendingFeeBatchSize) {
             revert PendingFeesTooHigh(pendingAmount, pendingFeeBatchSize);
         }
 
-        expectedBalance = expectedBalance + feesCollected - amount;
+        virtualBalance = virtualBalance + feesCollected - amount;
 
         emit FeePaid(to, amount, feesCollected);
 
@@ -90,7 +90,7 @@ abstract contract FeeDistributor is Ownable {
         uint256 publicGoodsAmount = excessAmount * publicGoodsBps / BASIS_POINTS;
         uint256 treasuryAmount = excessAmount - publicGoodsAmount;
 
-        expectedBalance -= excessAmount;
+        virtualBalance -= excessAmount;
 
         emit ExcessFeesSkimmed(publicGoodsAmount, treasuryAmount);
 
@@ -139,7 +139,7 @@ abstract contract FeeDistributor is Ownable {
     // same time.
     function setPendingFeeBatchSize(uint256 _pendingFeeBatchSize) external onlyOwner {
         uint256 balance = getBalance();
-        uint256 pendingAmount = expectedBalance - balance; // ToDo: Handle balance greater than fee pool
+        uint256 pendingAmount = virtualBalance - balance; // ToDo: Handle balance greater than fee pool
         if (_pendingFeeBatchSize < pendingAmount) revert PendingFeeBatchSizeTooLow(_pendingFeeBatchSize);
 
         pendingFeeBatchSize = _pendingFeeBatchSize;

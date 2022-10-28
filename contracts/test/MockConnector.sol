@@ -13,6 +13,7 @@ contract MockConnector is Connector {
 
     function relay() public {
         bytes memory _pendingMessage = pendingMessage;
+        delete pendingMessage;
         if (_pendingMessage.length == 0) revert NoPendingMessage();
         (bool success, bytes memory res) = counterpart.call(_pendingMessage);
         if(!success) {
@@ -26,7 +27,6 @@ contract MockConnector is Connector {
     }
 
     function _verifyCrossDomainSender() internal view override {
-        console.log(msg.sender);
         if (msg.sender != counterpart) revert NotCounterpart();
     }
 }

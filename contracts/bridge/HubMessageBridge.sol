@@ -8,8 +8,16 @@ import "../interfaces/ISpokeMessageBridge.sol";
 
 contract HubMessageBridge is MessageBridge, IHubMessageBridge {
     /* events */
-    event BundleReceived(bytes32 indexed bundleId);
-    event BundleForwarded(bytes32 indexed bundleId);
+    event BundleReceived(
+        bytes32 indexed bundleId,
+        bytes32 bundleRoot,
+        uint256 bundleFees,
+        uint256 fromChainId,
+        uint256 toChainId,
+        uint256 relayWindowStart,
+        address indexed relayer
+    );
+    event BundleForwarded(bytes32 indexed bundleId, bytes32 bundleRoot, uint256 fromChainId);
 
     /* config */
     uint256 public messageNonce;
@@ -60,16 +68,24 @@ contract HubMessageBridge is MessageBridge, IHubMessageBridge {
         uint256 fromChainId = getSpokeChainId(msg.sender);
 
         if (toChainId == getChainId()) {
-            bundles[bundleId] = ConfirmedBundle(bundleRoot, fromChainId);
-            emit BundleReceived(bundleId); // ToDO: Add additional data to event
+            _setBundle(bundleId, bundleRoot, fromChainId);
         } else {
             ISpokeMessageBridge spokeBridge = getSpokeBridge(toChainId);
+            emit BundleForwarded(bundleId, bundleRoot, fromChainId);
             spokeBridge.receiveMessageBundle(bundleId, bundleRoot, fromChainId);
-            emit BundleForwarded(bundleId);
         }
 
         // Pay relayer
         uint256 relayWindowStart = commitTime + getSpokeExitTime(fromChainId);
+        emit BundleReceived(
+            bundleId,
+            bundleRoot,
+            bundleFees,
+            fromChainId,
+            toChainId,
+            commitTime,
+            tx.origin
+        );
         uint256 relayWindowEnd = relayWindowStart + relayWindow;
         uint256 relayReward = 0;
         if (block.timestamp > relayWindowEnd) {

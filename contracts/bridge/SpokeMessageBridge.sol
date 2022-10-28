@@ -29,10 +29,10 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
         bytes32 indexed messageId
     );
     event BundleCommitted(
-        bytes32 bundleId,
+        bytes32 indexed bundleId,
         bytes32 bundleRoot,
         uint256 bundleFees,
-        uint256 toChainId,
+        uint256 indexed toChainId,
         uint256 commitTime
     );
 
@@ -168,10 +168,9 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
         uint256 fromChainId
     )
         external
-        payable
         onlyHub
     {
-        bundles[bundleId] = ConfirmedBundle(bundleRoot, fromChainId);
+        _setBundle(bundleId, bundleRoot, fromChainId);
     }
 
     function forwardMessage(address from, address to, bytes calldata data) external onlyHub {

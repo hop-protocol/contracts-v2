@@ -27,6 +27,8 @@ abstract contract MessageBridge is Ownable, EIP712, ICrossChainSource, ICrossCha
     using Lib_MerkleTree for bytes32;
     using BitmapLibrary for Bitmap;
 
+    event BundleSet(bytes32 indexed bundleId, bytes32 bundleRoot, uint256 indexed fromChainId);
+
     /* constants */
     address private constant DEFAULT_XDOMAIN_SENDER = 0x000000000000000000000000000000000000dEaD;
     uint256 private constant DEFAULT_XDOMAIN_CHAINID = uint256(bytes32(keccak256("Default Hop xDomain Sender")));
@@ -69,6 +71,11 @@ abstract contract MessageBridge is Ownable, EIP712, ICrossChainSource, ICrossCha
         if (!success) {
             relayedMessage[messageId] = false;
         }
+    }
+
+    function _setBundle(bytes32 bundleId, bytes32 bundleRoot, uint256 fromChainId) internal {
+        bundles[bundleId] = ConfirmedBundle(bundleRoot, fromChainId);
+        emit BundleSet(bundleId, bundleRoot, fromChainId);
     }
 
     function _setTrue(Bitmap storage bitmap, uint256 chunkIndex, bytes32 bitmapChunk, uint256 bitOffset) private {

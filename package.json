@@ -13,6 +13,7 @@
     "deploy:local": "npx hardhat run scripts/deploy.ts --network localhost",
     "deploy:goerli": "npx hardhat run scripts/deploy.ts --network goerli",
     "deploy:mainnet": "npx hardhat run scripts/deploy.ts --network mainnet",
+    "coverage": "npx hardhat coverage --solcoverjs .solcover.js",
     "lint": "eslint .",
     "prettier": "prettier '**/*.{json,sol,md}' --check",
     "solhint": "solhint 'contracts/**/*.sol'"

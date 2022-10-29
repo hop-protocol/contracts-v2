@@ -33,7 +33,6 @@ import {
   DEFAULT_TO_CHAIN_ID,
   DEFAULT_RESULT,
 } from '../constants'
-import { getSetResultCalldata, getBundleRoot } from '../utils'
 import SpokeMessage from './SpokeMessage'
 import deployFixture from './deployFixture'
 

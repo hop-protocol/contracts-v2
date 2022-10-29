@@ -23,13 +23,3 @@ export async function getSetResultCalldata(result: BigNumberish): Promise<string
   ])
   return message
 }
-
-export function getBundleRoot(messageIds: string[]) {
-  // ToDo: Get actual root
-  const bundleRoot = solidityKeccak256(
-    ['bytes32', 'bytes32'],
-    [messageIds[0], messageIds[1]]
-  )
-
-  return bundleRoot
-}

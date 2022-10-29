@@ -1,5 +1,6 @@
-import { BigNumber } from 'ethers'
+import { BigNumber, utils } from 'ethers'
 import { getSetResultCalldata } from './utils'
+const { parseUnits } = utils
 
 export const ONE_WEEK = 604800
 
@@ -12,13 +13,13 @@ export const ARBITRARY_EOA = '0x3333000000000000000000000000000000003333'
 export const MIN_PUBLIC_GOODS_BPS = 100_000
 
 // Fee distribution
-export const FULL_POOL_SIZE = 100_000
-export const MAX_BUNDLE_FEE = 10_000
+export const FULL_POOL_SIZE = parseUnits('0.1')
+export const MAX_BUNDLE_FEE = parseUnits('0.05')
 export const MAX_BUNDLE_FEE_BPS = 3_000_000 // 300%
 
 // Fee collection
-export const MAX_BUNDLE_MESSAGES = 2
-export const MESSAGE_FEE = 100
+export const MAX_BUNDLE_MESSAGES = 1024
+export const MESSAGE_FEE = parseUnits('0.000007')
 
 // Message
 export const DEFAULT_RESULT = 12345

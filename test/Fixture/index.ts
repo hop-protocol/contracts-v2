@@ -135,6 +135,22 @@ class Fixture {
     return deployFixture(_hubChainId, _spokeChainIds, _defaults)
   }
 
+  async sendMessageRepeat(
+    count: BigNumberish,
+    fromSigner: Signer,
+    overrides?: Partial<{
+      fromChainId: BigNumberish
+      toChainId: BigNumberish
+      to: string
+      data: BytesLike
+    }>
+  ) {
+    count = BigNumber.from(count)
+    for (let i = 0; count.gt(i); i++) {
+      await this.sendMessage(fromSigner, overrides)
+    }
+  }
+
   async sendMessage(
     fromSigner: Signer,
     overrides?: Partial<{
@@ -335,7 +351,7 @@ class Fixture {
     const data = overrides?.data ?? message.data
     const bundleId = overrides?.bundleId ?? storedBundle.bundleId
 
-    const tree = new MerkleTree(storedBundle.messageIds)
+    const tree = new MerkleTree(storedBundle.messageIds, keccak256)
     const proof = tree
       .getProof(messageId)
       .map(node => '0x' + node.data.toString('hex'))
@@ -358,6 +374,16 @@ class Fixture {
     if (signer) {
       bridge = bridge.connect(signer)
     }
+
+    const msgId = await bridge.getSpokeMessageId(
+      message.bundleId,
+      message.treeIndex,
+      message.fromChainId,
+      message.from,
+      message.toChainId,
+      message.to,
+      message.data
+    )
 
     const tx = await bridge.relayMessage(fromChainId, from, to, data, {
       bundleId,

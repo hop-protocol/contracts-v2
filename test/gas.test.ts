@@ -59,14 +59,16 @@ describe('MessageBridge Gas Profile', function () {
       SPOKE_CHAIN_ID_1,
     ])
 
-    await fixture.sendMessage(sender)
-    await fixture.sendMessage(sender)
+    await fixture.sendMessageRepeat(MAX_BUNDLE_MESSAGES, sender)
 
     const {
       tx: sendTx,
       messageSent: { messageId: messageId0 },
     } = await fixture.sendMessage(sender, { to: ARBITRARY_EOA })
     await logGas('sendMessage()', sendTx)
+
+    const numFillerMessages = MAX_BUNDLE_MESSAGES - 2
+    await fixture.sendMessageRepeat(numFillerMessages, sender)
 
     const {
       tx: sendAndCommitTx,
@@ -77,7 +79,7 @@ describe('MessageBridge Gas Profile', function () {
     const { tx: relayTx0 } = await fixture.relayMessage(messageId0)
     await logGas('relayMessage()', relayTx0)
 
-    const { tx: relayTx1 } = await fixture.relayMessage(messageId1, undefined, { treeIndex: 1 })
+    const { tx: relayTx1 } = await fixture.relayMessage(messageId1)
     // await logGas('relayMessage()', relayTx1)
   })
 
@@ -94,14 +96,16 @@ describe('MessageBridge Gas Profile', function () {
       }
     )
 
-    await fixture.sendMessage(sender)
-    await fixture.sendMessage(sender)
+    await fixture.sendMessageRepeat(MAX_BUNDLE_MESSAGES, sender)
 
     const {
       tx: sendTx,
       messageSent: { messageId: messageId0 },
     } = await fixture.sendMessage(sender, { to: ARBITRARY_EOA })
     await logGas('sendMessage()', sendTx)
+
+    const numFillerMessages = MAX_BUNDLE_MESSAGES - 2
+    await fixture.sendMessageRepeat(numFillerMessages, sender)
 
     const {
       tx: sendAndCommitTx,

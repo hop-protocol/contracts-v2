@@ -39,7 +39,8 @@ describe('MessageBridge', function () {
         messageSent: { messageId: messageId0 },
       } = await fixture.sendMessage(sender)
 
-      await fixture.sendMessage(sender)
+      const numFillerMessages = MAX_BUNDLE_MESSAGES - 1
+      await fixture.sendMessageRepeat(numFillerMessages, sender)
 
       const { tx: relayTx } = await fixture.relayMessage(messageId0)
 
@@ -58,7 +59,7 @@ describe('MessageBridge', function () {
       expect(DEFAULT_FROM_CHAIN_ID).to.eq(xDomainChainId)
 
       const feeDistributor = fixture.getFeeDistributor()
-      const expectedFeeDistributorBalance = BigNumber.from(MESSAGE_FEE).mul(2)
+      const expectedFeeDistributorBalance = BigNumber.from(MESSAGE_FEE).mul(MAX_BUNDLE_MESSAGES)
       const feeDistributorBalance = await provider.getBalance(
         feeDistributor.address
       )

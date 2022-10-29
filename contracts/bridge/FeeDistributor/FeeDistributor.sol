@@ -81,13 +81,16 @@ abstract contract FeeDistributor is Ownable {
     }
 
     function payFee(address to, uint256 relayWindowStart, uint256 feesCollected) external onlyHubBridge {
-        uint256 relayWindowEnd = relayWindowStart + relayWindow;
         uint256 relayReward = 0;
         if (block.timestamp >= relayWindowStart) {
             relayReward = (block.timestamp - relayWindowStart) * feesCollected / relayWindow;
+        } else {
+            return;
         }
 
-        if (relayReward == 0) return;
+        uint256 maxFee = feesCollected * maxBundleFeeBPS / BASIS_POINTS;
+        if (maxFee > maxBundleFee) maxFee = maxBundleFee;
+        if (relayReward > maxFee) relayReward = maxFee;
 
         uint256 balance = getBalance();
         uint256 pendingAmount = virtualBalance + feesCollected - balance;

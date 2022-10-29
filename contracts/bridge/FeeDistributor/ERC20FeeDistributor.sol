@@ -16,14 +16,18 @@ contract ERC20FeeDistributor is FeeDistributor {
         address _publicGoods,
         uint256 _minPublicGoodsBps,
         uint256 _fullPoolSize,
-        IERC20 _feeToken
+        IERC20 _feeToken,
+        uint256 _maxBundleFee,
+        uint256 _maxBundleFeeBPS
     ) 
         FeeDistributor(
             _hubBridge,
             _treasury,
             _publicGoods,
             _minPublicGoodsBps,
-            _fullPoolSize
+            _fullPoolSize,
+            _maxBundleFee,
+            _maxBundleFeeBPS
         )
     {
         feeToken = _feeToken;

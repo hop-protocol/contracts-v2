@@ -13,15 +13,19 @@ abstract contract FeeDistributor is Ownable {
     error InvalidPublicGoodsBps(uint256 publicGoodsBps);
     error PendingFeeBatchSizeTooLow(uint256 pendingFeeBatchSize);
     error PoolNotFull(uint256 poolSize, uint256 fullPoolSize);
+    error NoZeroRelayWindow();
 
     /* events */
     event FeePaid(address indexed to, uint256 amount, uint256 feesCollected);
     event ExcessFeesSkimmed(uint256 publicGoodsAmount, uint256 treasuryAmount);
     event TreasurySet(address indexed treasury);
     event PublicGoodsSet(address indexed publicGoods);
-    event FullPoolSizeSet(uint256 indexed fullPoolSize);
-    event PublicGoodsBpsSet(uint256 indexed publicGoodsBps);
-    event PendingFeeBatchSizeSet(uint256 indexed pendingFeeBatchSize);
+    event FullPoolSizeSet(uint256 fullPoolSize);
+    event PublicGoodsBpsSet(uint256 publicGoodsBps);
+    event PendingFeeBatchSizeSet(uint256 pendingFeeBatchSize);
+    event RelayWindowSet(uint256 relayWindow);
+    event MaxBundleFeeSet(uint256 maxBundleFee);
+    event MaxBundleFeeBPSSet(uint256 maxBundleFeeBPS);
 
     /* constants */
     uint256 constant BASIS_POINTS = 10_000;
@@ -35,6 +39,9 @@ abstract contract FeeDistributor is Ownable {
     uint256 public fullPoolSize;
     uint256 public publicGoodsBps;
     uint256 public pendingFeeBatchSize;
+    uint256 public relayWindow = 12 hours;
+    uint256 public maxBundleFee;
+    uint256 public maxBundleFeeBPS;
 
     /* state */
     uint256 public virtualBalance;
@@ -51,7 +58,9 @@ abstract contract FeeDistributor is Ownable {
         address _treasury,
         address _publicGoods,
         uint256 _minPublicGoodsBps,
-        uint256 _fullPoolSize
+        uint256 _fullPoolSize,
+        uint256 _maxBundleFee,
+        uint256 _maxBundleFeeBPS
     ) {
         hubBridge = _hubBridge;
         treasury = _treasury;
@@ -59,6 +68,8 @@ abstract contract FeeDistributor is Ownable {
         minPublicGoodsBps = _minPublicGoodsBps;
         publicGoodsBps = _minPublicGoodsBps;
         fullPoolSize = _fullPoolSize;
+        maxBundleFee = _maxBundleFee;
+        maxBundleFeeBPS = _maxBundleFeeBPS;
     }
 
     receive() external payable {}
@@ -69,7 +80,29 @@ abstract contract FeeDistributor is Ownable {
         return address(this).balance;
     }
 
-    function payFee(address to, uint256 amount, uint256 feesCollected) external onlyHubBridge {
+    function payFee(address to, uint256 relayWindowStart, uint256 feesCollected) external onlyHubBridge {
+        uint256 relayWindowEnd = relayWindowStart + relayWindow;
+        uint256 relayReward = 0;
+        if (block.timestamp >= relayWindowStart) {
+            relayReward = (block.timestamp - relayWindowStart) * feesCollected / relayWindow;
+        }
+
+        if (relayReward == 0) return;
+
+        uint256 balance = getBalance();
+        uint256 pendingAmount = virtualBalance + feesCollected - balance;
+        if (pendingAmount > pendingFeeBatchSize) {
+            revert PendingFeesTooHigh(pendingAmount, pendingFeeBatchSize);
+        }
+
+        virtualBalance = virtualBalance + feesCollected - relayReward;
+
+        emit FeePaid(to, relayReward, feesCollected);
+
+        transfer(to, relayReward);
+    }
+
+    function _payFee(address to, uint256 amount, uint256 feesCollected) internal onlyHubBridge {
         uint256 balance = getBalance();
         uint256 pendingAmount = virtualBalance + feesCollected - balance;
         if (pendingAmount > pendingFeeBatchSize) {
@@ -145,5 +178,21 @@ abstract contract FeeDistributor is Ownable {
         pendingFeeBatchSize = _pendingFeeBatchSize;
 
         emit PendingFeeBatchSizeSet(_pendingFeeBatchSize);
+    }
+
+    function setRelayWindow(uint256 _relayWindow) external onlyOwner {
+        if (_relayWindow == 0) revert NoZeroRelayWindow();
+        relayWindow = _relayWindow;
+        emit RelayWindowSet(_relayWindow);
+    }
+
+    function setMaxBundleFee(uint256 _maxBundleFee) external onlyOwner {
+        maxBundleFee = _maxBundleFee;
+        emit MaxBundleFeeSet(_maxBundleFee);
+    }
+
+    function setMaxBundleFeeBPS(uint256 _maxBundleFeeBPS) external onlyOwner {
+        maxBundleFeeBPS = _maxBundleFeeBPS;
+        emit MaxBundleFeeBPSSet(_maxBundleFeeBPS);
     }
 }

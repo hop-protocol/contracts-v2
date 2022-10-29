@@ -22,6 +22,8 @@ import {
   DEFAULT_FROM_CHAIN_ID,
   DEFAULT_TO_CHAIN_ID,
   DEFAULT_RESULT,
+  MAX_BUNDLE_FEE,
+  MAX_BUNDLE_FEE_BPS
 } from '../constants'
 import { getSetResultCalldata } from '../utils'
 import Fixture, { Defaults } from '../Fixture'
@@ -151,7 +153,9 @@ async function connectHubAndSpoke(
     TREASURY,
     PUBLIC_GOODS,
     MIN_PUBLIC_GOODS_BPS,
-    FULL_POOL_SIZE
+    FULL_POOL_SIZE,
+    MAX_BUNDLE_FEE,
+    MAX_BUNDLE_FEE_BPS
   )
 
   const spokeChainId = await spokeBridge.getChainId()

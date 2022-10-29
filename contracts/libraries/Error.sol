@@ -6,7 +6,6 @@ error NoZeroChainId();
 error NoZeroExitTime();
 error NoZeroMessageFee();
 error NoZeroMaxBundleMessages();
-error NoZeroRelayWindow();
 error BundleNotFound(bytes32 bundleRoot);
 error InvalidProof(
     bytes32 bundleRoot,

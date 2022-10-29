@@ -13,6 +13,8 @@ export const MIN_PUBLIC_GOODS_BPS = 100_000
 
 // Fee distribution
 export const FULL_POOL_SIZE = 100_000
+export const MAX_BUNDLE_FEE = 10_000
+export const MAX_BUNDLE_FEE_BPS = 3_000_000 // 300%
 
 // Fee collection
 export const MAX_BUNDLE_MESSAGES = 2

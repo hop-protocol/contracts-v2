@@ -9,14 +9,18 @@ contract ETHFeeDistributor is FeeDistributor {
         address _treasury,
         address _publicGoods,
         uint256 _minPublicGoodsBps,
-        uint256 _fullPoolSize
+        uint256 _fullPoolSize,
+        uint256 _maxBundleFee,
+        uint256 _maxBundleFeeBPS
     ) 
         FeeDistributor(
             _hubBridge,
             _treasury,
             _publicGoods,
             _minPublicGoodsBps,
-            _fullPoolSize
+            _fullPoolSize,
+            _maxBundleFee,
+            _maxBundleFeeBPS
         )
     {}
 

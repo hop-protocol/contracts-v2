@@ -25,7 +25,6 @@ contract HubMessageBridge is MessageBridge, IHubMessageBridge {
     mapping(uint256 => ISpokeMessageBridge) private spokeBridgeForChainId;
     mapping(uint256 => uint256) private exitTimeForChainId;
     mapping(uint256 => FeeDistributor) private feeDistributorForChainId;
-    uint256 public relayWindow = 12 hours;
 
     /// @dev  Wrapper for sending Hub -> Spoke messages
     function sendMessage(
@@ -83,21 +82,11 @@ contract HubMessageBridge is MessageBridge, IHubMessageBridge {
             bundleFees,
             fromChainId,
             toChainId,
-            commitTime,
+            relayWindowStart,
             tx.origin
         );
-        uint256 relayWindowEnd = relayWindowStart + relayWindow;
-        uint256 relayReward = 0;
-        if (block.timestamp > relayWindowEnd) {
-            relayReward = bundleFees;
-        } else if (block.timestamp >= relayWindowStart) {
-            relayReward = (block.timestamp - relayWindowStart) * bundleFees / relayWindow;
-        }
-
-        if (relayReward > 0) {
-            FeeDistributor feeDistributor = getFeeDistributor(fromChainId);
-            feeDistributor.payFee(tx.origin, relayReward, bundleFees);
-        }
+        FeeDistributor feeDistributor = getFeeDistributor(fromChainId);
+        feeDistributor.payFee(tx.origin, relayWindowStart, bundleFees);
     }
 
     // Setters
@@ -120,11 +109,6 @@ contract HubMessageBridge is MessageBridge, IHubMessageBridge {
         spokeBridgeForChainId[chainId] = ISpokeMessageBridge(spokeBridge);
         exitTimeForChainId[chainId] = exitTime;
         feeDistributorForChainId[chainId] = FeeDistributor(feeDistributor);
-    }
-
-    function setRelayWindow(uint256 _relayWindow) external onlyOwner {
-        if (_relayWindow == 0) revert NoZeroRelayWindow();
-        relayWindow = _relayWindow;
     }
 
     // Getters

@@ -69,7 +69,8 @@ abstract contract MessageBridge is Ownable, EIP712, ICrossChainSource, ICrossCha
         bool success = _relayMessage(messageId, fromChainId, from, to, data); // ToDo: Inlining this saves 434 gas, any solution?
 
         if (!success) {
-            relayedMessage[messageId] = false;
+            // ToDo: spentMessages.setFalse(bundleProof.treeIndex);
+            // relayedMessage[messageId] = false;
         }
     }
 

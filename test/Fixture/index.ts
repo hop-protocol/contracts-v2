@@ -72,6 +72,7 @@ class Fixture {
       bundleFees: BigNumber
     }
   }
+  spentMessageIds: { [key: string]: boolean }
 
   constructor(
     _hubChainId: BigNumber,
@@ -125,6 +126,7 @@ class Fixture {
     this.messageIdsToBundleIds = {}
     this.bundleIds = []
     this.bundles = {}
+    this.spentMessageIds = {}
   }
 
   static async deploy(
@@ -221,8 +223,8 @@ class Fixture {
 
       this.messageIds = []
 
-      // optionally exit the bundle here
-      const connectionTxs = await this.relayBundleMessages(
+      // exit the bundle here
+      const connectionTxs = await this.relayConnectorMessage(
         fromChainId,
         toChainId
       )
@@ -242,55 +244,7 @@ class Fixture {
     }
   }
 
-  async getSendMessageEvents(tx: ContractTransaction) {
-    const receipt = await tx.wait()
-
-    const messageSentEvent = receipt.events?.find(
-      e => e.event === 'MessageSent'
-    )
-    if (!messageSentEvent?.args) throw new Error('No MessageSent event found')
-    const messageSent = {
-      messageId: messageSentEvent.args.messageId as string,
-      from: messageSentEvent.args.from as string,
-      toChainId: messageSentEvent.args.toChainId as BigNumber,
-      to: messageSentEvent.args.to as string,
-      data: messageSentEvent.args.data as string,
-    }
-
-    const messageBundledEvent = receipt.events?.find(
-      e => e.event === 'MessageBundled'
-    )
-    let messageBundled
-    if (messageBundledEvent?.args) {
-      messageBundled = {
-        bundleId: messageBundledEvent.args.bundleId as string,
-        treeIndex: messageBundledEvent.args.treeIndex as BigNumber,
-        messageId: messageBundledEvent.args.messageId as string,
-      }
-    }
-
-    const bundleCommittedEvent = receipt.events?.find(
-      e => e.event === 'BundleCommitted'
-    )
-    let bundleCommitted
-    if (bundleCommittedEvent?.args) {
-      bundleCommitted = {
-        bundleId: bundleCommittedEvent.args.bundleId as string,
-        bundleRoot: bundleCommittedEvent.args.bundleRoot as string,
-        bundleFees: bundleCommittedEvent.args.bundleFees as BigNumber,
-        toChainId: bundleCommittedEvent.args.toChainId as BigNumber,
-        commitTime: bundleCommittedEvent.args.commitTime as BigNumber,
-      }
-    }
-
-    return {
-      messageSent,
-      messageBundled,
-      bundleCommitted,
-    }
-  }
-
-  async relayBundleMessages(
+  async relayConnectorMessage(
     fromChainId: BigNumberish,
     toChainId: BigNumberish
   ) {
@@ -375,16 +329,6 @@ class Fixture {
       bridge = bridge.connect(signer)
     }
 
-    const msgId = await bridge.getSpokeMessageId(
-      message.bundleId,
-      message.treeIndex,
-      message.fromChainId,
-      message.from,
-      message.toChainId,
-      message.to,
-      message.data
-    )
-
     const tx = await bridge.relayMessage(fromChainId, from, to, data, {
       bundleId,
       treeIndex,
@@ -392,7 +336,23 @@ class Fixture {
       totalLeaves,
     })
 
+    const { messageRelayed } = await this.getRelayMessageEvents(tx)
+    if (!messageRelayed) throw new Error('No MessageRelayed event found')
+    expect(messageId).to.eq(messageRelayed.messageId)
+    expect(fromChainId).to.eq(messageRelayed.fromChainId)
+    expect(from).to.eq(messageRelayed.from)
+    expect(to).to.eq(messageRelayed.to)
+
+    this.spentMessageIds[messageId] = true
+
     return { tx }
+  }
+
+  getUnspentMessageIds(bundleId: string) {
+    const bundle = this.bundles[bundleId]
+    return bundle.messageIds.filter((messageId: string) => {
+      return !this.spentMessageIds[messageId]
+    })
   }
 
   getMessageReceiver(chainId?: BigNumberish) {
@@ -414,6 +374,90 @@ class Fixture {
     if (!storedBundle) throw new Error('Bundle for messageId not found')
 
     return storedBundle
+  }
+
+  // Get events
+
+  async getSendMessageEvents(tx: ContractTransaction) {
+    const receipt = await tx.wait()
+
+    const messageSentEvent = receipt.events?.find(
+      e => e.event === 'MessageSent'
+    )
+    if (!messageSentEvent?.args) throw new Error('No MessageSent event found')
+    const messageSent = {
+      messageId: messageSentEvent.args.messageId as string,
+      from: messageSentEvent.args.from as string,
+      toChainId: messageSentEvent.args.toChainId as BigNumber,
+      to: messageSentEvent.args.to as string,
+      data: messageSentEvent.args.data as string,
+    }
+
+    const messageBundledEvent = receipt.events?.find(
+      e => e.event === 'MessageBundled'
+    )
+    let messageBundled
+    if (messageBundledEvent?.args) {
+      messageBundled = {
+        bundleId: messageBundledEvent.args.bundleId as string,
+        treeIndex: messageBundledEvent.args.treeIndex as BigNumber,
+        messageId: messageBundledEvent.args.messageId as string,
+      }
+    }
+
+    const bundleCommittedEvent = receipt.events?.find(
+      e => e.event === 'BundleCommitted'
+    )
+    let bundleCommitted
+    if (bundleCommittedEvent?.args) {
+      bundleCommitted = {
+        bundleId: bundleCommittedEvent.args.bundleId as string,
+        bundleRoot: bundleCommittedEvent.args.bundleRoot as string,
+        bundleFees: bundleCommittedEvent.args.bundleFees as BigNumber,
+        toChainId: bundleCommittedEvent.args.toChainId as BigNumber,
+        commitTime: bundleCommittedEvent.args.commitTime as BigNumber,
+      }
+    }
+
+    return {
+      messageSent,
+      messageBundled,
+      bundleCommitted,
+    }
+  }
+
+  async getRelayMessageEvents(tx: ContractTransaction) {
+    const receipt = await tx.wait()
+
+    const messageRelayedEvent = receipt.events?.find(
+      e => e.event === 'MessageRelayed'
+    )
+
+    let messageRelayed
+    if (messageRelayedEvent?.args) {
+      messageRelayed = {
+        messageId: messageRelayedEvent.args.messageId as string,
+        fromChainId: messageRelayedEvent.args.fromChainId as BigNumber,
+        from: messageRelayedEvent.args.from as string,
+        to: messageRelayedEvent.args.to as string,
+      }
+    }
+
+    const messageRevertedEvent = receipt.events?.find(
+      e => e.event === 'MessageReverted'
+    )
+    let messageReverted
+    if (messageRevertedEvent?.args) {
+      messageReverted = {
+        bundleId: messageRevertedEvent.args.bundleId as string,
+        bundleRoot: messageRevertedEvent.args.bundleRoot as string,
+        bundleFees: messageRevertedEvent.args.bundleFees as BigNumber,
+        toChainId: messageRevertedEvent.args.toChainId as BigNumber,
+        commitTime: messageRevertedEvent.args.commitTime as BigNumber,
+      }
+    }
+
+    return { messageRelayed, messageReverted }
   }
 }
 

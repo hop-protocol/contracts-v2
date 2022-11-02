@@ -18,7 +18,7 @@ export const MAX_BUNDLE_FEE = parseUnits('0.05')
 export const MAX_BUNDLE_FEE_BPS = 3_000_000 // 300%
 
 // Fee collection
-export const MAX_BUNDLE_MESSAGES = 1024
+export const MAX_BUNDLE_MESSAGES = 32
 export const MESSAGE_FEE = parseUnits('0.000007')
 
 // Message

@@ -22,10 +22,11 @@ const { provider } = ethers
 const { solidityKeccak256, keccak256, defaultAbiCoder: abi } = ethers.utils
 import Fixture from './Fixture'
 import { getSetResultCalldata } from './utils'
+import type { MockMessageReceiver as IMessageReceiver } from '../typechain'
 
 describe('MessageBridge', function () {
   describe('sendMessage', function () {
-    it('Should call contract Spoke to Hub', async function () {
+    it('Should complete a full Spoke to Hub bundle', async function () {
       const [deployer, sender, relayer] = await ethers.getSigners()
       const data = await getSetResultCalldata(DEFAULT_RESULT)
 
@@ -39,27 +40,33 @@ describe('MessageBridge', function () {
         messageSent: { messageId: messageId0 },
       } = await fixture.sendMessage(sender)
 
-      const numFillerMessages = MAX_BUNDLE_MESSAGES - 1
+      const numFillerMessages = MAX_BUNDLE_MESSAGES - 2
       await fixture.sendMessageRepeat(numFillerMessages, sender)
 
-      const { tx: relayTx } = await fixture.relayMessage(messageId0)
+      const { bundleCommitted } = await fixture.sendMessage(sender)
+      if (!bundleCommitted) throw new Error('Bundle not committed')
 
+      const unspentMessageIds = fixture.getUnspentMessageIds(
+        bundleCommitted.bundleId
+      )
       const messageReceiver = fixture.getMessageReceiver()
 
-      const result = await messageReceiver.result()
-      expect(DEFAULT_RESULT).to.eq(result)
+      for (let i = 0; i < unspentMessageIds.length; i++) {
+        const messageId = unspentMessageIds[i]
+        const { tx: relayTx } = await fixture.relayMessage(messageId)
 
-      const msgSender = await messageReceiver.msgSender()
-      expect(hubBridge.address).to.eq(msgSender)
-
-      const xDomainSender = await messageReceiver.xDomainSender()
-      expect(sender.address).to.eq(xDomainSender)
-
-      const xDomainChainId = await messageReceiver.xDomainChainId()
-      expect(DEFAULT_FROM_CHAIN_ID).to.eq(xDomainChainId)
+        await expectMessageReceiverState(
+          messageReceiver,
+          DEFAULT_RESULT,
+          hubBridge.address,
+          sender.address,
+          DEFAULT_FROM_CHAIN_ID
+        )
+      }
 
       const feeDistributor = fixture.getFeeDistributor()
-      const expectedFeeDistributorBalance = BigNumber.from(MESSAGE_FEE).mul(MAX_BUNDLE_MESSAGES)
+      const expectedFeeDistributorBalance =
+        BigNumber.from(MESSAGE_FEE).mul(MAX_BUNDLE_MESSAGES)
       const feeDistributorBalance = await provider.getBalance(
         feeDistributor.address
       )
@@ -133,4 +140,22 @@ function getCalldataStats(calldata: string) {
 
   const calldataCost = zeroBytes * 4 + nonZeroBytes * 16
   return { calldataBytes, calldataCost }
+}
+
+async function expectMessageReceiverState(
+  messageReceiver: IMessageReceiver,
+  result: BigNumberish,
+  msgSender: string,
+  xDomainSender: string,
+  xDomainChainId: BigNumberish,
+) {
+  const _result = await messageReceiver.result()
+  const _msgSender = await messageReceiver.msgSender()
+  const _xDomainSender = await messageReceiver.xDomainSender()
+  const _xDomainChainId = await messageReceiver.xDomainChainId()
+
+  expect(result).to.eq(_result)
+  expect(msgSender).to.eq(_msgSender)
+  expect(xDomainSender).to.eq(_xDomainSender)
+  expect(xDomainChainId).to.eq(_xDomainChainId)
 }

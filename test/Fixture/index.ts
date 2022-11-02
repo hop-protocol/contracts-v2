@@ -345,7 +345,7 @@ class Fixture {
 
     this.spentMessageIds[messageId] = true
 
-    return { tx }
+    return { tx, messageRelayed, message }
   }
 
   getUnspentMessageIds(bundleId: string) {

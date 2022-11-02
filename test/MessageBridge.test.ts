@@ -53,7 +53,13 @@ describe('MessageBridge', function () {
 
       for (let i = 0; i < unspentMessageIds.length; i++) {
         const messageId = unspentMessageIds[i]
-        const { tx: relayTx } = await fixture.relayMessage(messageId)
+        const { messageRelayed, message } = await fixture.relayMessage(messageId)
+
+        if (!messageRelayed) throw new Error('No MessageRelayed event found')
+        expect(messageId).to.eq(messageRelayed.messageId)
+        expect(message.fromChainId).to.eq(messageRelayed.fromChainId)
+        expect(message.from).to.eq(messageRelayed.from)
+        expect(message.to).to.eq(messageRelayed.to)
 
         await expectMessageReceiverState(
           messageReceiver,

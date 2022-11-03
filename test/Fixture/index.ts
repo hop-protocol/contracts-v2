@@ -357,10 +357,6 @@ class Fixture {
 
     const { messageRelayed } = await this.getRelayMessageEvents(tx)
     if (!messageRelayed) throw new Error('No MessageRelayed event found')
-    expect(messageId).to.eq(messageRelayed.messageId)
-    expect(fromChainId).to.eq(messageRelayed.fromChainId)
-    expect(from).to.eq(messageRelayed.from)
-    expect(to).to.eq(messageRelayed.to)
 
     this.spentMessageIds[messageId] = true
 

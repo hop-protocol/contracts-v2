@@ -1,4 +1,3 @@
-import { expect } from 'chai'
 import {
   BigNumber,
   BigNumberish,
@@ -196,15 +195,9 @@ class Fixture {
         data
       )
 
-      expect(message.getMessageId()).to.eq(messageSent.messageId)
       this.messageIds.push(messageSent.messageId)
       this.messages[messageSent.messageId] = message
     }
-
-    expect(from.toLowerCase()).to.eq(messageSent.from.toLowerCase())
-    expect(toChainId).to.eq(messageSent.toChainId)
-    expect(to.toLowerCase()).to.eq(messageSent.to.toLowerCase())
-    expect(data.toString().toLowerCase()).to.eq(messageSent.data.toLowerCase())
 
     let firstConnectionTx
     let secondConnectionTx

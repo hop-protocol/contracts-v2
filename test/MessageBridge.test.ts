@@ -37,10 +37,18 @@ describe('MessageBridge', function () {
         SPOKE_CHAIN_ID_1,
       ])
 
-      const {
-        tx: sendTx,
-        messageSent: { messageId: messageId0 },
-      } = await fixture.sendMessage(sender)
+      const { messageSent } = await fixture.sendMessage(sender)
+
+      const messageReceiver = fixture.getMessageReceiver()
+
+      expect(sender.address.toLowerCase()).to.eq(messageSent.from.toLowerCase())
+      expect(toChainId).to.eq(messageSent.toChainId)
+      expect(messageReceiver.address.toLowerCase()).to.eq(
+        messageSent.to.toLowerCase()
+      )
+      expect(data.toString().toLowerCase()).to.eq(
+        messageSent.data.toLowerCase()
+      )
 
       const numFillerMessages = MAX_BUNDLE_MESSAGES - 2
       await fixture.sendMessageRepeat(numFillerMessages, sender)
@@ -78,7 +86,6 @@ describe('MessageBridge', function () {
       const unspentMessageIds = fixture.getUnspentMessageIds(
         bundleCommitted.bundleId
       )
-      const messageReceiver = fixture.getMessageReceiver()
 
       for (let i = 0; i < unspentMessageIds.length; i++) {
         const messageId = unspentMessageIds[i]

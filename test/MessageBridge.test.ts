@@ -27,6 +27,8 @@ import type { MockMessageReceiver as IMessageReceiver } from '../typechain'
 describe('MessageBridge', function () {
   describe('sendMessage', function () {
     it('Should complete a full Spoke to Hub bundle', async function () {
+      const fromChainId = SPOKE_CHAIN_ID_0
+      const toChainId = HUB_CHAIN_ID
       const [deployer, sender, relayer] = await ethers.getSigners()
       const data = await getSetResultCalldata(DEFAULT_RESULT)
 
@@ -43,8 +45,35 @@ describe('MessageBridge', function () {
       const numFillerMessages = MAX_BUNDLE_MESSAGES - 2
       await fixture.sendMessageRepeat(numFillerMessages, sender)
 
-      const { bundleCommitted } = await fixture.sendMessage(sender)
+      const { bundleCommitted, bundleReceived, bundleSet } =
+        await fixture.sendMessage(sender)
       if (!bundleCommitted) throw new Error('Bundle not committed')
+      if (!bundleReceived) throw new Error('Bundle not received at Hub')
+      if (!bundleSet) throw new Error('Bundle not set on Hub')
+
+      // BundleCommitted event
+      const bundleId = bundleCommitted.bundleId
+      const bundleRoot = bundleCommitted.bundleRoot
+      const commitTime = bundleCommitted.commitTime
+      const expectedFullBundleFee =
+        BigNumber.from(MESSAGE_FEE).mul(MAX_BUNDLE_MESSAGES)
+      expect(expectedFullBundleFee).to.eq(bundleCommitted.bundleFees)
+      expect(HUB_CHAIN_ID).to.eq(bundleCommitted.toChainId)
+
+      // BundleReceived event
+      expect(bundleId).to.eq(bundleReceived.bundleId)
+      expect(bundleRoot).to.eq(bundleReceived.bundleRoot)
+      expect(expectedFullBundleFee).to.eq(bundleReceived.bundleFees)
+      expect(fromChainId).to.eq(bundleReceived.fromChainId)
+      expect(toChainId).to.eq(bundleReceived.toChainId)
+      const exitTime = await fixture.hubBridge.getSpokeExitTime(fromChainId)
+      expect(commitTime.add(exitTime)).to.eq(bundleReceived.relayWindowStart)
+      expect(deployer.address).to.eq(bundleReceived.relayer)
+
+      // BundleSet event
+      expect(bundleId).to.eq(bundleSet.bundleId)
+      expect(bundleRoot).to.eq(bundleSet.bundleRoot)
+      expect(fromChainId).to.eq(bundleSet.fromChainId)
 
       const unspentMessageIds = fixture.getUnspentMessageIds(
         bundleCommitted.bundleId
@@ -53,7 +82,9 @@ describe('MessageBridge', function () {
 
       for (let i = 0; i < unspentMessageIds.length; i++) {
         const messageId = unspentMessageIds[i]
-        const { messageRelayed, message } = await fixture.relayMessage(messageId)
+        const { messageRelayed, message } = await fixture.relayMessage(
+          messageId
+        )
 
         if (!messageRelayed) throw new Error('No MessageRelayed event found')
         expect(messageId).to.eq(messageRelayed.messageId)
@@ -66,17 +97,15 @@ describe('MessageBridge', function () {
           DEFAULT_RESULT,
           hubBridge.address,
           sender.address,
-          DEFAULT_FROM_CHAIN_ID
+          fromChainId
         )
       }
 
       const feeDistributor = fixture.getFeeDistributor()
-      const expectedFeeDistributorBalance =
-        BigNumber.from(MESSAGE_FEE).mul(MAX_BUNDLE_MESSAGES)
       const feeDistributorBalance = await provider.getBalance(
         feeDistributor.address
       )
-      expect(expectedFeeDistributorBalance).to.eq(feeDistributorBalance)
+      expect(expectedFullBundleFee).to.eq(feeDistributorBalance)
     })
 
     // with large data

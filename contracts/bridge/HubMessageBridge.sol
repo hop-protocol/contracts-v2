@@ -17,7 +17,12 @@ contract HubMessageBridge is MessageBridge, IHubMessageBridge {
         uint256 relayWindowStart,
         address indexed relayer
     );
-    event BundleForwarded(bytes32 indexed bundleId, bytes32 bundleRoot, uint256 fromChainId);
+    event BundleForwarded(
+        bytes32 indexed bundleId,
+        bytes32 bundleRoot,
+        uint256 indexed fromChainId,
+        uint256 indexed toChainId
+    );
 
     /* config */
     uint256 public messageNonce;
@@ -70,7 +75,7 @@ contract HubMessageBridge is MessageBridge, IHubMessageBridge {
             _setBundle(bundleId, bundleRoot, fromChainId);
         } else {
             ISpokeMessageBridge spokeBridge = getSpokeBridge(toChainId);
-            emit BundleForwarded(bundleId, bundleRoot, fromChainId);
+            emit BundleForwarded(bundleId, bundleRoot, fromChainId, toChainId);
             spokeBridge.receiveMessageBundle(bundleId, bundleRoot, fromChainId);
         }
 

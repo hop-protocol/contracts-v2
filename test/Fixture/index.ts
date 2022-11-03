@@ -208,6 +208,9 @@ class Fixture {
 
     let firstConnectionTx
     let secondConnectionTx
+    let bundleSet
+    let bundleReceived
+    let bundleForwarded
     if (bundleCommitted) {
       const bundleId = bundleCommitted.bundleId
       this.bundleIds.push(bundleId)
@@ -232,6 +235,19 @@ class Fixture {
       secondConnectionTx = connectionTxs.secondConnectionTx
       if (!firstConnectionTx) throw new Error('No messages relayed')
       // ToDo: Check event data from relayReceipt
+      const bundleExitEventsHub = await this.getBundleExitEvents(
+        firstConnectionTx
+      )
+      let bundleExitEventsSpoke
+      if (secondConnectionTx) {
+        bundleExitEventsSpoke = await this.getBundleExitEvents(
+          secondConnectionTx
+        )
+      }
+      bundleSet =
+        bundleExitEventsHub.bundleSet ?? bundleExitEventsSpoke?.bundleSet
+      bundleReceived = bundleExitEventsHub.bundleReceived
+      bundleForwarded = bundleExitEventsHub.bundleForwarded
     }
 
     return {
@@ -241,6 +257,9 @@ class Fixture {
       messageSent,
       messageBundled,
       bundleCommitted,
+      bundleSet,
+      bundleReceived,
+      bundleForwarded,
     }
   }
 
@@ -424,6 +443,72 @@ class Fixture {
       messageBundled,
       bundleCommitted,
     }
+  }
+
+  async getBundleExitEvents(tx: ContractTransaction) {
+    const receipt = await tx.wait()
+
+    // BundleSet
+    const bundleSetEventRaw = receipt.events?.find(
+      e =>
+        e.topics[0] ===
+        '0x9a17800d6f9f6089a26747bec54b04bf3b22ff2c893fe32ac63b3e397b5d9afc'
+    )
+
+    let bundleSet
+    if (bundleSetEventRaw) {
+      const bundleSetEvent =
+        this.hubBridge.interface.parseLog(bundleSetEventRaw)
+      bundleSet = {
+        bundleId: bundleSetEvent.args.bundleId as string,
+        bundleRoot: bundleSetEvent.args.bundleRoot as string,
+        fromChainId: bundleSetEvent.args.fromChainId as BigNumber,
+      }
+    }
+
+    // BundleReceived
+    const bundleReceivedEventRaw = receipt.events?.find(
+      e =>
+        e.topics[0] ===
+        '0xa9042860700683d69272195cc488bb6408e785469f38565cc38a1a779107319d'
+    )
+    let bundleReceived
+    if (bundleReceivedEventRaw) {
+      const bundleReceivedEvent = this.hubBridge.interface.parseLog(
+        bundleReceivedEventRaw
+      )
+      bundleReceived = {
+        bundleId: bundleReceivedEvent.args.bundleId as string,
+        bundleRoot: bundleReceivedEvent.args.bundleRoot as string,
+        bundleFees: bundleReceivedEvent.args.bundleFees as BigNumber,
+        fromChainId: bundleReceivedEvent.args.fromChainId as BigNumber,
+        toChainId: bundleReceivedEvent.args.toChainId as BigNumber,
+        relayWindowStart: bundleReceivedEvent.args.relayWindowStart as BigNumber,
+        relayer: bundleReceivedEvent.args.relayer as string,
+      }
+    }
+
+    // BundleForwarded
+    const bundleForwardedEventRaw = receipt.events?.find(
+      e =>
+        e.topics[0] ===
+        '0x416f67b24b33d443009a07c9cc28fdc27b376e438f7d51b72207fc46d94862c9'
+    )
+    let bundleForwarded
+    if (bundleForwardedEventRaw) {
+      const bundleForwardedEvent = this.hubBridge.interface.parseLog(
+        bundleForwardedEventRaw
+      )
+      console.log(bundleForwardedEvent)
+      bundleForwarded = {
+        bundleId: bundleForwardedEvent.args.bundleId as string,
+        bundleRoot: bundleForwardedEvent.args.bundleRoot as string,
+        fromChainId: bundleForwardedEvent.args.fromChainId as BigNumber,
+        toChainId: bundleForwardedEvent.args.toChainId as BigNumber,
+      }
+    }
+
+    return { bundleSet, bundleReceived, bundleForwarded }
   }
 
   async getRelayMessageEvents(tx: ContractTransaction) {

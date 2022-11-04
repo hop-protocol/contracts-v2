@@ -41,7 +41,7 @@ describe('MessageBridge', function () {
 
       const messageReceiver = fixture.getMessageReceiver()
 
-      // BundleSent event
+      // MessageSent event
       expect(sender.address.toLowerCase()).to.eq(messageSent.from.toLowerCase())
       expect(toChainId).to.eq(messageSent.toChainId)
       expect(messageReceiver.address.toLowerCase()).to.eq(
@@ -132,7 +132,7 @@ describe('MessageBridge', function () {
 
       const { messageSent } = await fixture.sendMessage(sender)
 
-      // BundleSent event
+      // MessageSent event
       expect(sender.address.toLowerCase()).to.eq(messageSent.from.toLowerCase())
       expect(toChainId).to.eq(messageSent.toChainId)
       expect(messageReceiver.address.toLowerCase()).to.eq(
@@ -170,7 +170,7 @@ describe('MessageBridge', function () {
       expect(commitTime.add(exitTime)).to.eq(bundleReceived.relayWindowStart)
       expect(deployer.address).to.eq(bundleReceived.relayer)
 
-      // BundleSet event
+      // MessageSent event
       expect(bundleId).to.eq(bundleSet.bundleId)
       expect(bundleRoot).to.eq(bundleSet.bundleRoot)
       expect(fromChainId).to.eq(bundleSet.fromChainId)
@@ -206,6 +206,49 @@ describe('MessageBridge', function () {
         feeDistributor.address
       )
       expect(expectedFullBundleFee).to.eq(feeDistributorBalance)
+    })
+
+    it.only('Should call contract Hub to Spoke', async function () {
+      const fromChainId = HUB_CHAIN_ID
+      const toChainId = SPOKE_CHAIN_ID_0
+      const [deployer, sender, relayer] = await ethers.getSigners()
+      const data = await getSetResultCalldata(DEFAULT_RESULT)
+
+      const { fixture, hubBridge } = await Fixture.deploy(
+        HUB_CHAIN_ID,
+        [SPOKE_CHAIN_ID_0, SPOKE_CHAIN_ID_1],
+        { fromChainId, toChainId }
+      )
+      const messageReceiver = fixture.getMessageReceiver(toChainId)
+
+      const { messageSent, messageRelayed } = await fixture.sendMessage(sender)
+      if (!messageRelayed) throw new Error('No message relayed')
+
+      // MessageSent event
+      expect(sender.address.toLowerCase()).to.eq(messageSent.from.toLowerCase())
+      expect(toChainId).to.eq(messageSent.toChainId)
+      expect(messageReceiver.address.toLowerCase()).to.eq(
+        messageSent.to.toLowerCase()
+      )
+      expect(data.toString().toLowerCase()).to.eq(
+        messageSent.data.toLowerCase()
+      )
+
+      // MessageRelayed event
+      const messageId = messageSent.messageId
+      expect(messageId).to.eq(messageRelayed.messageId)
+      expect(fromChainId).to.eq(messageRelayed.fromChainId)
+      expect(sender.address).to.eq(messageRelayed.from)
+      expect(messageReceiver.address).to.eq(messageRelayed.to)
+
+      const destinationBridge = fixture.bridges[toChainId.toString()].address
+      await expectMessageReceiverState(
+        messageReceiver,
+        DEFAULT_RESULT,
+        destinationBridge,
+        sender.address,
+        fromChainId
+      )
     })
 
     // with large data

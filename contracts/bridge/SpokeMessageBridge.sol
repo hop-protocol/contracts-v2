@@ -173,8 +173,7 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
         _setBundle(bundleId, bundleRoot, fromChainId);
     }
 
-    function forwardMessage(address from, address to, bytes calldata data) external onlyHub {
-        bytes32 messageId = bytes32(0); // ToDo: L1 -> L2 message id
+    function forwardMessage(bytes32 messageId, address from, address to, bytes calldata data) external onlyHub {
         _relayMessage(messageId, hubChainId, from, to, data);
     }
 

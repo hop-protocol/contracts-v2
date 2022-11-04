@@ -53,7 +53,7 @@ contract HubMessageBridge is MessageBridge, IHubMessageBridge {
             data
         );
 
-        spokeBridge.forwardMessage(msg.sender, to, data);
+        spokeBridge.forwardMessage(messageId, msg.sender, to, data);
     }
 
     function getHubMessageId(uint256 nonce) public view returns (bytes32) {

@@ -4,6 +4,7 @@ import {
   Signer,
   BytesLike,
   ContractTransaction,
+  utils
 } from 'ethers'
 import { ethers } from 'hardhat'
 import { MerkleTree } from 'merkletreejs'
@@ -16,6 +17,7 @@ import type {
   FeeDistributor as IFeeDistributor,
   MockConnector as IMockConnector,
 } from '../../typechain'
+type Interface = utils.Interface
 
 import {
   ONE_WEEK,
@@ -178,6 +180,8 @@ class Fixture {
     const { messageSent, messageBundled, bundleCommitted } =
       await this.getSendMessageEvents(tx)
 
+    let messageRelayed
+    let messageReverted
     if (messageBundled) {
       const bundleId = messageBundled?.bundleId
       const treeIndex = messageBundled?.treeIndex
@@ -197,6 +201,18 @@ class Fixture {
 
       this.messageIds.push(messageSent.messageId)
       this.messages[messageSent.messageId] = message
+    } else {
+      // exit the message here
+      const { firstConnectionTx } = await this.relayConnectorMessage(
+        fromChainId,
+        toChainId
+      )
+
+      const relayMessageEvents = await this.getRelayMessageEvents(
+        firstConnectionTx
+      )
+      messageRelayed = relayMessageEvents.messageRelayed
+      messageReverted = relayMessageEvents.messageReverted
     }
 
     let firstConnectionTx
@@ -253,6 +269,8 @@ class Fixture {
       bundleSet,
       bundleReceived,
       bundleForwarded,
+      messageRelayed,
+      messageReverted,
     }
   }
 
@@ -500,37 +518,47 @@ class Fixture {
   }
 
   async getRelayMessageEvents(tx: ContractTransaction) {
-    const receipt = await tx.wait()
-
-    const messageRelayedEvent = receipt.events?.find(
-      e => e.event === 'MessageRelayed'
+    const messageRelayedEvent = await this._getRawEvent(
+      tx,
+      this.hubBridge.interface,
+      'MessageRelayed(bytes32,uint256,address,address)'
     )
+    const messageRelayed = messageRelayedEvent
+      ? {
+          messageId: messageRelayedEvent.args.messageId as string,
+          fromChainId: messageRelayedEvent.args.fromChainId as BigNumber,
+          from: messageRelayedEvent.args.from as string,
+          to: messageRelayedEvent.args.to as string,
+        }
+      : undefined
 
-    let messageRelayed
-    if (messageRelayedEvent?.args) {
-      messageRelayed = {
-        messageId: messageRelayedEvent.args.messageId as string,
-        fromChainId: messageRelayedEvent.args.fromChainId as BigNumber,
-        from: messageRelayedEvent.args.from as string,
-        to: messageRelayedEvent.args.to as string,
-      }
-    }
-
-    const messageRevertedEvent = receipt.events?.find(
-      e => e.event === 'MessageReverted'
+    const messageRevertedEvent = await this._getRawEvent(
+      tx,
+      this.hubBridge.interface,
+      'MessageReverted(bytes32,uint256,address,address)'
     )
-    let messageReverted
-    if (messageRevertedEvent?.args) {
-      messageReverted = {
-        bundleId: messageRevertedEvent.args.bundleId as string,
-        bundleRoot: messageRevertedEvent.args.bundleRoot as string,
-        bundleFees: messageRevertedEvent.args.bundleFees as BigNumber,
-        toChainId: messageRevertedEvent.args.toChainId as BigNumber,
-        commitTime: messageRevertedEvent.args.commitTime as BigNumber,
-      }
-    }
+    const messageReverted = messageRevertedEvent
+      ? {
+          messageId: messageRevertedEvent.args.messageId as string,
+          fromChainId: messageRevertedEvent.args.fromChainId as BigNumber,
+          from: messageRevertedEvent.args.from as string,
+          to: messageRevertedEvent.args.to as string,
+        }
+      : undefined
 
     return { messageRelayed, messageReverted }
+  }
+
+  async _getRawEvent(
+    tx: ContractTransaction,
+    iface: Interface,
+    eventSig: string
+  ) {
+    const receipt = await tx.wait()
+    const topic = ethers.utils.id(eventSig)
+    const rawEvent = receipt.events?.find(e => e.topics[0] === topic)
+    if (!rawEvent) return
+    return iface.parseLog(rawEvent)
   }
 }
 

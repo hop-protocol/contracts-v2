@@ -1,4 +1,4 @@
-import { expect, use } from 'chai'
+import { expect } from 'chai'
 import { ContractTransaction, BigNumber, BigNumberish, Signer, providers } from 'ethers'
 import { ethers } from 'hardhat'
 import {
@@ -208,7 +208,7 @@ describe('MessageBridge', function () {
       expect(expectedFullBundleFee).to.eq(feeDistributorBalance)
     })
 
-    it.only('Should call contract Hub to Spoke', async function () {
+    it('Should call contract Hub to Spoke', async function () {
       const fromChainId = HUB_CHAIN_ID
       const toChainId = SPOKE_CHAIN_ID_0
       const [deployer, sender, relayer] = await ethers.getSigners()
@@ -253,14 +253,37 @@ describe('MessageBridge', function () {
 
     // with large data
     // with empty data
-    it('Should call contract Spoke to Hub', async function () {})
-    it('Should call contract Hub to Spoke', async function () {})
-    it('Should call contract Spoke to Spoke', async function () {})
 
     // non-happy path
     // with hub
     // with spoke
-    it('It should revert if toChainId is not supported', async function () {})
+    it('It should revert if toChainId is not supported', async function () {
+      let fromChainId: BigNumber
+      it('from hub', async function () {
+        fromChainId = SPOKE_CHAIN_ID_0
+      })
+
+      it('from spoke', async function () {
+        fromChainId = HUB_CHAIN_ID
+      })
+
+      afterEach(async function () {
+        const toChainId = 7653
+        const [sender] = await ethers.getSigners()
+
+        const { fixture } = await Fixture.deploy(HUB_CHAIN_ID, [
+          SPOKE_CHAIN_ID_0,
+          SPOKE_CHAIN_ID_1,
+        ])
+
+        expect(
+          fixture.sendMessage(sender, {
+            fromChainId,
+            toChainId,
+          })
+        ).to.be.revertedWith(`InvalidRoute(${toChainId})`)
+      })
+    })
 
     // just hub
     it('It should revert if to is a spoke bridge', async function () {})

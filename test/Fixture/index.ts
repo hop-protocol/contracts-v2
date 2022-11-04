@@ -1,3 +1,4 @@
+import { expect } from 'chai'
 import {
   BigNumber,
   BigNumberish,
@@ -167,7 +168,10 @@ class Fixture {
     const from = await fromSigner.getAddress()
     const toChainId = overrides?.toChainId ?? this.defaults.toChainId
     const messageReceiver = this.getMessageReceiver(toChainId)
-    const to = overrides?.to ?? messageReceiver.address
+    const to =
+      overrides?.to ??
+      messageReceiver?.address ??
+      '0x0000000000000000000000000000000000000001'
     const data = overrides?.data ?? this.defaults.data
 
     const bridge = this.bridges[fromChainId.toString()]

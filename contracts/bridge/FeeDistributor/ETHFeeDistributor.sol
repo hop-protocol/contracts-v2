@@ -12,7 +12,7 @@ contract ETHFeeDistributor is FeeDistributor {
         uint256 _fullPoolSize,
         uint256 _maxBundleFee,
         uint256 _maxBundleFeeBPS
-    ) 
+    )
         FeeDistributor(
             _hubBridge,
             _treasury,

@@ -19,7 +19,7 @@ contract ERC20FeeDistributor is FeeDistributor {
         IERC20 _feeToken,
         uint256 _maxBundleFee,
         uint256 _maxBundleFeeBPS
-    ) 
+    )
         FeeDistributor(
             _hubBridge,
             _treasury,

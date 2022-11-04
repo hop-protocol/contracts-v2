@@ -488,7 +488,6 @@ class Fixture {
       const bundleForwardedEvent = this.hubBridge.interface.parseLog(
         bundleForwardedEventRaw
       )
-      console.log(bundleForwardedEvent)
       bundleForwarded = {
         bundleId: bundleForwardedEvent.args.bundleId as string,
         bundleRoot: bundleForwardedEvent.args.bundleRoot as string,

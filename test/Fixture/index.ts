@@ -371,7 +371,6 @@ class Fixture {
     })
 
     const { messageRelayed } = await this.getRelayMessageEvents(tx)
-    if (!messageRelayed) throw new Error('No MessageRelayed event found')
 
     this.spentMessageIds[messageId] = true
 

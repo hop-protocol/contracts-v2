@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
+import "../libraries/Error.sol";
 import "../connectors/Connector.sol";
 
 error MockRelayFailed();
@@ -20,6 +21,11 @@ contract MockConnector is Connector {
             // Bubble up error message
             assembly { revert(add(res,0x20), res) }
         }
+
+        // Trick compiler into including error in abi
+        if (false) {
+            revert CannotMessageAddress(msg.sender);
+        }
     }
 
     function _forwardCrossDomainMessage() internal override {
@@ -28,5 +34,9 @@ contract MockConnector is Connector {
 
     function _verifyCrossDomainSender() internal view override {
         if (msg.sender != counterpart) revert NotCounterpart();
+    }
+
+    function foo() private {
+        revert CannotMessageAddress(msg.sender);
     }
 }

@@ -38,13 +38,19 @@ import {
 import SpokeMessage from './SpokeMessage'
 import deployFixture from './deployFixture'
 
-export type Defaults =  {
+export type Defaults = {
   fromChainId: BigNumber
   toChainId: BigNumber
   data: string
 }
 
-export type Options = Partial<{ shouldLogGas: boolean }>
+export type MessageSentEvent = {
+  messageId: string
+  from: string
+  toChainId: BigNumber
+  to: string
+  data: string
+}
 
 class Fixture {
   // static state
@@ -312,7 +318,6 @@ class Fixture {
 
   async relayMessage(
     messageId: string,
-    signer?: Signer,
     overrides?: Partial<{
       fromChainId: BigNumberish
       from: string
@@ -358,11 +363,7 @@ class Fixture {
 
     const totalLeaves = overrides?.totalLeaves ?? storedBundle.messageIds.length // ToDo: Is this needed? roundUpPowersOfTwo(storedBundle.messageIds.length)
 
-    let bridge = this.bridges[toChainId.toString()]
-    if (signer) {
-      bridge = bridge.connect(signer)
-    }
-
+    const bridge = this.bridges[toChainId.toString()]
     const tx = await bridge.relayMessage(fromChainId, from, to, data, {
       bundleId,
       treeIndex,
@@ -414,7 +415,7 @@ class Fixture {
       e => e.event === 'MessageSent'
     )
     if (!messageSentEvent?.args) throw new Error('No MessageSent event found')
-    const messageSent = {
+    const messageSent: MessageSentEvent = {
       messageId: messageSentEvent.args.messageId as string,
       from: messageSentEvent.args.from as string,
       toChainId: messageSentEvent.args.toChainId as BigNumber,

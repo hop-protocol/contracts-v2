@@ -20,7 +20,7 @@ import Bridge, { SpokeBridge, HubBridge } from './Bridge'
 type Provider = providers.Provider
 const { provider } = ethers
 const { solidityKeccak256, keccak256, defaultAbiCoder: abi } = ethers.utils
-import Fixture from './Fixture'
+import Fixture, { MessageSentEvent } from './Fixture'
 import { getSetResultCalldata } from './utils'
 import type { MockMessageReceiver as IMessageReceiver } from '../typechain'
 
@@ -397,11 +397,63 @@ describe('MessageBridge', function () {
   })
 
   describe('relayMessage', function () {
-    it('Should not allow invalid nonce', async function () {})
-    it('Should not allow invalid fromChainId', async function () {})
-    it('Should not allow invalid from', async function () {})
-    it('Should not allow invalid to', async function () {})
-    it('Should not allow invalid data', async function () {})
+    describe('should not allow invalid message parameter', async function () {
+      let fixture: Fixture
+      let messageSent: MessageSentEvent
+
+      beforeEach(async function () {
+        const fromChainId = SPOKE_CHAIN_ID_0
+        const toChainId = HUB_CHAIN_ID
+        const [sender] = await ethers.getSigners()
+
+        const deployment = await Fixture.deploy(
+          HUB_CHAIN_ID,
+          [SPOKE_CHAIN_ID_0, SPOKE_CHAIN_ID_1],
+          { fromChainId, toChainId }
+        )
+        fixture = deployment.fixture
+
+        const sendMessageEvents = await fixture.sendMessage(sender)
+        messageSent = sendMessageEvents?.messageSent
+
+        const numFillerMessages = MAX_BUNDLE_MESSAGES - 1
+        await fixture.sendMessageRepeat(numFillerMessages, sender)
+      })
+
+      it('fromChainId', async function () {
+        await expect(
+          fixture.relayMessage(messageSent.messageId, {
+            fromChainId: SPOKE_CHAIN_ID_1,
+          })
+        ).to.be.revertedWith('InvalidProof')
+      })
+
+      it('from', async function () {
+        await expect(
+          fixture.relayMessage(messageSent.messageId, {
+            from: '0x0000000000000000000000000000000000000099',
+          })
+        ).to.be.revertedWith('InvalidProof')
+      })
+
+      it('to', async function () {
+        await expect(
+          fixture.relayMessage(messageSent.messageId, {
+            to: '0x0000000000000000000000000000000000000098',
+          })
+        ).to.be.revertedWith('InvalidProof')
+      })
+
+      it('data', async function () {
+        const invalidData = await getSetResultCalldata(2831082398)
+        await expect(
+          fixture.relayMessage(messageSent.messageId, {
+            data: invalidData,
+          })
+        ).to.be.revertedWith('InvalidProof')
+      })
+    })
+
     // BundleProof
     it('Should not allow invalid bundleId', async function () {})
     it('Should not allow invalid treeIndex', async function () {})

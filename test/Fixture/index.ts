@@ -344,22 +344,11 @@ class Fixture {
     const data = overrides?.data ?? message.data
     const bundleId = overrides?.bundleId ?? storedBundle.bundleId
 
-    const tree = new MerkleTree(storedBundle.messageIds, keccak256)
-    const proof = tree
-      .getProof(messageId)
-      .map(node => '0x' + node.data.toString('hex'))
+    const proof = this.getProof(bundleId, messageId)
+    const siblings = overrides?.siblings ?? proof
 
     const treeIndex =
       overrides?.treeIndex ?? storedBundle.messageIds.indexOf(messageId)
-    const siblings = overrides?.siblings ?? proof
-
-    // function roundUpPowersOfTwo(num: number) {
-    //   let pow = 1
-    //   while(num < pow) {
-    //     pow *= 2
-    //   }
-    //   return pow
-    // }
 
     const totalLeaves = overrides?.totalLeaves ?? storedBundle.messageIds.length // ToDo: Is this needed? roundUpPowersOfTwo(storedBundle.messageIds.length)
 
@@ -376,6 +365,20 @@ class Fixture {
     this.spentMessageIds[messageId] = true
 
     return { tx, messageRelayed, message }
+  }
+
+  getProof(bundleId: string, messageId: string) {
+    const storedBundleId = this.messageIdsToBundleIds[messageId]
+    if (!storedBundleId) throw new Error('Bundle for messageId not found')
+    const storedBundle = this.bundles[storedBundleId]
+    if (!storedBundle) throw new Error('Bundle for messageId not found')
+
+    const tree = new MerkleTree(storedBundle.messageIds, keccak256)
+    const proof = tree
+      .getProof(messageId)
+      .map(node => '0x' + node.data.toString('hex'))
+
+    return proof
   }
 
   getUnspentMessageIds(bundleId: string) {

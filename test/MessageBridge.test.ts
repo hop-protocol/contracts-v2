@@ -552,7 +552,7 @@ describe('MessageBridge', function () {
       ).to.be.revertedWith('InvalidProof')
     })
 
-    it('Should not allow the same message to be relayed twice', async function () {
+    it('should not allow the same message to be relayed twice', async function () {
       const messageId = messageSent.messageId
       const totalLeaves = fixture.bundles[bundleId].messageIds.length + 1
       const proof = fixture.getProof(bundleId, messageId)
@@ -567,37 +567,55 @@ describe('MessageBridge', function () {
   })
 
   describe('getXDomainChainId', function () {
-    it('should revert when called directly', async function () {})
+    it('should revert when called directly', async function () {
+      const fromChainId = SPOKE_CHAIN_ID_0
+      const toChainId = HUB_CHAIN_ID
+
+      const { fixture } = await Fixture.deploy(
+        HUB_CHAIN_ID,
+        [SPOKE_CHAIN_ID_0, SPOKE_CHAIN_ID_1],
+        { fromChainId, toChainId }
+      )
+
+      await expect(fixture.hubBridge.getXDomainChainId()).to.be.revertedWith(
+        'NotCrossDomainMessage'
+      )
+    })
   })
 
   describe('getXDomainSender', function () {
-    it('should revert when called directly', async function () {})
+    it('should revert when called directly', async function () {
+      const fromChainId = SPOKE_CHAIN_ID_0
+      const toChainId = HUB_CHAIN_ID
+
+      const { fixture } = await Fixture.deploy(
+        HUB_CHAIN_ID,
+        [SPOKE_CHAIN_ID_0, SPOKE_CHAIN_ID_1],
+        { fromChainId, toChainId }
+      )
+
+      await expect(fixture.hubBridge.getXDomainChainId()).to.be.revertedWith(
+        'NotCrossDomainMessage'
+      )
+    })
   })
 
   describe('getChainId', function () {
-    it('should return the chainId', async function () {})
+    it('should return the chainId', async function () {
+      const fromChainId = SPOKE_CHAIN_ID_0
+      const toChainId = HUB_CHAIN_ID
+
+      const { fixture } = await Fixture.deploy(
+        HUB_CHAIN_ID,
+        [SPOKE_CHAIN_ID_0, SPOKE_CHAIN_ID_1],
+        { fromChainId, toChainId }
+      )
+
+      const chainId = await fixture.hubBridge.getChainId()
+      expect(chainId).to.eq(HUB_CHAIN_ID)
+    })
   })
 })
-
-function getCalldataStats(calldata: string) {
-  let data = calldata
-  if (calldata.slice(0, 2) === '0x') {
-    data = calldata.slice(2)
-  }
-  const calldataBytes = data.length / 2
-
-  let zeroBytes = 0
-  for (let i = 0; i < calldataBytes; i = i + 2) {
-    const byte = data.slice(i, i + 2)
-    if (byte === '00') {
-      zeroBytes++
-    }
-  }
-  const nonZeroBytes = calldataBytes - zeroBytes
-
-  const calldataCost = zeroBytes * 4 + nonZeroBytes * 16
-  return { calldataBytes, calldataCost }
-}
 
 async function expectMessageReceiverState(
   messageReceiver: IMessageReceiver,

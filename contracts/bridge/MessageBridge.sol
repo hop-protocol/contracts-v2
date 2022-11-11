@@ -130,14 +130,14 @@ abstract contract MessageBridge is Ownable, EIP712, ICrossChainSource, ICrossCha
 
     function getXDomainChainId() public view returns (uint256) {
         if (xDomainChainId == DEFAULT_XDOMAIN_CHAINID) {
-            revert XDomainChainIdNotSet();
+            revert NotCrossDomainMessage();
         }
         return xDomainChainId;
     }
 
     function getXDomainSender() public view returns (address) {
         if (xDomainSender == DEFAULT_XDOMAIN_SENDER) {
-            revert XDomainMessengerNotSet();
+            revert NotCrossDomainMessage();
         }
         return xDomainSender;
     }

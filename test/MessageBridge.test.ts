@@ -1,25 +1,15 @@
 import { expect } from 'chai'
-import { ContractTransaction, BigNumber, BigNumberish, Signer, providers } from 'ethers'
+import { BigNumber, BigNumberish } from 'ethers'
 import { ethers } from 'hardhat'
 import {
-  ONE_WEEK,
   HUB_CHAIN_ID,
   SPOKE_CHAIN_ID_0,
   SPOKE_CHAIN_ID_1,
   DEFAULT_RESULT,
-  DEFAULT_FROM_CHAIN_ID,
-  DEFAULT_TO_CHAIN_ID,
   MESSAGE_FEE,
   MAX_BUNDLE_MESSAGES,
-  TREASURY,
-  PUBLIC_GOODS,
-  MIN_PUBLIC_GOODS_BPS,
-  FULL_POOL_SIZE,
 } from './constants'
-import Bridge, { SpokeBridge, HubBridge } from './Bridge'
-type Provider = providers.Provider
 const { provider } = ethers
-const { solidityKeccak256, keccak256, defaultAbiCoder: abi } = ethers.utils
 import Fixture, { MessageSentEvent } from './Fixture'
 import { getSetResultCalldata } from './utils'
 import type { MockMessageReceiver as IMessageReceiver } from '../typechain'
@@ -29,10 +19,10 @@ describe('MessageBridge', function () {
     it('Should complete a full Spoke to Hub bundle', async function () {
       const fromChainId = SPOKE_CHAIN_ID_0
       const toChainId = HUB_CHAIN_ID
-      const [deployer, sender, relayer] = await ethers.getSigners()
+      const [deployer, sender] = await ethers.getSigners()
       const data = await getSetResultCalldata(DEFAULT_RESULT)
 
-      const { fixture, hubBridge } = await Fixture.deploy(HUB_CHAIN_ID, [
+      const { fixture } = await Fixture.deploy(HUB_CHAIN_ID, [
         SPOKE_CHAIN_ID_0,
         SPOKE_CHAIN_ID_1,
       ])
@@ -251,52 +241,6 @@ describe('MessageBridge', function () {
       )
     })
 
-    // Clean run
-
-    it('Should complete a clean run', async function () {
-      const fromChainId = SPOKE_CHAIN_ID_0
-      const toChainId = HUB_CHAIN_ID
-      const [deployer, sender, relayer] = await ethers.getSigners()
-      const data = await getSetResultCalldata(DEFAULT_RESULT)
-
-      const { fixture, hubBridge } = await Fixture.deploy(HUB_CHAIN_ID, [
-        SPOKE_CHAIN_ID_0,
-        SPOKE_CHAIN_ID_1,
-      ])
-
-      const { messageSent } = await fixture.sendMessage(sender)
-
-      const numFillerMessages = MAX_BUNDLE_MESSAGES - 2
-      await fixture.sendMessageRepeat(numFillerMessages, sender)
-
-      const { bundleCommitted, bundleReceived, bundleSet } =
-        await fixture.sendMessage(sender)
-      if (!bundleCommitted) throw new Error('Bundle not committed')
-      if (!bundleReceived) throw new Error('Bundle not received at Hub')
-      if (!bundleSet) throw new Error('Bundle not set on Hub')
-
-      const unspentMessageIds = fixture.getUnspentMessageIds(
-        bundleCommitted.bundleId
-      )
-
-      const { messageRelayed, message } = await fixture.relayMessage(
-        messageSent.messageId
-      )
-
-      for (let i = 1; i < unspentMessageIds.length; i++) {
-        const messageId = unspentMessageIds[i]
-        const { messageRelayed, message } = await fixture.relayMessage(
-          messageId
-        )
-      }
-    })
-
-    // with large data
-    // with empty data
-
-    // non-happy path
-    // with hub
-    // with spoke
     describe('should revert if toChainId is not supported', async function () {
       let fromChainId: BigNumber
       it('from hub', async function () {

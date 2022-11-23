@@ -105,20 +105,6 @@ abstract contract FeeDistributor is Ownable {
         transfer(to, relayReward);
     }
 
-    function _payFee(address to, uint256 amount, uint256 feesCollected) internal onlyHubBridge {
-        uint256 balance = getBalance();
-        uint256 pendingAmount = virtualBalance + feesCollected - balance;
-        if (pendingAmount > pendingFeeBatchSize) {
-            revert PendingFeesTooHigh(pendingAmount, pendingFeeBatchSize);
-        }
-
-        virtualBalance = virtualBalance + feesCollected - amount;
-
-        emit FeePaid(to, amount, feesCollected);
-
-        transfer(to, amount);
-    }
-
     function skimExcessFees() external onlyOwner {
         uint256 poolSize = getBalance();
         if (poolSize < fullPoolSize) revert PoolNotFull(poolSize, fullPoolSize);

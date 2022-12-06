@@ -11,7 +11,7 @@ import {
 } from './constants'
 const { provider } = ethers
 import Fixture, { MessageSentEvent } from './Fixture'
-import { getSetResultCalldata } from './utils'
+import { getSetResultCalldata } from '../utils'
 import type { MockMessageReceiver as IMessageReceiver } from '../typechain'
 
 describe('MessageBridge', function () {

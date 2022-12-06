@@ -1,56 +1,55 @@
-import * as ethers from 'ethers'
-import { ethers as hhEthers } from "hardhat";
-import * as dotenv from "dotenv";
+import { Contract, Signer} from 'ethers'
+import { ethers, tenderly } from 'hardhat'
+import { getSigners, logContractDeployed } from '../utils'
 const { parseUnits } = ethers.utils
-
-export const ONE_WEEK = 604_800
-export const TREASURY = '0x1111000000000000000000000000000000001111'
-export const PUBLIC_GOODS = '0x2222000000000000000000000000000000002222'
-export const ARBITRARY_EOA = '0x3333000000000000000000000000000000003333'
-export const MIN_PUBLIC_GOODS_BPS = 100_000
-
-// Fee distribution
-export const FULL_POOL_SIZE = parseUnits('0.1')
-export const MAX_BUNDLE_FEE = parseUnits('0.05')
-export const MAX_BUNDLE_FEE_BPS = 3_000_000 // 300%
-
-const config = {
-  optimism: {
-    l1CrossDomainMessenger: '0x5086d1eEF304eb5284A0f6720f79403b4e9bE294',
-    l2CrossDomainMessenger: '0x4200000000000000000000000000000000000007',
-  },
-}
+import {
+  externalContracts,
+  ONE_WEEK,
+  TREASURY,
+  PUBLIC_GOODS,
+  MIN_PUBLIC_GOODS_BPS,
+  FULL_POOL_SIZE,
+  MAX_BUNDLE_FEE,
+  MAX_BUNDLE_FEE_BPS,
+} from './config'
 
 async function main() {
-  const HubMessageBridge = await hhEthers.getContractFactory("HubMessageBridge")
-  const SpokeMessageBridge = await hhEthers.getContractFactory("SpokeMessageBridge")
+  const HubMessageBridge = await ethers.getContractFactory('HubMessageBridge')
+  const SpokeMessageBridge = await ethers.getContractFactory(
+    'SpokeMessageBridge'
+  )
 
-  // HubMessageBridge.connect
   const { hubSigner, spokeSigners } = getSigners()
+  const hubName = (await hubSigner.provider.getNetwork()).name
+
   const hubMessageBridge = await HubMessageBridge.connect(hubSigner).deploy()
 
-  logContractDeployed('HubMessageBridge', hubMessageBridge)
+  await logContractDeployed('HubMessageBridge', hubMessageBridge)
+  await tenderly.persistArtifacts({
+    name: 'HubMessageBridge',
+    address: hubMessageBridge.address,
+    network: hubName,
+  })
 
   const spokeMessageBridges = []
   for (let i = 0; i < spokeSigners.length; i++) {
     const spokeSigner = spokeSigners[i]
+    const spokeName = (await spokeSigner.provider.getNetwork()).name
     const hubChainId = await hubSigner.getChainId()
     const spokeChainId = await spokeSigner.getChainId()
     const spokeMessageBridge = await SpokeMessageBridge.connect(
       spokeSigner
     ).deploy(hubChainId, [
       {
-        chainId: spokeChainId,
+        chainId: hubChainId,
         messageFee: '1000000000000',
-        maxBundleMessages: '16',
+        maxBundleMessages: '8',
       },
     ])
 
-    logContractDeployed('SpokeMessageBridge', spokeMessageBridge)
+    await logContractDeployed('SpokeMessageBridge', spokeMessageBridge)
 
-    const FeeDistributor = await hhEthers.getContractFactory(
-      'ETHFeeDistributor'
-    )
+    const FeeDistributor = await ethers.getContractFactory('ETHFeeDistributor')
 
     const feeDistributor = await FeeDistributor.connect(hubSigner).deploy(
       hubMessageBridge.address,
@@ -82,7 +81,7 @@ async function main() {
     )
 
     await spokeMessageBridge.setHubBridge(
-      hubMessageBridge.address,
+      l2Connector.address,
       feeDistributor.address,
       { gasLimit: 5000000 }
     )
@@ -90,31 +89,23 @@ async function main() {
   }
 }
 
-async function logContractDeployed(name: string, contract: ethers.Contract) {
-  await contract.deployed()
-
-  const provider = contract.provider
-  const networkName = (await provider.getNetwork()).name
-  console.log(`${name} deployed on ${networkName}: ${contract.address}`)
-}
-
 async function deployConnectors(
   l1Target: string,
   l2Target: string,
-  l1Signer: ethers.Signer,
-  l2Signer: ethers.Signer
+  l1Signer: Signer,
+  l2Signer: Signer
 ) {
   console.log('Deploying connectors...')
-  const L1OptimismConnector = await hhEthers.getContractFactory(
+  const L1OptimismConnector = await ethers.getContractFactory(
     'L1OptimismConnector'
   )
-  const L2OptimismConnector = await hhEthers.getContractFactory(
+  const L2OptimismConnector = await ethers.getContractFactory(
     'L2OptimismConnector'
   )
 
   const l1Connector = await L1OptimismConnector.connect(l1Signer).deploy(
     l1Target,
-    config.optimism.l1CrossDomainMessenger,
+    externalContracts.optimism.l1CrossDomainMessenger,
     { gasLimit: 5000000 }
   )
 
@@ -122,7 +113,7 @@ async function deployConnectors(
 
   const l2Connector = await L2OptimismConnector.connect(l2Signer).deploy(
     l2Target,
-    config.optimism.l2CrossDomainMessenger,
+    externalContracts.optimism.l2CrossDomainMessenger,
     { gasLimit: 5000000 }
   )
 
@@ -141,26 +132,6 @@ async function deployConnectors(
   return {
     l1Connector,
     l2Connector,
-  }
-}
-
-function getSigners() {
-  const deployerPrivateKey = process.env.DEPLOYER_PRIVATE_KEY
-  if (!deployerPrivateKey) {
-    throw new Error('Missing environment variable DEPLOYER_PRIVATE_KEY')
-  }
-
-  const hubRpc = process.env.RPC_ENDPOINT_GOERLI ?? ''
-  const hubProvider = new ethers.providers.JsonRpcProvider(hubRpc)
-  const hubSigner = new ethers.Wallet(deployerPrivateKey, hubProvider)
-
-  const spokeRpc = process.env.RPC_ENDPOINT_OPTIMISM_GOERLI ?? ''
-  const spokeProvider = new ethers.providers.JsonRpcProvider(spokeRpc)
-  const spokeSigner = new ethers.Wallet(deployerPrivateKey, spokeProvider)
-
-  return {
-    hubSigner,
-    spokeSigners: [spokeSigner],
   }
 }
 

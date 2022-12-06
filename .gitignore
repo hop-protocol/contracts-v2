@@ -10,3 +10,6 @@ artifacts
 
 notes.txt
 nft-poc
+
+tenderly.yaml
+deployments

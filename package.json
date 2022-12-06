@@ -5,23 +5,35 @@
   "author": "Hop Team (@HopProtocol)",
   "license": "MIT",
   "scripts": {
-    "test": "npx hardhat test test/MessageBridge.test.ts",
-    "gas-profile": "npx hardhat test test/gas.test.ts",
     "compile": "npx hardhat compile",
-    "chain": "npx hardhat node",
-    "deploy": "npx hardhat run scripts/deploy.ts",
-    "deploy:local": "npx hardhat run scripts/deploy.ts --network localhost",
-    "deploy:goerli": "npx hardhat run scripts/deploy.ts --network goerli",
-    "deploy:mainnet": "npx hardhat run scripts/deploy.ts --network mainnet",
-    "coverage": "npx hardhat coverage --solcoverjs .solcover.js",
     "lint": "eslint .",
     "prettier": "prettier '**/*.{json,sol,md}' --check",
-    "solhint": "solhint 'contracts/**/*.sol'"
+
+    "test": "npx hardhat test test/MessageBridge.test.ts",
+    "chain": "npx hardhat node",
+    "gas-profile": "npx hardhat test test/gas.test.ts",
+    "solhint": "solhint 'contracts/**/*.sol'",
+    "coverage": "npx hardhat coverage --solcoverjs .solcover.js",
+
+    "deploy": "npm run local:deploy",
+    "local:deploy": "npx hardhat run scripts/deploy.ts --network localhost",
+    "testnet:deploy": "npx hardhat run scripts/deploy.ts --network goerli",
+    "testnet:deploy-message-receiver": "npx hardhat run scripts/deployMessageReceiver.ts",
+    "mainnet:deploy": "npx hardhat run scripts/deploy.ts --network mainnet",
+
+    "testnet:verify-spoke": "npx hardhat verify --network optimismGoerli --constructor-args ./spokeParams.js",
+    "testnet:verify-hub": "npx hardhat verify --network goerli",
+    "testnet:verify-fee-distributor": "npx hardhat verify --network goerli --constructor-args ./scripts/constructorParams/feeDistributerParams.js",
+
+    "testnet:send-message": "npx hardhat run scripts/sendMessage.ts",
+    "testnet:exit-bundle": "npx hardhat exitBundle --network goerli --hash",
+    "testnet:relay-message": "npx hardhat run scripts/relayMessage.ts"
   },
   "devDependencies": {
-    "@nomiclabs/hardhat-ethers": "^2.0.6",
-    "@nomiclabs/hardhat-etherscan": "^3.1.0",
+    "@nomiclabs/hardhat-ethers": "^2.2.1",
+    "@nomiclabs/hardhat-etherscan": "^3.1.1",
     "@nomiclabs/hardhat-waffle": "^2.0.3",
+    "@tenderly/hardhat-tenderly": "^1.3.2",
     "@typechain/ethers-v5": "^7.2.0",
     "@typechain/hardhat": "^2.3.1",
     "@types/chai": "^4.3.1",
@@ -53,6 +65,7 @@
     "typescript": "^4.7.3"
   },
   "dependencies": {
+    "@eth-optimism/sdk": "^1.7.0",
     "@openzeppelin/contracts": "^4.7.3",
     "merkletreejs": "^0.2.32"
   }

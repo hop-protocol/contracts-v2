@@ -1,6 +1,9 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.2;
 
+// This library is inspired by the Arbitrum Outbox state management proposed by shotaronowhere (@shotaro)
+// https://github.com/OffchainLabs/nitro/blob/1420d00a0906cfd71448d792f19ade01425d079e/contracts/src/bridge/Outbox.sol
+
 struct Bitmap {
     mapping(uint256 => bytes32) _bitmap;
 }

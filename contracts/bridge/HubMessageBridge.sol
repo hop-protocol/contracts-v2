@@ -148,4 +148,18 @@ contract HubMessageBridge is MessageBridge, IHubMessageBridge {
         }
         return feeDistributor;
     }
+
+    function getRelayReward(
+        uint256 fromChainId,
+        uint256 bundleFees,
+        uint256 commitTime
+    )
+        public
+        view
+        returns (uint256)
+    {
+        uint256 relayWindowStart = commitTime + getSpokeExitTime(fromChainId);
+        FeeDistributor feeDistributor = getFeeDistributor(fromChainId);
+        return feeDistributor.getRelayReward(relayWindowStart, bundleFees);
+    }
 }

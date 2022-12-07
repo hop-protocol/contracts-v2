@@ -83,7 +83,7 @@ abstract contract FeeDistributor is Ownable {
     function payFee(address to, uint256 relayWindowStart, uint256 feesCollected) external onlyHubBridge {
         uint256 relayReward = 0;
         if (block.timestamp >= relayWindowStart) {
-            relayReward = (block.timestamp - relayWindowStart) * feesCollected / relayWindow;
+            relayReward = getRelayReward(relayWindowStart, feesCollected);
         } else {
             return;
         }
@@ -103,6 +103,10 @@ abstract contract FeeDistributor is Ownable {
         emit FeePaid(to, relayReward, feesCollected);
 
         transfer(to, relayReward);
+    }
+
+    function getRelayReward(uint256 relayWindowStart, uint256 feesCollected) public view returns (uint256) {
+        return (block.timestamp - relayWindowStart) * feesCollected / relayWindow;
     }
 
     function skimExcessFees() external onlyOwner {

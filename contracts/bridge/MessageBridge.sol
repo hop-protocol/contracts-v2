@@ -38,7 +38,6 @@ abstract contract MessageBridge is Ownable, EIP712, ICrossChainSource, ICrossCha
     /* state */
     mapping(address => bool) public noMessageList;
     mapping(bytes32 => ConfirmedBundle) public bundles;
-    mapping(bytes32 => bool) public relayedMessage;
     mapping(bytes32 => Bitmap) private spentMessagesForBundleId;
 
     constructor() EIP712("MessageBridge", "1") {}
@@ -69,8 +68,7 @@ abstract contract MessageBridge is Ownable, EIP712, ICrossChainSource, ICrossCha
         bool success = _relayMessage(messageId, fromChainId, from, to, data); // ToDo: Inlining this saves 434 gas, any solution?
 
         if (!success) {
-            // ToDo: spentMessages.setFalse(bundleProof.treeIndex);
-            // relayedMessage[messageId] = false;
+            spentMessages.switchFalse(bundleProof.treeIndex);
         }
     }
 
@@ -170,6 +168,11 @@ abstract contract MessageBridge is Ownable, EIP712, ICrossChainSource, ICrossCha
                 data
             )
         );
+    }
+
+    function isMessageSpent(bytes32 bundleId, uint256 index) public view returns (bool) {
+        Bitmap storage spentMessages = spentMessagesForBundleId[bundleId];
+        return spentMessages.isTrue(index);
     }
 
     /**

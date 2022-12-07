@@ -135,8 +135,11 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
 
         // New pending bundle
         pendingBundleIdForChainId[toChainId] = bytes32(uint256(pendingBundleIdForChainId[toChainId]) + 1);
-        // ToDo: Revisit after further consideration. Leaving array slots dirty saves 17,000 per message
-        // delete pendingMessageIdsForChainId[toChainId];
+
+        // Setting the array length to 0 while leaving storage slots dirty saves gas 15k gas per
+        // message. and is safe inthis case because the array length is never set to a non-zero
+        // number. This ensures dirty array slots can never be accessed until they're rewritten by
+        // a `push()`.
         assembly {
             sstore(pendingMessageIds.slot, 0)
         }

@@ -1,4 +1,3 @@
-import { expect } from 'chai'
 import {
   BigNumber,
   BigNumberish,
@@ -9,7 +8,7 @@ import {
 } from 'ethers'
 import { ethers } from 'hardhat'
 import { MerkleTree } from 'merkletreejs'
-const { solidityKeccak256, keccak256, defaultAbiCoder: abi } = ethers.utils
+const { keccak256 } = ethers.utils
 import type {
   SpokeMessageBridge as ISpokeMessageBridge,
   HubMessageBridge as IHubMessageBridge,
@@ -20,21 +19,7 @@ import type {
 } from '../../typechain'
 type Interface = utils.Interface
 
-import {
-  ONE_WEEK,
-  HUB_CHAIN_ID,
-  SPOKE_CHAIN_ID_0,
-  SPOKE_CHAIN_ID_1,
-  MESSAGE_FEE,
-  MAX_BUNDLE_MESSAGES,
-  TREASURY,
-  PUBLIC_GOODS,
-  MIN_PUBLIC_GOODS_BPS,
-  FULL_POOL_SIZE,
-  DEFAULT_FROM_CHAIN_ID,
-  DEFAULT_TO_CHAIN_ID,
-  DEFAULT_RESULT,
-} from '../constants'
+import { SPOKE_CHAIN_ID_0, MESSAGE_FEE } from '../constants'
 import SpokeMessage from './SpokeMessage'
 import deployFixture from './deployFixture'
 
@@ -360,11 +345,12 @@ class Fixture {
       totalLeaves,
     })
 
-    const { messageRelayed } = await this.getRelayMessageEvents(tx)
+    const { messageRelayed, messageReverted } =
+      await this.getRelayMessageEvents(tx)
 
     this.spentMessageIds[messageId] = true
 
-    return { tx, messageRelayed, message }
+    return { tx, messageRelayed, messageReverted, message }
   }
 
   getProof(bundleId: string, messageId: string) {

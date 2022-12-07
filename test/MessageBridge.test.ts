@@ -27,7 +27,7 @@ describe('MessageBridge', function () {
         SPOKE_CHAIN_ID_1,
       ])
 
-      const { messageSent } = await fixture.sendMessage(sender)
+      const { messageSent, messageBundled } = await fixture.sendMessage(sender)
 
       const messageReceiver = fixture.getMessageReceiver()
 
@@ -90,11 +90,16 @@ describe('MessageBridge', function () {
         expect(message.from).to.eq(messageRelayed.from)
         expect(message.to).to.eq(messageRelayed.to)
 
-        const destinationBridge = fixture.bridges[toChainId.toString()].address
+        if (!messageBundled) throw new Error('No MessageBundled event found')
+        const destinationBridge = fixture.bridges[toChainId.toString()]
+        await destinationBridge.isMessageSpent(
+          bundleId,
+          messageBundled.treeIndex
+        )
         await expectMessageReceiverState(
           messageReceiver,
           DEFAULT_RESULT,
-          destinationBridge,
+          destinationBridge.address,
           sender.address,
           fromChainId
         )
@@ -341,11 +346,7 @@ describe('MessageBridge', function () {
   })
 
   describe('relayMessage', function () {
-    let fixture: Fixture
-    let bundleId: string
-    let messageSent: MessageSentEvent
-
-    beforeEach(async function () {
+    it('should handle a failed relay', async function () {
       const fromChainId = SPOKE_CHAIN_ID_0
       const toChainId = HUB_CHAIN_ID
       const [sender] = await ethers.getSigners()
@@ -355,10 +356,12 @@ describe('MessageBridge', function () {
         [SPOKE_CHAIN_ID_0, SPOKE_CHAIN_ID_1],
         { fromChainId, toChainId }
       )
-      fixture = deployment.fixture
+      const fixture = deployment.fixture
 
-      const sendMessageEvents = await fixture.sendMessage(sender)
-      messageSent = sendMessageEvents?.messageSent
+      const { messageSent, messageBundled } = await fixture.sendMessage(
+        sender,
+        { data: '0xdeadbeef' }
+      )
 
       const numFillerMessages = MAX_BUNDLE_MESSAGES - 2
       await fixture.sendMessageRepeat(numFillerMessages, sender)
@@ -367,146 +370,193 @@ describe('MessageBridge', function () {
       if (!bundleCommitted || !bundleCommitted?.bundleId) {
         throw new Error('No bundleCommitted event')
       }
-      bundleId = bundleCommitted.bundleId
+
+      const { messageReverted } = await fixture.relayMessage(
+        messageSent.messageId
+      )
+
+      expect(messageSent.messageId).to.eq(messageReverted?.messageId)
+      expect(fromChainId).to.eq(messageReverted?.fromChainId)
+      expect(messageSent.from).to.eq(messageReverted?.from)
+      expect(messageSent.to).to.eq(messageReverted?.to)
+
+      const destinationBridge = fixture.bridges[toChainId.toString()]
+      if (!messageBundled) throw new Error('No messageBundled event')
+      const isSpent = await destinationBridge.isMessageSpent(
+        messageBundled.bundleId,
+        messageBundled.treeIndex
+      )
+      expect(isSpent).to.be.false
     })
 
-    it('should not allow invalid fromChainId', async function () {
-      await expect(
-        fixture.relayMessage(messageSent.messageId, {
-          fromChainId: SPOKE_CHAIN_ID_1,
-        })
-      ).to.be.revertedWith('InvalidProof')
-    })
+    describe('with standard setup', function () {
+      let fixture: Fixture
+      let bundleId: string
+      let messageSent: MessageSentEvent
 
-    it('should not allow invalid from', async function () {
-      await expect(
-        fixture.relayMessage(messageSent.messageId, {
-          from: '0x0000000000000000000000000000000000000099',
-        })
-      ).to.be.revertedWith('InvalidProof')
-    })
+      beforeEach(async function () {
+        const fromChainId = SPOKE_CHAIN_ID_0
+        const toChainId = HUB_CHAIN_ID
+        const [sender] = await ethers.getSigners()
 
-    it('should not allow invalid to', async function () {
-      await expect(
-        fixture.relayMessage(messageSent.messageId, {
-          to: '0x0000000000000000000000000000000000000098',
-        })
-      ).to.be.revertedWith('InvalidProof')
-    })
+        const deployment = await Fixture.deploy(
+          HUB_CHAIN_ID,
+          [SPOKE_CHAIN_ID_0, SPOKE_CHAIN_ID_1],
+          { fromChainId, toChainId }
+        )
+        fixture = deployment.fixture
 
-    it('should not allow invalid message data', async function () {
-      const invalidData = await getSetResultCalldata(2831082398)
-      await expect(
-        fixture.relayMessage(messageSent.messageId, {
-          data: invalidData,
-        })
-      ).to.be.revertedWith('InvalidProof')
-    })
+        const sendMessageEvents = await fixture.sendMessage(sender)
+        messageSent = sendMessageEvents?.messageSent
 
-    // BundleProof
-    it('should not allow invalid bundleId', async function () {
-      const invalidBundleId =
-        '0x0123456789012345678901234567890123456789012345678901234567891234'
-      await expect(
-        fixture.relayMessage(messageSent.messageId, {
-          bundleId: invalidBundleId,
-        })
-      ).to.be.revertedWith(`BundleNotFound("${invalidBundleId}")`)
-    })
+        const numFillerMessages = MAX_BUNDLE_MESSAGES - 2
+        await fixture.sendMessageRepeat(numFillerMessages, sender)
 
-    it('should not allow invalid treeIndex', async function () {
-      await expect(
-        fixture.relayMessage(messageSent.messageId, {
-          treeIndex: 1,
-        })
-      ).to.be.revertedWith('InvalidProof')
-    })
+        const { bundleCommitted } = await fixture.sendMessage(sender)
+        if (!bundleCommitted || !bundleCommitted?.bundleId) {
+          throw new Error('No bundleCommitted event')
+        }
+        bundleId = bundleCommitted.bundleId
+      })
 
-    it('should not allow invalid proof', async function () {
-      const messageId = messageSent.messageId
-      const wrongMessageId = fixture.bundles[bundleId].messageIds[1]
-      const wrongProof = fixture.getProof(bundleId, wrongMessageId)
-      await expect(
-        fixture.relayMessage(messageId, {
-          siblings: wrongProof,
-        })
-      ).to.be.revertedWith('InvalidProof')
-    })
+      it('should not allow invalid fromChainId', async function () {
+        await expect(
+          fixture.relayMessage(messageSent.messageId, {
+            fromChainId: SPOKE_CHAIN_ID_1,
+          })
+        ).to.be.revertedWith('InvalidProof')
+      })
 
-    it('should not allow extra siblings', async function () {
-      const messageId = messageSent.messageId
-      const totalLeaves = fixture.bundles[bundleId].messageIds.length + 1
-      const proof = fixture.getProof(bundleId, messageId)
-      proof.push(proof[proof.length - 1])
-      await expect(
-        fixture.relayMessage(messageId, {
-          siblings: proof,
-          totalLeaves,
-        })
-      ).to.be.revertedWith('InvalidProof')
-    })
+      it('should not allow invalid from', async function () {
+        await expect(
+          fixture.relayMessage(messageSent.messageId, {
+            from: '0x0000000000000000000000000000000000000099',
+          })
+        ).to.be.revertedWith('InvalidProof')
+      })
 
-    it('should not allow empty proof for non single element tree', async function () {
-      const messageId = messageSent.messageId
-      await expect(
-        fixture.relayMessage(messageId, {
-          siblings: [],
-          totalLeaves: 1,
-        })
-      ).to.be.revertedWith('InvalidProof')
-    })
+      it('should not allow invalid to', async function () {
+        await expect(
+          fixture.relayMessage(messageSent.messageId, {
+            to: '0x0000000000000000000000000000000000000098',
+          })
+        ).to.be.revertedWith('InvalidProof')
+      })
 
-    it('should not allow totalLeaves + 1', async function () {
-      const messageId = messageSent.messageId
-      const totalLeaves = fixture.bundles[bundleId].messageIds.length + 1
-      await expect(
-        fixture.relayMessage(messageId, {
-          totalLeaves,
-        })
-      ).to.be.revertedWith('Lib_MerkleTree: Total siblings does not correctly correspond to total leaves.')
-    })
+      it('should not allow invalid message data', async function () {
+        const invalidData = await getSetResultCalldata(2831082398)
+        await expect(
+          fixture.relayMessage(messageSent.messageId, {
+            data: invalidData,
+          })
+        ).to.be.revertedWith('InvalidProof')
+      })
 
-    it('should not allow totalLeaves / 2', async function () {
-      const messageId = messageSent.messageId
-      const totalLeaves = fixture.bundles[bundleId].messageIds.length / 2
-      await expect(
-        fixture.relayMessage(messageId, {
-          totalLeaves,
-        })
-      ).to.be.revertedWith('Lib_MerkleTree: Total siblings does not correctly correspond to total leaves.')
-    })
+      // BundleProof
+      it('should not allow invalid bundleId', async function () {
+        const invalidBundleId =
+          '0x0123456789012345678901234567890123456789012345678901234567891234'
+        await expect(
+          fixture.relayMessage(messageSent.messageId, {
+            bundleId: invalidBundleId,
+          })
+        ).to.be.revertedWith(`BundleNotFound("${invalidBundleId}")`)
+      })
 
-    it('should not allow 0 totalLeaves', async function () {
-      const messageId = messageSent.messageId
-      await expect(
-        fixture.relayMessage(messageId, {
-          totalLeaves: 0,
-        })
-      ).to.be.revertedWith('Lib_MerkleTree: Total leaves must be greater than zero.')
-    })
+      it('should not allow invalid treeIndex', async function () {
+        await expect(
+          fixture.relayMessage(messageSent.messageId, {
+            treeIndex: 1,
+          })
+        ).to.be.revertedWith('InvalidProof')
+      })
 
-    it('should not allow just root as sibling', async function () {
-      const messageId = messageSent.messageId
-      const root = fixture.getBundle(messageId).bundleRoot
-      await expect(
-        fixture.relayMessage(messageId, {
-          siblings: [root],
-          totalLeaves: 2,
-        })
-      ).to.be.revertedWith('InvalidProof')
-    })
+      it('should not allow invalid proof', async function () {
+        const messageId = messageSent.messageId
+        const wrongMessageId = fixture.bundles[bundleId].messageIds[1]
+        const wrongProof = fixture.getProof(bundleId, wrongMessageId)
+        await expect(
+          fixture.relayMessage(messageId, {
+            siblings: wrongProof,
+          })
+        ).to.be.revertedWith('InvalidProof')
+      })
 
-    it('should not allow the same message to be relayed twice', async function () {
-      const messageId = messageSent.messageId
-      const totalLeaves = fixture.bundles[bundleId].messageIds.length + 1
-      const proof = fixture.getProof(bundleId, messageId)
-      proof.push(proof[proof.length - 1])
-      await expect(
-        fixture.relayMessage(messageId, {
-          siblings: proof,
-          totalLeaves,
-        })
-      ).to.be.revertedWith('InvalidProof')
+      it('should not allow extra siblings', async function () {
+        const messageId = messageSent.messageId
+        const totalLeaves = fixture.bundles[bundleId].messageIds.length + 1
+        const proof = fixture.getProof(bundleId, messageId)
+        proof.push(proof[proof.length - 1])
+        await expect(
+          fixture.relayMessage(messageId, {
+            siblings: proof,
+            totalLeaves,
+          })
+        ).to.be.revertedWith('InvalidProof')
+      })
+
+      it('should not allow empty proof for non single element tree', async function () {
+        const messageId = messageSent.messageId
+        await expect(
+          fixture.relayMessage(messageId, {
+            siblings: [],
+            totalLeaves: 1,
+          })
+        ).to.be.revertedWith('InvalidProof')
+      })
+
+      it('should not allow totalLeaves + 1', async function () {
+        const messageId = messageSent.messageId
+        const totalLeaves = fixture.bundles[bundleId].messageIds.length + 1
+        await expect(
+          fixture.relayMessage(messageId, {
+            totalLeaves,
+          })
+        ).to.be.revertedWith('Lib_MerkleTree: Total siblings does not correctly correspond to total leaves.')
+      })
+
+      it('should not allow totalLeaves / 2', async function () {
+        const messageId = messageSent.messageId
+        const totalLeaves = fixture.bundles[bundleId].messageIds.length / 2
+        await expect(
+          fixture.relayMessage(messageId, {
+            totalLeaves,
+          })
+        ).to.be.revertedWith('Lib_MerkleTree: Total siblings does not correctly correspond to total leaves.')
+      })
+
+      it('should not allow 0 totalLeaves', async function () {
+        const messageId = messageSent.messageId
+        await expect(
+          fixture.relayMessage(messageId, {
+            totalLeaves: 0,
+          })
+        ).to.be.revertedWith('Lib_MerkleTree: Total leaves must be greater than zero.')
+      })
+
+      it('should not allow just root as sibling', async function () {
+        const messageId = messageSent.messageId
+        const root = fixture.getBundle(messageId).bundleRoot
+        await expect(
+          fixture.relayMessage(messageId, {
+            siblings: [root],
+            totalLeaves: 2,
+          })
+        ).to.be.revertedWith('InvalidProof')
+      })
+
+      it('should not allow the same message to be relayed twice', async function () {
+        const messageId = messageSent.messageId
+        const totalLeaves = fixture.bundles[bundleId].messageIds.length + 1
+        const proof = fixture.getProof(bundleId, messageId)
+        proof.push(proof[proof.length - 1])
+        await expect(
+          fixture.relayMessage(messageId, {
+            siblings: proof,
+            totalLeaves,
+          })
+        ).to.be.revertedWith('InvalidProof')
+      })
     })
   })
 
@@ -566,7 +616,7 @@ async function expectMessageReceiverState(
   result: BigNumberish,
   msgSender: string,
   xDomainSender: string,
-  xDomainChainId: BigNumberish,
+  xDomainChainId: BigNumberish
 ) {
   const _result = await messageReceiver.result()
   const _msgSender = await messageReceiver.msgSender()

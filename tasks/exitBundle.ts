@@ -8,8 +8,6 @@ task('exitBundle', 'Exit a bundle from L2 to L1')
     const { hubSigner, spokeSigners } = getSigners()
     const spokeSigner = spokeSigners[0]
 
-    // l1Signer = await ethers.getSigner()
-    // l2Url = `https://opt-goerli.g.alchemy.com/v2/${process.env.OPTIMISM_GOERLI_ALCHEMY_KEY}`
     const crossChainMessenger = new sdk.CrossChainMessenger({
       l1ChainId: 5,
       l2ChainId: 420,
@@ -30,8 +28,3 @@ task('exitBundle', 'Exit a bundle from L2 to L1')
 
     console.log('Bundle exited', receipt.transactionHash)
   })
-
-// main().catch(error => {
-//   console.error(error)
-//   process.exitCode = 1
-// })

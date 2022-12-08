@@ -4,7 +4,7 @@ module.exports = [
     {
       chainId: '5',
       messageFee: '1000000000000',
-      maxBundleMessages: '2',
+      maxBundleMessages: '8',
     },
   ],
 ]

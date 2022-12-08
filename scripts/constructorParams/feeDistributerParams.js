@@ -1,21 +1,23 @@
-const {
-  coreMessengerAddresses,
-  TREASURY,
-  PUBLIC_GOODS,
-  MIN_PUBLIC_GOODS_BPS,
-  FULL_POOL_SIZE,
-  MAX_BUNDLE_FEE,
-  MAX_BUNDLE_FEE_BPS,
-} = require('../config')
+const { contracts, deployConfig } = require('../config')
+const { messengers } = contracts.testnet
 
-const hubMessageBridgeAddress = coreMessengerAddresses['5']
+const {
+  treasury,
+  publicGoods,
+  minPublicGoodsBps,
+  fullPoolSize,
+  maxBundleFee,
+  maxBundleFeeBps,
+} = deployConfig
+
+const hubMessageBridgeAddress = messengers['5']
 
 module.exports = [
   hubMessageBridgeAddress,
-  TREASURY,
-  PUBLIC_GOODS,
-  MIN_PUBLIC_GOODS_BPS,
-  FULL_POOL_SIZE,
-  MAX_BUNDLE_FEE,
-  MAX_BUNDLE_FEE_BPS,
+  treasury,
+  publicGoods,
+  minPublicGoodsBps,
+  fullPoolSize,
+  maxBundleFee,
+  maxBundleFeeBps,
 ]

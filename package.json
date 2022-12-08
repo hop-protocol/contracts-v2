@@ -21,7 +21,7 @@
     "testnet:deploy-message-receiver": "npx hardhat run scripts/deployMessageReceiver.ts",
     "mainnet:deploy": "npx hardhat run scripts/deploy.ts --network mainnet",
 
-    "testnet:verify-spoke": "npx hardhat verify --network optimismGoerli --constructor-args ./spokeParams.js",
+    "testnet:verify-spoke": "npx hardhat verify --network optimismGoerli --constructor-args ./scripts/constructorParams/spokeParams.js",
     "testnet:verify-hub": "npx hardhat verify --network goerli",
     "testnet:verify-fee-distributor": "npx hardhat verify --network goerli --constructor-args ./scripts/constructorParams/feeDistributerParams.js",
 

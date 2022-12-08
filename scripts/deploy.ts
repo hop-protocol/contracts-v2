@@ -1,5 +1,5 @@
 import { Contract, Signer} from 'ethers'
-import { ethers, tenderly } from 'hardhat'
+import { ethers } from 'hardhat'
 import { getSigners, logContractDeployed } from '../utils'
 const { parseUnits } = ethers.utils
 import { contracts, deployConfig } from './config'
@@ -18,11 +18,11 @@ async function main() {
   const hubMessageBridge = await HubMessageBridge.connect(hubSigner).deploy()
 
   await logContractDeployed('HubMessageBridge', hubMessageBridge)
-  await tenderly.persistArtifacts({
-    name: 'HubMessageBridge',
-    address: hubMessageBridge.address,
-    network: hubName,
-  })
+  // await tenderly.persistArtifacts({
+  //   name: 'HubMessageBridge',
+  //   address: hubMessageBridge.address,
+  //   network: hubName,
+  // })
 
   const spokeMessageBridges = []
   for (let i = 0; i < spokeSigners.length; i++) {

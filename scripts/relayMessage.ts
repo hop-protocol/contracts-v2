@@ -3,25 +3,27 @@ import { getSigners, getSetResultCalldata } from '../utils'
 import { coreMessengerAddresses, relayMessageConfig } from './config'
 
 async function main() {
-  const { hubSigner } = getSigners()
-
   const {
     fromChainId,
     toChainId,
     to,
     proof: { bundleId, treeIndex, siblings, totalLeaves },
   } = relayMessageConfig
+
   const data = await getSetResultCalldata(relayMessageConfig.result)
   const messageBridgeAddress = coreMessengerAddresses[toChainId]
   let messageBridge = await ethers.getContractAt(
     'HubMessageBridge',
     messageBridgeAddress
   )
-  messageBridge = messageBridge.connect(hubSigner)
+
+  const { signers } = getSigners()
+  const signer = signers[fromChainId]
+  messageBridge = messageBridge.connect(signer)
 
   const tx = await messageBridge.relayMessage(
     fromChainId,
-    hubSigner.address,
+    signer.address,
     to,
     data,
     {

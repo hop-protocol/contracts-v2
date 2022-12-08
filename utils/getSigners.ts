@@ -17,6 +17,10 @@ function getSigners() {
   return {
     hubSigner,
     spokeSigners: [spokeSigner],
+    signers: {
+      '5': hubSigner,
+      '420': spokeSigner,
+    } as { [key: string]: ethers.Wallet },
   }
 }
 

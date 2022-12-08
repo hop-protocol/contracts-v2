@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat'
 import { getSigners, getSetResultCalldata } from '../utils'
-import { coreMessengerAddresses } from './config'
+import { coreMessengerAddresses, messageConfig } from './config'
 
 async function main() {
   for (let i = 0; i < 8; i++) {
@@ -9,39 +9,25 @@ async function main() {
 }
 
 async function sendMessage() {
-  const { hubSigner, spokeSigners } = getSigners()
+  const { message } = messageConfig
+  const { fromChainId, toChainId, to, result } = message
 
-  const fromChainId = 420
-  const toChainId = 5
-  const result = 999
-  const spokeSigner = spokeSigners[0]
-  const messageReceiverAddress = '0x7B258c793CdbC3567B6727a2Ad8Bc7646d74c55C'
+  const { signers } = getSigners()
+  const signer = signers[message.fromChainId]
+
   const messageBridgeAddress = coreMessengerAddresses[fromChainId]
   const messageBridge = (
     await ethers.getContractAt('SpokeMessageBridge', messageBridgeAddress)
-  ).connect(spokeSigner)
+  ).connect(signer)
   const data = await getSetResultCalldata(result)
 
-  const routeData = await messageBridge.routeData(420)
-
-  const tx = await messageBridge.sendMessage(
-    toChainId,
-    messageReceiverAddress,
-    data,
-    {
-      gasLimit: 5000000,
-      value: '1000000000000',
-    }
-  )
-  // const tx = await messageBridge.setHubBridge(
-  //   '0xf16d90c57c9810181d2fcbc8b150ecfa63fc9b1b',
-  //   '0xb0e4a4a2fd045aa32befae04a568c56d685dfa1b',
-  //   { gasLimit: 5000000 }
-  // )
+  const tx = await messageBridge.sendMessage(toChainId, to, data, {
+    gasLimit: 5000000,
+    value: '1000000000000',
+  })
 
   const receipt = await tx.wait()
   console.log('messageSent', receipt.transactionHash)
-  // sendMessage(uint256,address,bytes)
 }
 
 main().catch(error => {

@@ -238,7 +238,7 @@ class Fixture {
       firstConnectionTx = connectionTxs.firstConnectionTx
       secondConnectionTx = connectionTxs.secondConnectionTx
       if (!firstConnectionTx) throw new Error('No messages relayed')
-      // ToDo: Check event data from relayReceipt
+
       const bundleExitEventsHub = await this.getBundleExitEvents(
         firstConnectionTx
       )
@@ -273,7 +273,6 @@ class Fixture {
     fromChainId: BigNumberish,
     toChainId: BigNumberish
   ) {
-    // ToDO: Relay all messages
     fromChainId = fromChainId.toString()
     toChainId = toChainId.toString()
     let firstConnector: IMockConnector | undefined

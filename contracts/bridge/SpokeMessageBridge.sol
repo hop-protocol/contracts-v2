@@ -40,7 +40,7 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
     uint256 public immutable hubChainId;
 
     /* config*/
-    IHubMessageBridge public hubBridge;
+    address public hubBridgeConnector;
     address public hubFeeDistributor;
     uint256 public pendingFeeBatchSize;
     mapping(uint256 => RouteData) public routeData;
@@ -52,7 +52,7 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
     uint256 public totalFeesForHub;
 
     modifier onlyHub() {
-        if (msg.sender != address(hubBridge)) {
+        if (msg.sender != hubBridgeConnector) {
             revert NotHubBridge(msg.sender);
         }
         _;
@@ -147,7 +147,7 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
 
         emit BundleCommitted(bundleId, bundleRoot, bundleFees, toChainId, block.timestamp);
 
-        hubBridge.receiveOrForwardMessageBundle(
+        IHubMessageBridge(hubBridgeConnector).receiveOrForwardMessageBundle(
             bundleId,
             bundleRoot,
             bundleFees,
@@ -182,13 +182,13 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
 
     /* Setters */
 
-    function setHubBridge(IHubMessageBridge _hubBridge, address _hubFeeDistributor) public onlyOwner {
-        if (address(_hubBridge) == address(0)) revert NoZeroAddress();
+    function setHubBridge(address _hubBridgeConnector, address _hubFeeDistributor) public onlyOwner {
+        if (_hubBridgeConnector == address(0)) revert NoZeroAddress();
         if (_hubFeeDistributor == address(0)) revert NoZeroAddress();
 
-        noMessageList[address(_hubBridge)] = true;
-        noMessageList[address(_hubFeeDistributor)] = true;
-        hubBridge = _hubBridge;
+        noMessageList[_hubBridgeConnector] = true;
+        noMessageList[_hubFeeDistributor] = true;
+        hubBridgeConnector = _hubBridgeConnector;
         hubFeeDistributor = _hubFeeDistributor;
     }
 
@@ -219,6 +219,7 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
     function _sendFeesToHub(uint256 amount) internal virtual {
         emit FeesSentToHub(amount);
 
+        // ToDo: Make cross-chain payment
         (bool success, ) = hubFeeDistributor.call{value: amount}("");
         if (!success) revert(); // TransferFailed(to, amount);
     }

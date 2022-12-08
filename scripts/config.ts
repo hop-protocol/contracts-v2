@@ -1,6 +1,32 @@
 import { ethers } from 'hardhat'
 const { parseUnits } = ethers.utils
 
+export const deployConfig = {
+  treasury: '0x1111000000000000000000000000000000001111',
+  publicGoods: '0x2222000000000000000000000000000000002222',
+
+  // Fee distribution
+  fullPoolSize: parseUnits('0.1'),
+  maxBundleFee: parseUnits('0.05'),
+  maxBundleFeeBps: 3_000_000, // 300%
+  minPublicGoodsBps: 100_000,
+}
+
+export const relayMessageConfig = {
+  fromChainId: 420,
+  toChainId: 5,
+  to: '0x7B258c793CdbC3567B6727a2Ad8Bc7646d74c55C',
+  result: 999,
+  proof: {
+    bundleId: '0x67828efe977de865e3a6315b092ec6b10f5e0e149b7f3d43fbeaee953fa04f62',
+    treeIndex: 0,
+    siblings: [
+      '0x07179261de5ae34af8281b9b73e5ed2aadb3ef14bad7e01a16cf8b643d51ea82',
+    ],
+    totalLeaves: 2,
+  },
+}
+
 export const externalContracts = {
   optimism: {
     l1CrossDomainMessenger: '0x5086d1eEF304eb5284A0f6720f79403b4e9bE294',
@@ -37,29 +63,3 @@ export const spokePeripheryAddresses: {
 // Deploying connectors...
 // L1Connector deployed on goerli: 0x4b844c25EF430e71D42EEA89d87Ffe929f8db927
 // L2Connector deployed on optimism-goerli: 0x342EA1227fC0e085704D30cd17a16cA98B58D08B
-
-export const deployConfig = {
-  treasury: '0x1111000000000000000000000000000000001111',
-  publicGoods: '0x2222000000000000000000000000000000002222',
-
-  // Fee distribution
-  fullPoolSize: parseUnits('0.1'),
-  maxBundleFee: parseUnits('0.05'),
-  maxBundleFeeBps: 3_000_000, // 300%
-  minPublicGoodsBps: 100_000,
-}
-
-export const relayMessageConfig = {
-  fromChainId: 420,
-  toChainId: 5,
-  to: '0x7B258c793CdbC3567B6727a2Ad8Bc7646d74c55C',
-  result: 999,
-  proof: {
-    bundleId: '0x67828efe977de865e3a6315b092ec6b10f5e0e149b7f3d43fbeaee953fa04f62',
-    treeIndex: 0,
-    siblings: [
-      '0x07179261de5ae34af8281b9b73e5ed2aadb3ef14bad7e01a16cf8b643d51ea82',
-    ],
-    totalLeaves: 2,
-  },
-}

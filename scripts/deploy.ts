@@ -2,16 +2,8 @@ import { Contract, Signer} from 'ethers'
 import { ethers, tenderly } from 'hardhat'
 import { getSigners, logContractDeployed } from '../utils'
 const { parseUnits } = ethers.utils
-import {
-  externalContracts,
-  ONE_WEEK,
-  TREASURY,
-  PUBLIC_GOODS,
-  MIN_PUBLIC_GOODS_BPS,
-  FULL_POOL_SIZE,
-  MAX_BUNDLE_FEE,
-  MAX_BUNDLE_FEE_BPS,
-} from './config'
+import { externalContracts, deployConfig } from './config'
+import { ONE_WEEK } from './constants'
 
 async function main() {
   const HubMessageBridge = await ethers.getContractFactory('HubMessageBridge')
@@ -53,12 +45,12 @@ async function main() {
 
     const feeDistributor = await FeeDistributor.connect(hubSigner).deploy(
       hubMessageBridge.address,
-      TREASURY,
-      PUBLIC_GOODS,
-      MIN_PUBLIC_GOODS_BPS,
-      FULL_POOL_SIZE,
-      MAX_BUNDLE_FEE,
-      MAX_BUNDLE_FEE_BPS
+      deployConfig.treasury,
+      deployConfig.publicGoods,
+      deployConfig.minPublicGoodsBps,
+      deployConfig.fullPoolSize,
+      deployConfig.maxBundleFee,
+      deployConfig.maxBundleFeeBps
     )
 
     await logContractDeployed('FeeDistributor', feeDistributor)

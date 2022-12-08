@@ -192,7 +192,6 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
         hubFeeDistributor = _hubFeeDistributor;
     }
 
-    // ToDo: Set in constructor
     /// @notice `pendingFeeBatchSize` of 0 will flush the pending fees for every bundle.
     function setpendingFeeBatchSize(uint256 _pendingFeeBatchSize) external onlyOwner {
         pendingFeeBatchSize = _pendingFeeBatchSize;

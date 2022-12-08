@@ -34,8 +34,8 @@ async function main() {
     ).deploy(hubChainId, [
       {
         chainId: hubChainId,
-        messageFee: '1000000000000',
-        maxBundleMessages: '8',
+        messageFee: deployConfig.messageFee,
+        maxBundleMessages: deployConfig.maxBundleMessages,
       },
     ])
 

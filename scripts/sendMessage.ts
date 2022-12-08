@@ -1,9 +1,15 @@
 import { ethers } from 'hardhat'
 import { getSigners, getSetResultCalldata } from '../utils'
-import { coreMessengerAddresses, messageConfig } from './config'
+import {
+  coreMessengerAddresses,
+  deployConfig,
+  messageConfig,
+  txConfig,
+} from './config'
 
 async function main() {
-  for (let i = 0; i < 8; i++) {
+  const { maxBundleMessages } = deployConfig
+  for (let i = 0; i < maxBundleMessages; i++) {
     await sendMessage()
   }
 }
@@ -11,6 +17,8 @@ async function main() {
 async function sendMessage() {
   const { message } = messageConfig
   const { fromChainId, toChainId, to, result } = message
+  const { messageFee } = deployConfig
+  const { gasLimit } = txConfig
 
   const { signers } = getSigners()
   const signer = signers[message.fromChainId]
@@ -22,8 +30,8 @@ async function sendMessage() {
   const data = await getSetResultCalldata(result)
 
   const tx = await messageBridge.sendMessage(toChainId, to, data, {
-    gasLimit: 5000000,
-    value: '1000000000000',
+    gasLimit: gasLimit,
+    value: messageFee,
   })
 
   const receipt = await tx.wait()

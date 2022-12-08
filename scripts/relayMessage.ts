@@ -1,17 +1,16 @@
 import { ethers } from 'hardhat'
 import { getSigners, getSetResultCalldata } from '../utils'
-import { coreMessengerAddresses, relayMessageConfig } from './config'
+import { contracts, messageConfig } from './config'
+const { messengers } = contracts.testnet
 
 async function main() {
   const {
-    fromChainId,
-    toChainId,
-    to,
+    message: { fromChainId, toChainId, to, result },
     proof: { bundleId, treeIndex, siblings, totalLeaves },
-  } = relayMessageConfig
+  } = messageConfig
 
-  const data = await getSetResultCalldata(relayMessageConfig.result)
-  const messageBridgeAddress = coreMessengerAddresses[toChainId]
+  const data = await getSetResultCalldata(result)
+  const messageBridgeAddress = messengers[toChainId]
   let messageBridge = await ethers.getContractAt(
     'HubMessageBridge',
     messageBridgeAddress

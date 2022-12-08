@@ -1,11 +1,12 @@
 import { ethers } from 'hardhat'
 import { getSigners, getSetResultCalldata } from '../utils'
 import {
-  coreMessengerAddresses,
+  contracts,
   deployConfig,
   messageConfig,
   txConfig,
 } from './config'
+const { messengers } = contracts.testnet
 
 async function main() {
   const { maxBundleMessages } = deployConfig
@@ -23,7 +24,7 @@ async function sendMessage() {
   const { signers } = getSigners()
   const signer = signers[message.fromChainId]
 
-  const messageBridgeAddress = coreMessengerAddresses[fromChainId]
+  const messageBridgeAddress = messengers[fromChainId]
   const messageBridge = (
     await ethers.getContractAt('SpokeMessageBridge', messageBridgeAddress)
   ).connect(signer)

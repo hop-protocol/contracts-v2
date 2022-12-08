@@ -1,6 +1,7 @@
 import { ethers } from 'hardhat'
 import { getSigners, logContractDeployed } from '../utils'
-import { coreMessengerAddresses } from './config'
+import { contracts } from './config'
+const { messengers } = contracts.testnet
 
 async function main() {
   const { hubSigner } = getSigners()
@@ -8,7 +9,7 @@ async function main() {
     'MockMessageReceiver'
   )
   MockMessageReceiver = MockMessageReceiver.connect(hubSigner)
-  const messengerAddress = coreMessengerAddresses[await hubSigner.getChainId()]
+  const messengerAddress = messengers[await hubSigner.getChainId()]
   const tx = await MockMessageReceiver.deploy(messengerAddress)
   logContractDeployed('MockMessageReceiver', tx)
 }

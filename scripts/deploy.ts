@@ -2,8 +2,9 @@ import { Contract, Signer} from 'ethers'
 import { ethers, tenderly } from 'hardhat'
 import { getSigners, logContractDeployed } from '../utils'
 const { parseUnits } = ethers.utils
-import { externalContracts, deployConfig } from './config'
+import { contracts, deployConfig } from './config'
 import { ONE_WEEK } from './constants'
+const { externalContracts } = contracts.testnet
 
 async function main() {
   const HubMessageBridge = await ethers.getContractFactory('HubMessageBridge')

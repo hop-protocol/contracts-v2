@@ -36,39 +36,30 @@ export const messageConfig = {
   },
 }
 
-export const externalContracts = {
-  optimism: {
-    l1CrossDomainMessenger: '0x5086d1eEF304eb5284A0f6720f79403b4e9bE294',
-    l2CrossDomainMessenger: '0x4200000000000000000000000000000000000007',
-  },
-}
-
-export const coreMessengerAddresses: { [keyof: string]: string } = {
-  '5': '0x9827315F7D2B1AAd0aa4705c06dafEE6cAEBF920',
-  '420': '0x4b844c25EF430e71D42EEA89d87Ffe929f8db927',
-}
-
-type SpokePeripheryAddresses = {
-  // spokeMessageBridge: string
+type AuxiliaryAddresses = {
   // l1Connector: string
   // l2Connector: string
   // feeDistributor: string
 }
 
-export const spokePeripheryAddresses: {
-  [keyof: string]: SpokePeripheryAddresses
-} = {
-  '420': {
-    // spokeMessageBridge: '0x4c67906e1cdA0a785552e130F8F91B655d0a302D',
-    // l1Connector: '0xF4fdE68275C74C9D879B4a20bf1CD45dd6EB8F0b',
-    // l2Connector: '0x19480Da508241e0f91e5D13036E62278C7e73B79',
-    // feeDistributor: '0xf82326D7A8aEFf8Cb8129B9284E71859eB29EaE8',
+export const contracts = {
+  testnet: {
+    externalContracts: {
+      optimism: {
+        l1CrossDomainMessenger: '0x5086d1eEF304eb5284A0f6720f79403b4e9bE294',
+        l2CrossDomainMessenger: '0x4200000000000000000000000000000000000007',
+      },
+    },
+    messengers: {
+      '5': '0x9827315F7D2B1AAd0aa4705c06dafEE6cAEBF920',
+      '420': '0x4b844c25EF430e71D42EEA89d87Ffe929f8db927',
+    } as { [keyof: string]: string },
+    auxiliary: {
+      '420': {
+        // l1Connector: '0xF4fdE68275C74C9D879B4a20bf1CD45dd6EB8F0b',
+        // l2Connector: '0x19480Da508241e0f91e5D13036E62278C7e73B79',
+        // feeDistributor: '0xf82326D7A8aEFf8Cb8129B9284E71859eB29EaE8',
+      },
+    } as { [keyof: string]: AuxiliaryAddresses },
   },
 }
-
-// HubMessageBridge deployed on goerli: 0x9827315F7D2B1AAd0aa4705c06dafEE6cAEBF920
-// SpokeMessageBridge deployed on optimism-goerli: 0x4b844c25EF430e71D42EEA89d87Ffe929f8db927
-// FeeDistributor deployed on goerli: 0x8fF09Ff3C87085Fe4607F2eE7514579FE50944C5
-// Deploying connectors...
-// L1Connector deployed on goerli: 0x4b844c25EF430e71D42EEA89d87Ffe929f8db927
-// L2Connector deployed on optimism-goerli: 0x342EA1227fC0e085704D30cd17a16cA98B58D08B

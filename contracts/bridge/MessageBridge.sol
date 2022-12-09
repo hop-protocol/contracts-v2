@@ -30,10 +30,10 @@ abstract contract MessageBridge is Ownable, EIP712, ICrossChainSource, ICrossCha
     event BundleSet(bytes32 indexed bundleId, bytes32 bundleRoot, uint256 indexed fromChainId);
 
     /* constants */
-    address private constant DEFAULT_XDOMAIN_SENDER = 0x000000000000000000000000000000000000dEaD;
-    uint256 private constant DEFAULT_XDOMAIN_CHAINID = uint256(bytes32(keccak256("Default Hop xDomain Sender")));
-    address private xDomainSender = DEFAULT_XDOMAIN_SENDER;
-    uint256 private xDomainChainId = DEFAULT_XDOMAIN_CHAINID;
+    address private constant DEFAULT_CROSS_CHAIN_SENDER = 0x000000000000000000000000000000000000dEaD;
+    uint256 private constant DEFAULT_CROSS_CHAIN_CHAINID = uint256(bytes32(keccak256("Default Hop xDomain Sender")));
+    address private xDomainSender = DEFAULT_CROSS_CHAIN_SENDER;
+    uint256 private xDomainChainId = DEFAULT_CROSS_CHAIN_CHAINID;
 
     /* state */
     mapping(address => bool) public noMessageList;
@@ -116,8 +116,8 @@ abstract contract MessageBridge is Ownable, EIP712, ICrossChainSource, ICrossCha
         xDomainSender = from;
         xDomainChainId = fromChainId;
         (success, ) = to.call(data);
-        xDomainSender = DEFAULT_XDOMAIN_SENDER;
-        xDomainChainId = DEFAULT_XDOMAIN_CHAINID;
+        xDomainSender = DEFAULT_CROSS_CHAIN_SENDER;
+        xDomainChainId = DEFAULT_CROSS_CHAIN_CHAINID;
 
         if (success) {
             emit MessageRelayed(messageId, fromChainId, from, to);
@@ -126,22 +126,22 @@ abstract contract MessageBridge is Ownable, EIP712, ICrossChainSource, ICrossCha
         }
     }
 
-    function getXDomainChainId() public view returns (uint256) {
-        if (xDomainChainId == DEFAULT_XDOMAIN_CHAINID) {
+    function getCrossChainChainId() public view returns (uint256) {
+        if (xDomainChainId == DEFAULT_CROSS_CHAIN_CHAINID) {
             revert NotCrossDomainMessage();
         }
         return xDomainChainId;
     }
 
-    function getXDomainSender() public view returns (address) {
-        if (xDomainSender == DEFAULT_XDOMAIN_SENDER) {
+    function getCrossChainSender() public view returns (address) {
+        if (xDomainSender == DEFAULT_CROSS_CHAIN_SENDER) {
             revert NotCrossDomainMessage();
         }
         return xDomainSender;
     }
 
-    function getXDomainData() public view returns (uint256, address) {
-        return (getXDomainChainId(), getXDomainSender());
+    function getCrossChainData() public view returns (uint256, address) {
+        return (getCrossChainChainId(), getCrossChainSender());
     }
 
     function getSpokeMessageId(

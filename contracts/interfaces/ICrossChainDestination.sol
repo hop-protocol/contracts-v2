@@ -18,7 +18,7 @@ interface ICrossChainDestination {
         address indexed to
     );
 
-    function getXDomainSender() external view returns (address);
-    function getXDomainChainId() external view returns (uint256);
-    function getXDomainData() external view returns (uint256 chainId, address sender);
+    function getCrossChainSender() external view returns (address);
+    function getCrossChainChainId() external view returns (uint256);
+    function getCrossChainData() external view returns (uint256 chainId, address sender);
 }

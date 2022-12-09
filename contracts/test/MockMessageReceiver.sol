@@ -3,8 +3,8 @@ pragma solidity ^0.8.2;
 import "hardhat/console.sol";
 
 interface IHopMessenger {
-    function getXDomainSender() external returns (address);
-    function getXDomainChainId() external returns (uint256);
+    function getCrossChainSender() external returns (address);
+    function getCrossChainChainId() external returns (uint256);
 }
 
 contract MockMessageReceiver {
@@ -22,7 +22,7 @@ contract MockMessageReceiver {
     function setResult(uint256 _result) external payable {
         result = _result;
         msgSender = msg.sender;
-        xDomainSender = messenger.getXDomainSender();
-        xDomainChainId = messenger.getXDomainChainId();
+        xDomainSender = messenger.getCrossChainSender();
+        xDomainChainId = messenger.getCrossChainChainId();
     }
 }

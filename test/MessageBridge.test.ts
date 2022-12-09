@@ -560,7 +560,7 @@ describe('MessageBridge', function () {
     })
   })
 
-  describe('getXDomainChainId', function () {
+  describe('getCrossChainChainId', function () {
     it('should revert when called directly', async function () {
       const fromChainId = SPOKE_CHAIN_ID_0
       const toChainId = HUB_CHAIN_ID
@@ -571,13 +571,13 @@ describe('MessageBridge', function () {
         { fromChainId, toChainId }
       )
 
-      await expect(fixture.hubBridge.getXDomainChainId()).to.be.revertedWith(
+      await expect(fixture.hubBridge.getCrossChainChainId()).to.be.revertedWith(
         'NotCrossDomainMessage'
       )
     })
   })
 
-  describe('getXDomainSender', function () {
+  describe('getCrossChainSender', function () {
     it('should revert when called directly', async function () {
       const fromChainId = SPOKE_CHAIN_ID_0
       const toChainId = HUB_CHAIN_ID
@@ -588,7 +588,7 @@ describe('MessageBridge', function () {
         { fromChainId, toChainId }
       )
 
-      await expect(fixture.hubBridge.getXDomainChainId()).to.be.revertedWith(
+      await expect(fixture.hubBridge.getCrossChainChainId()).to.be.revertedWith(
         'NotCrossDomainMessage'
       )
     })

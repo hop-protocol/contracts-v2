@@ -1,0 +1,26 @@
+{
+  "name": "@hop-protocol/connectors",
+  "version": "0.0.0",
+  "license": "MIT",
+  "description": "Easy cross-chain connections",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hop-protocol/contracts-v2.git"
+  },
+  "author": "Hop Team (@HopProtocol)",
+  "bugs": {
+    "url": "https://github.com/hop-protocol/contracts-v2/issues"
+  },
+  "homepage": "https://github.com/hop-protocol/contracts-v2#readme",
+  "scripts": {
+    "compile": "npx hardhat compile",
+    "lint": "eslint .",
+    "prettier": "prettier '**/*.{json,sol,md}' --check",
+    "test": "npx hardhat test test/Connector.test.ts",
+    "chain": "npx hardhat node",
+    "gas-profile": "npx hardhat test test/gas.test.ts",
+    "solhint": "solhint 'contracts/**/*.sol'",
+    "coverage": "npx hardhat coverage --solcoverjs .solcover.js"
+  }
+}

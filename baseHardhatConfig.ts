@@ -1,27 +1,14 @@
+import path from 'path'
 import * as dotenv from 'dotenv'
-import { HardhatUserConfig, task } from 'hardhat/config'
-// import '@tenderly/hardhat-tenderly'
+import { HardhatUserConfig } from 'hardhat/config'
 import '@nomiclabs/hardhat-etherscan'
 import '@nomiclabs/hardhat-waffle'
 import '@typechain/hardhat'
-import 'hardhat-gas-reporter'
 import 'solidity-coverage'
-import './tasks/exitBundle'
 
-dotenv.config()
-
-// This is a sample Hardhat task. To learn how to create your own go to
-// https://hardhat.org/guides/create-task.html
-task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
-  const accounts = await hre.ethers.getSigners()
-
-  for (const account of accounts) {
-    console.log(account.address)
-  }
+dotenv.config({
+  path: path.join(__dirname, '.env'),
 })
-
-// You need to export an object to set up your config
-// Go to https://hardhat.org/config/ to learn more
 
 const accounts =
   process.env.DEPLOYER_PRIVATE_KEY !== undefined
@@ -29,7 +16,7 @@ const accounts =
     : []
 
 const config: HardhatUserConfig = {
-  solidity:{
+  solidity: {
     compilers: [
       {
         version: '0.8.9',
@@ -85,10 +72,6 @@ const config: HardhatUserConfig = {
       accounts,
     },
   },
-  gasReporter: {
-    enabled: process.env.REPORT_GAS !== undefined,
-    currency: 'USD',
-  },
   etherscan: {
     apiKey: {
       mainnet: process.env.ETHERSCAN_API_KEY || '',
@@ -98,10 +81,6 @@ const config: HardhatUserConfig = {
       optimisticGoerli: process.env.OPTIMISM_API_KEY || '',
     },
   },
-  // tenderly: {
-  //   project: process.env.TENDERLY_PROJECT || '',
-  //   username: process.env.TENDERLY_USERNAME || '',
-  // },
 }
 
 export default config

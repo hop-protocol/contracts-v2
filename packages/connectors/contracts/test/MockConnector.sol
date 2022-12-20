@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
-import "../libraries/Error.sol";
-import "../connectors/Connector.sol";
+import "../Connector.sol";
 
 error MockRelayFailed();
 error NoPendingMessage();
+error CannotMessageAddress(address to);
 
 contract MockConnector is Connector {
     bytes public pendingMessage;
@@ -34,9 +34,5 @@ contract MockConnector is Connector {
 
     function _verifyCrossDomainSender() internal view override {
         if (msg.sender != counterpart) revert NotCounterpart();
-    }
-
-    function foo() private {
-        revert CannotMessageAddress(msg.sender);
     }
 }

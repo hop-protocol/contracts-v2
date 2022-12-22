@@ -6,8 +6,8 @@ import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import "../utils/Lib_MerkleTree.sol";
 import "../libraries/Error.sol";
 import "../libraries/Bitmap.sol";
-import "../interfaces/ICrossChainSource.sol";
-import "../interfaces/ICrossChainDestination.sol";
+import "../erc5164/MessageExecutor.sol";
+import "../erc5164/IMessageDispatcherBasic.sol";
 
 import "hardhat/console.sol"; // ToDo: Remove
 
@@ -23,7 +23,7 @@ struct BundleProof {
     uint256 totalLeaves;
 }
 
-abstract contract MessageBridge is Ownable, EIP712, ICrossChainSource, ICrossChainDestination {
+abstract contract MessageBridge is Ownable, EIP712, MessageExecutor, IMessageDispatcherBasic {
     using Lib_MerkleTree for bytes32;
     using BitmapLibrary for Bitmap;
 
@@ -42,7 +42,7 @@ abstract contract MessageBridge is Ownable, EIP712, ICrossChainSource, ICrossCha
 
     constructor() EIP712("MessageBridge", "1") {}
 
-    function relayMessage(
+    function executeMessage(
         uint256 fromChainId,
         address from,
         address to,
@@ -65,11 +65,7 @@ abstract contract MessageBridge is Ownable, EIP712, ICrossChainSource, ICrossCha
         Bitmap storage spentMessages = spentMessagesForBundleId[bundleProof.bundleId];
         spentMessages.switchTrue(bundleProof.treeIndex); // Reverts if already true
 
-        bool success = _relayMessage(messageId, fromChainId, from, to, data); // ToDo: Inlining this saves 434 gas, any solution?
-
-        if (!success) {
-            spentMessages.switchFalse(bundleProof.treeIndex);
-        }
+        _executeMessage(messageId, fromChainId, from, to, data);
     }
 
     function _setBundle(bytes32 bundleId, bytes32 bundleRoot, uint256 fromChainId) internal {
@@ -110,20 +106,11 @@ abstract contract MessageBridge is Ownable, EIP712, ICrossChainSource, ICrossCha
         }
     }
 
-    function _relayMessage(bytes32 messageId, uint256 fromChainId, address from, address to, bytes memory data) internal returns (bool success) {
+    function _executeMessage(bytes32 messageId, uint256 fromChainId, address from, address to, bytes memory data) internal {
         if (noMessageList[to]) revert CannotMessageAddress(to);
+        _execute(to, data, fromChainId, from);
 
-        xDomainSender = from;
-        xDomainChainId = fromChainId;
-        (success, ) = to.call(data);
-        xDomainSender = DEFAULT_CROSS_CHAIN_SENDER;
-        xDomainChainId = DEFAULT_CROSS_CHAIN_CHAINID;
-
-        if (success) {
-            emit MessageRelayed(messageId, fromChainId, from, to);
-        } else {
-            emit MessageReverted(messageId, fromChainId, from, to);
-        }
+        emit MessageExecuted(fromChainId, messageId);
     }
 
     function getCrossChainChainId() public view returns (uint256) {

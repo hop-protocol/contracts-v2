@@ -39,6 +39,7 @@ contract HubMessageBridge is MessageBridge, IHubMessageBridge {
     )
         external
         payable
+        returns (bytes32)
     {
         ISpokeMessageBridge spokeBridge = getSpokeBridge(toChainId);
 
@@ -54,6 +55,8 @@ contract HubMessageBridge is MessageBridge, IHubMessageBridge {
         );
 
         spokeBridge.forwardMessage(messageId, msg.sender, to, data);
+
+        return messageId;
     }
 
     function getHubMessageId(uint256 nonce) public view returns (bytes32) {

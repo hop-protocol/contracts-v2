@@ -175,8 +175,7 @@ class Fixture {
     const { messageSent, messageBundled, bundleCommitted } =
       await this.getSendMessageEvents(tx)
 
-    let messageRelayed
-    let messageReverted
+    let messageExecuted
     if (messageBundled) {
       const bundleId = messageBundled?.bundleId
       const treeIndex = messageBundled?.treeIndex
@@ -203,11 +202,10 @@ class Fixture {
         toChainId
       )
 
-      const relayMessageEvents = await this.getRelayMessageEvents(
+      const executeMessageEvents = await this.getExecuteMessageEvents(
         firstConnectionTx
       )
-      messageRelayed = relayMessageEvents.messageRelayed
-      messageReverted = relayMessageEvents.messageReverted
+      messageExecuted = executeMessageEvents.messageExecuted
     }
 
     let firstConnectionTx
@@ -237,7 +235,7 @@ class Fixture {
       )
       firstConnectionTx = connectionTxs.firstConnectionTx
       secondConnectionTx = connectionTxs.secondConnectionTx
-      if (!firstConnectionTx) throw new Error('No messages relayed')
+      if (!firstConnectionTx) throw new Error('No messages executed')
 
       const bundleExitEventsHub = await this.getBundleExitEvents(
         firstConnectionTx
@@ -264,8 +262,7 @@ class Fixture {
       bundleSet,
       bundleReceived,
       bundleForwarded,
-      messageRelayed,
-      messageReverted,
+      messageExecuted,
     }
   }
 
@@ -300,7 +297,7 @@ class Fixture {
     return tx
   }
 
-  async relayMessage(
+  async executeMessage(
     messageId: string,
     overrides?: Partial<{
       fromChainId: BigNumberish
@@ -337,19 +334,18 @@ class Fixture {
     const totalLeaves = overrides?.totalLeaves ?? storedBundle.messageIds.length // ToDo: Is this needed? roundUpPowersOfTwo(storedBundle.messageIds.length)
 
     const bridge = this.bridges[toChainId.toString()]
-    const tx = await bridge.relayMessage(fromChainId, from, to, data, {
+    const tx = await bridge.executeMessage(fromChainId, from, to, data, {
       bundleId,
       treeIndex,
       siblings,
       totalLeaves,
     })
 
-    const { messageRelayed, messageReverted } =
-      await this.getRelayMessageEvents(tx)
+    const { messageExecuted } = await this.getExecuteMessageEvents(tx)
 
     this.spentMessageIds[messageId] = true
 
-    return { tx, messageRelayed, messageReverted, message }
+    return { tx, messageExecuted, message }
   }
 
   getProof(bundleId: string, messageId: string) {
@@ -509,36 +505,20 @@ class Fixture {
     return { bundleSet, bundleReceived, bundleForwarded }
   }
 
-  async getRelayMessageEvents(tx: ContractTransaction) {
-    const messageRelayedEvent = await this._getRawEvent(
+  async getExecuteMessageEvents(tx: ContractTransaction) {
+    const messageExecutedEvent = await this._getRawEvent(
       tx,
       this.hubBridge.interface,
-      'MessageRelayed(bytes32,uint256,address,address)'
+      'MessageExecuted(uint256,bytes32)'
     )
-    const messageRelayed = messageRelayedEvent
+    const messageExecuted = messageExecutedEvent
       ? {
-          messageId: messageRelayedEvent.args.messageId as string,
-          fromChainId: messageRelayedEvent.args.fromChainId as BigNumber,
-          from: messageRelayedEvent.args.from as string,
-          to: messageRelayedEvent.args.to as string,
+          fromChainId: messageExecutedEvent.args.fromChainId as BigNumber,
+          messageId: messageExecutedEvent.args.messageId as string,
         }
       : undefined
 
-    const messageRevertedEvent = await this._getRawEvent(
-      tx,
-      this.hubBridge.interface,
-      'MessageReverted(bytes32,uint256,address,address)'
-    )
-    const messageReverted = messageRevertedEvent
-      ? {
-          messageId: messageRevertedEvent.args.messageId as string,
-          fromChainId: messageRevertedEvent.args.fromChainId as BigNumber,
-          from: messageRevertedEvent.args.from as string,
-          to: messageRevertedEvent.args.to as string,
-        }
-      : undefined
-
-    return { messageRelayed, messageReverted }
+    return { messageExecuted }
   }
 
   async _getRawEvent(

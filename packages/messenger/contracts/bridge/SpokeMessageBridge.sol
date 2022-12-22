@@ -3,7 +3,6 @@ pragma solidity ^0.8.2;
 
 import "./MessageBridge.sol";
 import "../utils/Lib_MerkleTree.sol";
-import "../interfaces/ICrossChainSource.sol";
 import "../interfaces/IHubMessageBridge.sol";
 import "../interfaces/ISpokeMessageBridge.sol";
 
@@ -77,6 +76,7 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
     )
         external
         payable
+        returns (bytes32)
     {
         RouteData memory _routeData = routeData[toChainId];
         if (_routeData.maxBundleMessages == 0) revert InvalidRoute(toChainId);
@@ -106,6 +106,8 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
         if (pendingMessageIds.length >= _routeData.maxBundleMessages) {
             _commitPendingBundle(toChainId);
         }
+
+        return messageId;
     }
 
     function commitPendingBundle(uint256 toChainId) external payable {
@@ -177,7 +179,7 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
     }
 
     function forwardMessage(bytes32 messageId, address from, address to, bytes calldata data) external onlyHub {
-        _relayMessage(messageId, hubChainId, from, to, data);
+        _executeMessage(messageId, hubChainId, from, to, data);
     }
 
     /* Setters */

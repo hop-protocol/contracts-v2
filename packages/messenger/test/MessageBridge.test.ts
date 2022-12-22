@@ -80,15 +80,13 @@ describe('MessageBridge', function () {
 
       for (let i = 0; i < unspentMessageIds.length; i++) {
         const messageId = unspentMessageIds[i]
-        const { messageRelayed, message } = await fixture.relayMessage(
+        const { messageExecuted, message } = await fixture.executeMessage(
           messageId
         )
 
-        if (!messageRelayed) throw new Error('No MessageRelayed event found')
-        expect(messageId).to.eq(messageRelayed.messageId)
-        expect(message.fromChainId).to.eq(messageRelayed.fromChainId)
-        expect(message.from).to.eq(messageRelayed.from)
-        expect(message.to).to.eq(messageRelayed.to)
+        if (!messageExecuted) throw new Error('No MessageExecuted event found')
+        expect(message.fromChainId).to.eq(messageExecuted.fromChainId)
+        expect(messageId).to.eq(messageExecuted.messageId)
 
         if (!messageBundled) throw new Error('No MessageBundled event found')
         const destinationBridge = fixture.bridges[toChainId.toString()]
@@ -176,15 +174,13 @@ describe('MessageBridge', function () {
 
       for (let i = 0; i < unspentMessageIds.length; i++) {
         const messageId = unspentMessageIds[i]
-        const { messageRelayed, message } = await fixture.relayMessage(
+        const { messageExecuted, message } = await fixture.executeMessage(
           messageId
         )
 
-        if (!messageRelayed) throw new Error('No MessageRelayed event found')
-        expect(messageId).to.eq(messageRelayed.messageId)
-        expect(message.fromChainId).to.eq(messageRelayed.fromChainId)
-        expect(message.from).to.eq(messageRelayed.from)
-        expect(message.to).to.eq(messageRelayed.to)
+        if (!messageExecuted) throw new Error('No MessageExecuted event found')
+        expect(message.fromChainId).to.eq(messageExecuted.fromChainId)
+        expect(messageId).to.eq(messageExecuted.messageId)
 
         const destinationBridge = fixture.bridges[toChainId.toString()].address
         await expectMessageReceiverState(
@@ -216,8 +212,8 @@ describe('MessageBridge', function () {
       )
       const messageReceiver = fixture.getMessageReceiver(toChainId)
 
-      const { messageSent, messageRelayed } = await fixture.sendMessage(sender)
-      if (!messageRelayed) throw new Error('No message relayed')
+      const { messageSent, messageExecuted } = await fixture.sendMessage(sender)
+      if (!messageExecuted) throw new Error('No message relayed')
 
       // MessageSent event
       expect(sender.address.toLowerCase()).to.eq(messageSent.from.toLowerCase())
@@ -231,10 +227,8 @@ describe('MessageBridge', function () {
 
       // MessageRelayed event
       const messageId = messageSent.messageId
-      expect(messageId).to.eq(messageRelayed.messageId)
-      expect(fromChainId).to.eq(messageRelayed.fromChainId)
-      expect(sender.address).to.eq(messageRelayed.from)
-      expect(messageReceiver.address).to.eq(messageRelayed.to)
+      expect(messageId).to.eq(messageExecuted.messageId)
+      expect(fromChainId).to.eq(messageExecuted.fromChainId)
 
       const destinationBridge = fixture.bridges[toChainId.toString()].address
       await expectMessageReceiverState(
@@ -296,7 +290,7 @@ describe('MessageBridge', function () {
         await fixture.sendMessageRepeat(numFillerMessages, sender)
 
         await expect(
-          fixture.relayMessage(messageSent.messageId)
+          fixture.executeMessage(messageSent.messageId)
         ).to.be.revertedWith(`CannotMessageAddress("${connector.address}")`)
       })
 
@@ -321,7 +315,7 @@ describe('MessageBridge', function () {
         await fixture.sendMessageRepeat(numFillerMessages, sender)
 
         await expect(
-          fixture.relayMessage(messageSent.messageId)
+          fixture.executeMessage(messageSent.messageId)
         ).to.be.revertedWith(`CannotMessageAddress("${connector.address}")`)
       })
 
@@ -345,7 +339,7 @@ describe('MessageBridge', function () {
     })
   })
 
-  describe('relayMessage', function () {
+  describe('executeMessage', function () {
     it('should handle a failed relay', async function () {
       const fromChainId = SPOKE_CHAIN_ID_0
       const toChainId = HUB_CHAIN_ID
@@ -370,15 +364,6 @@ describe('MessageBridge', function () {
       if (!bundleCommitted || !bundleCommitted?.bundleId) {
         throw new Error('No bundleCommitted event')
       }
-
-      const { messageReverted } = await fixture.relayMessage(
-        messageSent.messageId
-      )
-
-      expect(messageSent.messageId).to.eq(messageReverted?.messageId)
-      expect(fromChainId).to.eq(messageReverted?.fromChainId)
-      expect(messageSent.from).to.eq(messageReverted?.from)
-      expect(messageSent.to).to.eq(messageReverted?.to)
 
       const destinationBridge = fixture.bridges[toChainId.toString()]
       if (!messageBundled) throw new Error('No messageBundled event')
@@ -421,7 +406,7 @@ describe('MessageBridge', function () {
 
       it('should not allow invalid fromChainId', async function () {
         await expect(
-          fixture.relayMessage(messageSent.messageId, {
+          fixture.executeMessage(messageSent.messageId, {
             fromChainId: SPOKE_CHAIN_ID_1,
           })
         ).to.be.revertedWith('InvalidProof')
@@ -429,7 +414,7 @@ describe('MessageBridge', function () {
 
       it('should not allow invalid from', async function () {
         await expect(
-          fixture.relayMessage(messageSent.messageId, {
+          fixture.executeMessage(messageSent.messageId, {
             from: '0x0000000000000000000000000000000000000099',
           })
         ).to.be.revertedWith('InvalidProof')
@@ -437,7 +422,7 @@ describe('MessageBridge', function () {
 
       it('should not allow invalid to', async function () {
         await expect(
-          fixture.relayMessage(messageSent.messageId, {
+          fixture.executeMessage(messageSent.messageId, {
             to: '0x0000000000000000000000000000000000000098',
           })
         ).to.be.revertedWith('InvalidProof')
@@ -446,7 +431,7 @@ describe('MessageBridge', function () {
       it('should not allow invalid message data', async function () {
         const invalidData = await getSetResultCalldata(2831082398)
         await expect(
-          fixture.relayMessage(messageSent.messageId, {
+          fixture.executeMessage(messageSent.messageId, {
             data: invalidData,
           })
         ).to.be.revertedWith('InvalidProof')
@@ -457,7 +442,7 @@ describe('MessageBridge', function () {
         const invalidBundleId =
           '0x0123456789012345678901234567890123456789012345678901234567891234'
         await expect(
-          fixture.relayMessage(messageSent.messageId, {
+          fixture.executeMessage(messageSent.messageId, {
             bundleId: invalidBundleId,
           })
         ).to.be.revertedWith(`BundleNotFound("${invalidBundleId}")`)
@@ -465,7 +450,7 @@ describe('MessageBridge', function () {
 
       it('should not allow invalid treeIndex', async function () {
         await expect(
-          fixture.relayMessage(messageSent.messageId, {
+          fixture.executeMessage(messageSent.messageId, {
             treeIndex: 1,
           })
         ).to.be.revertedWith('InvalidProof')
@@ -476,7 +461,7 @@ describe('MessageBridge', function () {
         const wrongMessageId = fixture.bundles[bundleId].messageIds[1]
         const wrongProof = fixture.getProof(bundleId, wrongMessageId)
         await expect(
-          fixture.relayMessage(messageId, {
+          fixture.executeMessage(messageId, {
             siblings: wrongProof,
           })
         ).to.be.revertedWith('InvalidProof')
@@ -488,7 +473,7 @@ describe('MessageBridge', function () {
         const proof = fixture.getProof(bundleId, messageId)
         proof.push(proof[proof.length - 1])
         await expect(
-          fixture.relayMessage(messageId, {
+          fixture.executeMessage(messageId, {
             siblings: proof,
             totalLeaves,
           })
@@ -498,7 +483,7 @@ describe('MessageBridge', function () {
       it('should not allow empty proof for non single element tree', async function () {
         const messageId = messageSent.messageId
         await expect(
-          fixture.relayMessage(messageId, {
+          fixture.executeMessage(messageId, {
             siblings: [],
             totalLeaves: 1,
           })
@@ -509,7 +494,7 @@ describe('MessageBridge', function () {
         const messageId = messageSent.messageId
         const totalLeaves = fixture.bundles[bundleId].messageIds.length + 1
         await expect(
-          fixture.relayMessage(messageId, {
+          fixture.executeMessage(messageId, {
             totalLeaves,
           })
         ).to.be.revertedWith('Lib_MerkleTree: Total siblings does not correctly correspond to total leaves.')
@@ -519,7 +504,7 @@ describe('MessageBridge', function () {
         const messageId = messageSent.messageId
         const totalLeaves = fixture.bundles[bundleId].messageIds.length / 2
         await expect(
-          fixture.relayMessage(messageId, {
+          fixture.executeMessage(messageId, {
             totalLeaves,
           })
         ).to.be.revertedWith('Lib_MerkleTree: Total siblings does not correctly correspond to total leaves.')
@@ -528,7 +513,7 @@ describe('MessageBridge', function () {
       it('should not allow 0 totalLeaves', async function () {
         const messageId = messageSent.messageId
         await expect(
-          fixture.relayMessage(messageId, {
+          fixture.executeMessage(messageId, {
             totalLeaves: 0,
           })
         ).to.be.revertedWith('Lib_MerkleTree: Total leaves must be greater than zero.')
@@ -538,7 +523,7 @@ describe('MessageBridge', function () {
         const messageId = messageSent.messageId
         const root = fixture.getBundle(messageId).bundleRoot
         await expect(
-          fixture.relayMessage(messageId, {
+          fixture.executeMessage(messageId, {
             siblings: [root],
             totalLeaves: 2,
           })
@@ -551,7 +536,7 @@ describe('MessageBridge', function () {
         const proof = fixture.getProof(bundleId, messageId)
         proof.push(proof[proof.length - 1])
         await expect(
-          fixture.relayMessage(messageId, {
+          fixture.executeMessage(messageId, {
             siblings: proof,
             totalLeaves,
           })

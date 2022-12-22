@@ -32,7 +32,7 @@
     "testnet:verify-fee-distributor": "npx hardhat verify --network goerli --constructor-args ./scripts/constructorParams/feeDistributerParams.js",
     "testnet:send-message": "npx hardhat run scripts/sendMessage.ts",
     "testnet:exit-bundle": "npx hardhat exitBundle --network goerli --hash",
-    "testnet:relay-message": "npx hardhat run scripts/relayMessage.ts"
+    "testnet:relay-message": "npx hardhat run scripts/executeMessage.ts"
   },
   "devDependencies": {
     "@eth-optimism/sdk": "^1.7.0",

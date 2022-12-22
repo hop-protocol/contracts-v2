@@ -20,7 +20,7 @@ async function main() {
   const signer = signers[fromChainId]
   messageBridge = messageBridge.connect(signer)
 
-  const tx = await messageBridge.relayMessage(
+  const tx = await messageBridge.executeMessage(
     fromChainId,
     signer.address,
     to,
@@ -35,7 +35,7 @@ async function main() {
 
   const receipt = await tx.wait()
 
-  console.log('relayMessage', receipt.transactionHash)
+  console.log('executeMessage', receipt.transactionHash)
 }
 
 main().catch(error => {

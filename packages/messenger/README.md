@@ -29,15 +29,16 @@ ICrossChainSender(hopMessageBridge).sendMessage(toChainId, to, data);
 ### Receive a message
 
 ```solidity
-function myFunction() external {
-    // validation
-    require(msg.sender == hopMessageBridge, "Invalid sender");
-    address from = ICrossChainReceiver(hopMessageBridge).getCrossChainSender();
-    uint256 fromChainId = ICrossChainReceiver(hopMessageBridge).getCrossChainChainId();
-    require(from == expectedCrossChainSender, "Invalid cross-chain sender");
-    require(fromChainId == expectedCrossChainId, "Invalid cross-chain chainId");
+contract MyContract is CrossChainEnabled {
+    function myFunction() external {
+        // validation
+        require(msg.sender == hopMessageBridge, "Invalid sender");
+        (address from, uint256 fromChainId) = _crossChainContext();
+        require(from == expectedCrossChainSender, "Invalid cross-chain sender");
+        require(fromChainId == expectedCrossChainId, "Invalid cross-chain chainId");
 
-    // Business logic
+        // Business logic
+    }
 }
 ```
 

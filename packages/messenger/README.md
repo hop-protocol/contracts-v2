@@ -4,12 +4,14 @@ The Hop Core Messenger is a simple, trustless messaging protocol that can be use
 
 ### How it works
 * The Core Messenger uses a hub-and-spoke model
-* Messages are aggregated into bundles.
+* Messages are aggregated into bundles
 * The bundle is hashed and sent to the destination
 * Native bridges with Ethereum are used to pass the bundle hash
 * At the destination, messages in the bundle can be unpacked and executed
 
-Because the native bridges can sometimes be slow, the Hop Core Messenger is best used for messages that need to be trustless and secure but are not time sensitive (e.g. DAO governance actions). Despite it's limitations in speed, the Hop Core Messenger can act as a powerful trustless settlement-layer for much faster types of messaging such as collateralized messaging and optimistic messaging (as seen in Hop V1).
+Because the native bridges can sometimes be slow, the Hop Core Messenger is best used for messages that require trustlessness and high-security but are not time sensitive (e.g. value settlement, dispute resolution, DAO governance, etc.).
+
+Faster messaging models such as collateralized messaging and optimistic messaging (as seen in Hop V1) can be easily implemented on top of the Core Messenger for application-specific or generalized use cases.
 
 ## Deployments
 
@@ -22,22 +24,34 @@ Because the native bridges can sometimes be slow, the Hop Core Messenger is best
 
 ### Send a message
 
+You can send a message by calling the EIP-5164 method, `dispatchMessage`.
+
 ```solidity
-ICrossChainSender(hopMessageBridge).dispatchMessage(toChainId, to, data);
+ISingleMessageDispatcher(hopMessageBridge).dispatchMessage(toChainId, to, data);
 ```
 
 ### Receive a message
 
+When receiving a message, inherit from [`CrossChainEnabled`](https://github.com/hop-protocol/contracts-v2/blob/master/packages/messenger/contracts/erc5164/CrossChainEnabled.sol) to access the `messageId`, `from` address, and `fromChainId`.
+
 ```solidity
 contract MyContract is CrossChainEnabled {
+    event MyMessageHandleEvent {
+        bytes32 indexed messageId /*,
+        ... your event params*/
+    }
+
     function myFunction() external {
-        // validation
+        // Parse the cross-chain context from the call
+        (bytes32 messageId, address from, uint256 fromChainId) = _crossChainContext();
+
+        // Validate the cross-chain caller
         require(msg.sender == hopMessageBridge, "Invalid sender");
-        (address from, uint256 fromChainId) = _crossChainContext();
         require(from == expectedCrossChainSender, "Invalid cross-chain sender");
         require(fromChainId == expectedCrossChainId, "Invalid cross-chain chainId");
 
-        // Business logic
+        // Execute your business logic
+        emit MyMessageHandleEvent(messageId, /* your event params */);
     }
 }
 ```

@@ -7,7 +7,7 @@ import "../utils/Lib_MerkleTree.sol";
 import "../libraries/Error.sol";
 import "../libraries/Bitmap.sol";
 import "../erc5164/MessageExecutor.sol";
-import "../erc5164/IMessageDispatcherBasic.sol";
+import "../erc5164/ISingleMessageDispatcher.sol";
 
 import "hardhat/console.sol"; // ToDo: Remove
 
@@ -23,7 +23,7 @@ struct BundleProof {
     uint256 totalLeaves;
 }
 
-abstract contract MessageBridge is Ownable, EIP712, MessageExecutor, IMessageDispatcherBasic {
+abstract contract MessageBridge is Ownable, EIP712, MessageExecutor, ISingleMessageDispatcher {
     using Lib_MerkleTree for bytes32;
     using BitmapLibrary for Bitmap;
 
@@ -108,9 +108,7 @@ abstract contract MessageBridge is Ownable, EIP712, MessageExecutor, IMessageDis
 
     function _executeMessage(bytes32 messageId, uint256 fromChainId, address from, address to, bytes memory data) internal {
         if (noMessageList[to]) revert CannotMessageAddress(to);
-        _execute(to, data, fromChainId, from);
-
-        emit MessageExecuted(fromChainId, messageId);
+        _execute(messageId, fromChainId, from, to, data);
     }
 
     function getCrossChainChainId() public view returns (uint256) {

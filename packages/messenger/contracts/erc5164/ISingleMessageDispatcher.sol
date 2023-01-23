@@ -3,8 +3,8 @@ pragma solidity ^0.8.2;
 
 import "./IMessageDispatcher.sol";
 
-interface IMessageDispatcherBasic is IMessageDispatcher {
-    function sendMessage(
+interface ISingleMessageDispatcher is IMessageDispatcher {
+    function dispatchMessage(
         uint256 toChainId,
         address to,
         bytes calldata data

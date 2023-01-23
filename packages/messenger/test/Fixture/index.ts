@@ -130,7 +130,7 @@ class Fixture {
     return deployFixture(_hubChainId, _spokeChainIds, _defaults)
   }
 
-  async sendMessageRepeat(
+  async dispatchMessageRepeat(
     count: BigNumberish,
     fromSigner: Signer,
     overrides?: Partial<{
@@ -142,11 +142,11 @@ class Fixture {
   ) {
     count = BigNumber.from(count)
     for (let i = 0; count.gt(i); i++) {
-      await this.sendMessage(fromSigner, overrides)
+      await this.dispatchMessage(fromSigner, overrides)
     }
   }
 
-  async sendMessage(
+  async dispatchMessage(
     fromSigner: Signer,
     overrides?: Partial<{
       fromChainId: BigNumberish
@@ -169,7 +169,7 @@ class Fixture {
 
     const tx = await bridge
       .connect(fromSigner)
-      .sendMessage(toChainId, to, data, {
+      .dispatchMessage(toChainId, to, data, {
         value: MESSAGE_FEE,
       })
     const { messageSent, messageBundled, bundleCommitted } =

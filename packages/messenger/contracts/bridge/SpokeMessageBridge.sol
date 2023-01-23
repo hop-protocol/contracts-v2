@@ -69,7 +69,7 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
         }
     }
 
-    function sendMessage(
+    function dispatchMessage(
         uint256 toChainId,
         address to,
         bytes calldata data

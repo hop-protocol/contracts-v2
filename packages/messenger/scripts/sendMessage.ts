@@ -11,11 +11,11 @@ const { messengers } = contracts.testnet
 async function main() {
   const { maxBundleMessages } = deployConfig
   for (let i = 0; i < maxBundleMessages; i++) {
-    await sendMessage()
+    await dispatchMessage()
   }
 }
 
-async function sendMessage() {
+async function dispatchMessage() {
   const { message } = messageConfig
   const { fromChainId, toChainId, to, result } = message
   const { messageFee } = deployConfig
@@ -30,7 +30,7 @@ async function sendMessage() {
   ).connect(signer)
   const data = await getSetResultCalldata(result)
 
-  const tx = await messageBridge.sendMessage(toChainId, to, data, {
+  const tx = await messageBridge.dispatchMessage(toChainId, to, data, {
     gasLimit: gasLimit,
     value: messageFee,
   })

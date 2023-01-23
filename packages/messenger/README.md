@@ -23,7 +23,7 @@ Because the native bridges can sometimes be slow, the Hop Core Messenger is best
 ### Send a message
 
 ```solidity
-ICrossChainSender(hopMessageBridge).sendMessage(toChainId, to, data);
+ICrossChainSender(hopMessageBridge).dispatchMessage(toChainId, to, data);
 ```
 
 ### Receive a message

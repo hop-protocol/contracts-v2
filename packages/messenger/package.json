@@ -30,7 +30,7 @@
     "testnet:verify-spoke": "npx hardhat verify --network optimismGoerli --constructor-args ./scripts/constructorParams/spokeParams.js",
     "testnet:verify-hub": "npx hardhat verify --network goerli",
     "testnet:verify-fee-distributor": "npx hardhat verify --network goerli --constructor-args ./scripts/constructorParams/feeDistributerParams.js",
-    "testnet:send-message": "npx hardhat run scripts/sendMessage.ts",
+    "testnet:send-message": "npx hardhat run scripts/dispatchMessage.ts",
     "testnet:exit-bundle": "npx hardhat exitBundle --network goerli --hash",
     "testnet:relay-message": "npx hardhat run scripts/executeMessage.ts"
   },

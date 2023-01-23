@@ -15,7 +15,7 @@ import { getSetResultCalldata } from '../utils'
 import type { MockMessageReceiver as IMessageReceiver } from '../typechain'
 
 describe('MessageBridge', function () {
-  describe('sendMessage', function () {
+  describe('dispatchMessage', function () {
     it('Should complete a full Spoke to Hub bundle', async function () {
       const fromChainId = SPOKE_CHAIN_ID_0
       const toChainId = HUB_CHAIN_ID
@@ -27,7 +27,7 @@ describe('MessageBridge', function () {
         SPOKE_CHAIN_ID_1,
       ])
 
-      const { messageSent, messageBundled } = await fixture.sendMessage(sender)
+      const { messageSent, messageBundled } = await fixture.dispatchMessage(sender)
 
       const messageReceiver = fixture.getMessageReceiver()
 
@@ -42,10 +42,10 @@ describe('MessageBridge', function () {
       )
 
       const numFillerMessages = MAX_BUNDLE_MESSAGES - 2
-      await fixture.sendMessageRepeat(numFillerMessages, sender)
+      await fixture.dispatchMessageRepeat(numFillerMessages, sender)
 
       const { bundleCommitted, bundleReceived, bundleSet } =
-        await fixture.sendMessage(sender)
+        await fixture.dispatchMessage(sender)
       if (!bundleCommitted) throw new Error('Bundle not committed')
       if (!bundleReceived) throw new Error('Bundle not received at Hub')
       if (!bundleSet) throw new Error('Bundle not set on Hub')
@@ -123,7 +123,7 @@ describe('MessageBridge', function () {
       )
       const messageReceiver = fixture.getMessageReceiver(toChainId)
 
-      const { messageSent } = await fixture.sendMessage(sender)
+      const { messageSent } = await fixture.dispatchMessage(sender)
 
       // MessageSent event
       expect(sender.address.toLowerCase()).to.eq(messageSent.from.toLowerCase())
@@ -136,10 +136,10 @@ describe('MessageBridge', function () {
       )
 
       const numFillerMessages = MAX_BUNDLE_MESSAGES - 2
-      await fixture.sendMessageRepeat(numFillerMessages, sender)
+      await fixture.dispatchMessageRepeat(numFillerMessages, sender)
 
       const { bundleCommitted, bundleReceived, bundleSet } =
-        await fixture.sendMessage(sender)
+        await fixture.dispatchMessage(sender)
       if (!bundleCommitted) throw new Error('Bundle not committed')
       if (!bundleReceived) throw new Error('Bundle not received at Hub')
       if (!bundleSet) throw new Error('Bundle not set on Hub')
@@ -212,7 +212,7 @@ describe('MessageBridge', function () {
       )
       const messageReceiver = fixture.getMessageReceiver(toChainId)
 
-      const { messageSent, messageExecuted } = await fixture.sendMessage(sender)
+      const { messageSent, messageExecuted } = await fixture.dispatchMessage(sender)
       if (!messageExecuted) throw new Error('No message relayed')
 
       // MessageSent event
@@ -260,7 +260,7 @@ describe('MessageBridge', function () {
         ])
 
         expect(
-          fixture.sendMessage(sender, {
+          fixture.dispatchMessage(sender, {
             fromChainId,
             toChainId,
           })
@@ -282,12 +282,12 @@ describe('MessageBridge', function () {
 
         const connector = fixture.hubConnectors[fromChainId.toString()]
 
-        const { messageSent } = await fixture.sendMessage(sender, {
+        const { messageSent } = await fixture.dispatchMessage(sender, {
           to: connector.address,
         })
 
         const numFillerMessages = MAX_BUNDLE_MESSAGES - 1
-        await fixture.sendMessageRepeat(numFillerMessages, sender)
+        await fixture.dispatchMessageRepeat(numFillerMessages, sender)
 
         await expect(
           fixture.executeMessage(messageSent.messageId)
@@ -307,12 +307,12 @@ describe('MessageBridge', function () {
 
         const connector = fixture.spokeConnectors[toChainId.toString()]
 
-        const { messageSent } = await fixture.sendMessage(sender, {
+        const { messageSent } = await fixture.dispatchMessage(sender, {
           to: connector.address,
         })
 
         const numFillerMessages = MAX_BUNDLE_MESSAGES - 1
-        await fixture.sendMessageRepeat(numFillerMessages, sender)
+        await fixture.dispatchMessageRepeat(numFillerMessages, sender)
 
         await expect(
           fixture.executeMessage(messageSent.messageId)
@@ -333,7 +333,7 @@ describe('MessageBridge', function () {
         const connector = fixture.spokeConnectors[toChainId.toString()]
 
         await expect(
-          fixture.sendMessage(sender, { to: connector.address })
+          fixture.dispatchMessage(sender, { to: connector.address })
         ).to.be.revertedWith(`CannotMessageAddress("${connector.address}")`)
       })
     })
@@ -352,15 +352,15 @@ describe('MessageBridge', function () {
       )
       const fixture = deployment.fixture
 
-      const { messageSent, messageBundled } = await fixture.sendMessage(
+      const { messageSent, messageBundled } = await fixture.dispatchMessage(
         sender,
         { data: '0xdeadbeef' }
       )
 
       const numFillerMessages = MAX_BUNDLE_MESSAGES - 2
-      await fixture.sendMessageRepeat(numFillerMessages, sender)
+      await fixture.dispatchMessageRepeat(numFillerMessages, sender)
 
-      const { bundleCommitted } = await fixture.sendMessage(sender)
+      const { bundleCommitted } = await fixture.dispatchMessage(sender)
       if (!bundleCommitted || !bundleCommitted?.bundleId) {
         throw new Error('No bundleCommitted event')
       }
@@ -391,13 +391,13 @@ describe('MessageBridge', function () {
         )
         fixture = deployment.fixture
 
-        const sendMessageEvents = await fixture.sendMessage(sender)
-        messageSent = sendMessageEvents?.messageSent
+        const dispatchMessageEvents = await fixture.dispatchMessage(sender)
+        messageSent = dispatchMessageEvents?.messageSent
 
         const numFillerMessages = MAX_BUNDLE_MESSAGES - 2
-        await fixture.sendMessageRepeat(numFillerMessages, sender)
+        await fixture.dispatchMessageRepeat(numFillerMessages, sender)
 
-        const { bundleCommitted } = await fixture.sendMessage(sender)
+        const { bundleCommitted } = await fixture.dispatchMessage(sender)
         if (!bundleCommitted || !bundleCommitted?.bundleId) {
           throw new Error('No bundleCommitted event')
         }

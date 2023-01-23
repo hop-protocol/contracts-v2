@@ -29,7 +29,7 @@ interface iOVM_BaseCrossDomainMessenger {
      * @param _message Message to send to the target.
      * @param _gasLimit Gas limit for the provided message.
      */
-    function sendMessage(
+    function dispatchMessage(
         address _target,
         bytes calldata _message,
         uint32 _gasLimit

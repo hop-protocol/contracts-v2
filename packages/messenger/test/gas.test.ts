@@ -24,7 +24,7 @@ const { solidityKeccak256, keccak256, defaultAbiCoder: abi } = ethers.utils
 import Fixture from './Fixture'
 
 describe('MessageBridge Gas Profile', function () {
-  it('Should sendMessage L1 -> L2', async function () {
+  it('Should dispatchMessage L1 -> L2', async function () {
     console.log('    Send message L1 -> L2')
     const [sender] = await ethers.getSigners()
 
@@ -37,20 +37,20 @@ describe('MessageBridge Gas Profile', function () {
       }
     )
 
-    await fixture.sendMessage(sender)
-    await fixture.sendMessage(sender)
+    await fixture.dispatchMessage(sender)
+    await fixture.dispatchMessage(sender)
 
     const {
       tx: sendTx,
       messageSent: { messageId: messageId0 },
-    } = await fixture.sendMessage(sender, { to: ARBITRARY_EOA })
-    await logGas('sendMessage()', sendTx)
+    } = await fixture.dispatchMessage(sender, { to: ARBITRARY_EOA })
+    await logGas('dispatchMessage()', sendTx)
 
-    const { tx: sendAndCommitTx } = await fixture.sendMessage(sender)
-    // await logGas('sendMessage() with commit', sendAndCommitTx)
+    const { tx: sendAndCommitTx } = await fixture.dispatchMessage(sender)
+    // await logGas('dispatchMessage() with commit', sendAndCommitTx)
   })
 
-  it('Should sendMessage L2 -> L1', async function () {
+  it('Should dispatchMessage L2 -> L1', async function () {
     console.log('    Send message L2 -> L1')
     const [sender] = await ethers.getSigners()
 
@@ -59,22 +59,22 @@ describe('MessageBridge Gas Profile', function () {
       SPOKE_CHAIN_ID_1,
     ])
 
-    await fixture.sendMessageRepeat(MAX_BUNDLE_MESSAGES, sender)
+    await fixture.dispatchMessageRepeat(MAX_BUNDLE_MESSAGES, sender)
 
     const {
       tx: sendTx,
       messageSent: { messageId: messageId0 },
-    } = await fixture.sendMessage(sender, { to: ARBITRARY_EOA })
-    await logGas('sendMessage()', sendTx)
+    } = await fixture.dispatchMessage(sender, { to: ARBITRARY_EOA })
+    await logGas('dispatchMessage()', sendTx)
 
     const numFillerMessages = MAX_BUNDLE_MESSAGES - 2
-    await fixture.sendMessageRepeat(numFillerMessages, sender)
+    await fixture.dispatchMessageRepeat(numFillerMessages, sender)
 
     const {
       tx: sendAndCommitTx,
       messageSent: { messageId: messageId1 },
-    } = await fixture.sendMessage(sender, { to: ARBITRARY_EOA })
-    // await logGas('sendMessage() with commit', sendAndCommitTx)
+    } = await fixture.dispatchMessage(sender, { to: ARBITRARY_EOA })
+    // await logGas('dispatchMessage() with commit', sendAndCommitTx)
 
     const { tx: relayTx0 } = await fixture.executeMessage(messageId0)
     await logGas('executeMessage()', relayTx0)
@@ -83,7 +83,7 @@ describe('MessageBridge Gas Profile', function () {
     // await logGas('executeMessage()', relayTx1)
   })
 
-  it('Should sendMessage L2 -> L2', async function () {
+  it('Should dispatchMessage L2 -> L2', async function () {
     console.log('    Send message L2 -> L2')
     const [sender] = await ethers.getSigners()
 
@@ -96,22 +96,22 @@ describe('MessageBridge Gas Profile', function () {
       }
     )
 
-    await fixture.sendMessageRepeat(MAX_BUNDLE_MESSAGES, sender)
+    await fixture.dispatchMessageRepeat(MAX_BUNDLE_MESSAGES, sender)
 
     const {
       tx: sendTx,
       messageSent: { messageId: messageId0 },
-    } = await fixture.sendMessage(sender, { to: ARBITRARY_EOA })
-    await logGas('sendMessage()', sendTx)
+    } = await fixture.dispatchMessage(sender, { to: ARBITRARY_EOA })
+    await logGas('dispatchMessage()', sendTx)
 
     const numFillerMessages = MAX_BUNDLE_MESSAGES - 2
-    await fixture.sendMessageRepeat(numFillerMessages, sender)
+    await fixture.dispatchMessageRepeat(numFillerMessages, sender)
 
     const {
       tx: sendAndCommitTx,
       messageSent: { messageId: messageId1 },
-    } = await fixture.sendMessage(sender, { to: ARBITRARY_EOA })
-    // await logGas('sendMessage() with commit', sendAndCommitTx)
+    } = await fixture.dispatchMessage(sender, { to: ARBITRARY_EOA })
+    // await logGas('dispatchMessage() with commit', sendAndCommitTx)
 
     const { tx: relayTx0 } = await fixture.executeMessage(messageId0)
     await logGas('executeMessage()', relayTx0)

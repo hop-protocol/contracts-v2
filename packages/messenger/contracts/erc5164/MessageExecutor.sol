@@ -6,14 +6,23 @@ import "./IMessageExecutor.sol";
 contract MessageExecutor is IMessageExecutor {
     error CallFailedForUnknownReason();
 
-    function _execute(address to, bytes memory data, uint256 fromChainId, address from) internal {
+    function _execute(
+        bytes32 messageId,
+        uint256 fromChainId,
+        address from,
+        address to,
+        bytes memory data
+    )
+        internal
+    {
         (bool success, bytes memory returnData) = to.call(
-            abi.encodePacked(data, fromChainId, from)
+            abi.encodePacked(data, messageId, fromChainId, from)
         );
-        if (success) return;
 
-        // handle revert
-        if (returnData.length > 0) {
+        if (success) {
+            emit MessageExecuted(fromChainId, messageId);
+        } else if (returnData.length > 0) {
+            // Bubble up the revert reason
             assembly {
                 let returnDataSize := mload(returnData)
                 revert(add(32, returnData), returnDataSize)

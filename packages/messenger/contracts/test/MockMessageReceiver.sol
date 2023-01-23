@@ -13,8 +13,9 @@ contract MockMessageReceiver is CrossChainEnabled {
 
     uint256 public result;
     address public msgSender;
-    address public xDomainSender;
+    bytes32 public messageId;
     uint256 public xDomainChainId;
+    address public xDomainSender;
 
     constructor(IHopMessenger _messenger) {
         messenger = _messenger;
@@ -23,6 +24,6 @@ contract MockMessageReceiver is CrossChainEnabled {
     function setResult(uint256 _result) external payable {
         result = _result;
         msgSender = msg.sender;
-        (xDomainChainId, xDomainSender) = _crossChainContext();
+        (messageId, xDomainChainId, xDomainSender) = _crossChainContext();
     }
 }

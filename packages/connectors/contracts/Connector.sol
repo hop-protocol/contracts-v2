@@ -2,7 +2,9 @@
 
 pragma solidity ^0.8.2;
 
-error NotCounterpart();
+error InvalidCounterpart(address counterpart);
+error InvalidBridge(address msgSender);
+error InvalidFromChainId(uint256 fromChainId);
 
 abstract contract Connector {
     address public target;

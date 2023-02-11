@@ -1,6 +1,6 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.2;
-import "../erc5164/CrossChainEnabled.sol";
+import "@hop-protocol/ERC5164/contracts/CrossChainEnabled.sol";
 import "hardhat/console.sol";
 
 interface IHopMessenger {

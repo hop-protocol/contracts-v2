@@ -5,7 +5,9 @@
   "description": "Hop Contracts V2",
   "author": "Hop Team (@HopProtocol)",
   "license": "MIT",
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*"
+  ],
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.2.1",
     "@nomiclabs/hardhat-etherscan": "^3.1.1",

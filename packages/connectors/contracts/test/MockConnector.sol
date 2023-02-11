@@ -33,6 +33,6 @@ contract MockConnector is Connector {
     }
 
     function _verifyCrossDomainSender() internal view override {
-        if (msg.sender != counterpart) revert NotCounterpart();
+        if (msg.sender != counterpart) revert InvalidCounterpart(msg.sender);
     }
 }

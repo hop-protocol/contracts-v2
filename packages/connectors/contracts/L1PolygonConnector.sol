@@ -24,7 +24,7 @@ contract L1PolygonConnector is Connector, FxBaseRootTunnel {
     }
 
     function _verifyCrossDomainSender() internal override pure {
-        revert NotCounterpart();
+        revert InvalidCounterpart(address(0));
     }
 
     function _processMessageFromChild(bytes memory message) internal override {

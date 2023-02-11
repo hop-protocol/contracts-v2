@@ -20,6 +20,6 @@ contract L2ArbitrumConnector is Connector {
     function _verifyCrossDomainSender() internal override view {
         // crossChainSender is unaliased
         address crossChainSender = LibArbitrumL2.crossChainSender(LibArbitrumL2.ARBSYS);
-        if (crossChainSender != counterpart) revert NotCounterpart();
+        if (crossChainSender != counterpart) revert InvalidCounterpart(crossChainSender);
     }
 }

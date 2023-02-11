@@ -3,11 +3,11 @@ pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
+import "@hop-protocol/ERC5164/contracts/MessageExecutor.sol";
+import "@hop-protocol/ERC5164/contracts/ISingleMessageDispatcher.sol";
 import "../utils/Lib_MerkleTree.sol";
 import "../libraries/Error.sol";
 import "../libraries/Bitmap.sol";
-import "../erc5164/MessageExecutor.sol";
-import "../erc5164/ISingleMessageDispatcher.sol";
 
 import "hardhat/console.sol"; // ToDo: Remove
 

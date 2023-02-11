@@ -24,6 +24,6 @@ contract AMBConnector is Connector {
 
     function _verifyCrossDomainSender() internal override view {
         address crossChainSender = LibAMB.crossChainSender(arbitraryMessageBridge);
-        if (crossChainSender != counterpart) revert NotCounterpart();
+        if (crossChainSender != counterpart) revert InvalidCounterpart(crossChainSender);
     }
 }

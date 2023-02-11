@@ -28,6 +28,6 @@ contract L2OptimismConnector is Connector {
 
     function _verifyCrossDomainSender() internal override view {
         address crossChainSender = LibOptimism.crossChainSender(l2CrossDomainMessenger);
-        if (crossChainSender != counterpart) revert NotCounterpart();
+        if (crossChainSender != counterpart) revert InvalidCounterpart(crossChainSender);
     }
 }

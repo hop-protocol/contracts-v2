@@ -32,6 +32,6 @@ contract L1ArbitrumConnector is Connector {
     function _verifyCrossDomainSender() internal override view {
         IBridge bridge = IInbox(inbox).bridge();
         address crossChainSender = LibArbitrumL1.crossChainSender(address(bridge));
-        if (crossChainSender != counterpart) revert NotCounterpart();
+        if (crossChainSender != counterpart) revert InvalidCounterpart(crossChainSender);
     }
 }

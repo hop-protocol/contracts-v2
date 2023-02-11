@@ -1,8 +1,8 @@
 {
-  "name": "@hop-protocol/connectors",
+  "name": "@hop-protocol/ERC5164",
   "version": "0.0.0",
   "license": "MIT",
-  "description": "Easy cross-chain connections",
+  "description": "ERC5164 contracts",
   "main": "index.js",
   "repository": {
     "type": "git",
@@ -17,12 +17,9 @@
     "compile": "npx hardhat compile",
     "lint": "eslint .",
     "prettier": "prettier '**/*.{json,sol,md}' --check",
-    "test": "npx hardhat test test/Connector.test.ts",
+    "test": "echo 'Not implemented' && exit 0",
     "chain": "npx hardhat node",
     "solhint": "solhint 'contracts/**/*.sol'",
     "coverage": "npx hardhat coverage --solcoverjs .solcover.js"
-  },
-  "dependencies": {
-    "@hop-protocol/ERC5164": "^0.0.0"
   }
 }

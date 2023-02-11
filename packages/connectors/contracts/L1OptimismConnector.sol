@@ -38,7 +38,7 @@ contract L1OptimismConnector is Connector, Ownable {
 
     function _verifyCrossDomainSender() internal override view {
         address crossChainSender = LibOptimism.crossChainSender(l1CrossDomainMessenger);
-        if (crossChainSender != counterpart) revert NotCounterpart();
+        if (crossChainSender != counterpart) revert InvalidCounterpart(crossChainSender);
     }
 
     // Private functions

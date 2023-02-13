@@ -21,7 +21,7 @@ abstract contract Connector {
             _verifyCrossDomainSender();
 
             (bool success, bytes memory res) = target.call(msg.data);
-            if(!success) {
+            if (!success) {
                 // Bubble up error message
                 assembly { revert(add(res,0x20), res) }
             }
@@ -32,7 +32,7 @@ abstract contract Connector {
      * @dev Sets the counterpart
      * @param _counterpart The new bridge connector address
      */
-    function setCounterpart(address _counterpart) external {
+    function setCounterpart(address _counterpart) public {
         require(counterpart == address(0), "CNR: Connector address has already been set");
         counterpart = _counterpart;
     }

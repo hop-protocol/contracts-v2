@@ -19,14 +19,10 @@ async function main() {
   const destinationPingPong = '0x0000000000000000000000000000000000000002' // This would be deployed before connector
 
   const PingPong = await ethers.getContractFactory('PingPong')
-  const pingPong1 = await PingPong.connect(signer1).deploy(
-    connectorAddress
-  )
+  const pingPong1 = await PingPong.connect(signer1).deploy(connectorAddress)
   await logContractDeployed('PingPong', pingPong1)
 
-  const pingPong2 = await PingPong.connect(signer2).deploy(
-    connectorAddress
-  )
+  const pingPong2 = await PingPong.connect(signer2).deploy(connectorAddress)
   await logContractDeployed('PingPong', pingPong2)
 
   const ERC5164ConnectorFactory = await ethers.getContractFactory(

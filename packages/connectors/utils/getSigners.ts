@@ -15,13 +15,9 @@ function getSigners() {
   const spokeSigner = new ethers.Wallet(deployerPrivateKey, spokeProvider)
 
   return {
-    hubSigner,
-    spokeSigners: [spokeSigner],
-    signers: {
-      '5': hubSigner,
-      '420': spokeSigner,
-    } as { [key: string]: ethers.Wallet },
-  }
+    '5': hubSigner,
+    '420': spokeSigner,
+  } as { [key: string]: ethers.Wallet }
 }
 
 export default getSigners

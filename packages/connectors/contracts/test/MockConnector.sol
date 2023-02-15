@@ -10,8 +10,6 @@ error CannotMessageAddress(address to);
 contract MockConnector is Connector {
     bytes public pendingMessage;
 
-    constructor(address target) Connector(target) {}
-
     function relay() public {
         bytes memory _pendingMessage = pendingMessage;
         delete pendingMessage;

@@ -10,15 +10,15 @@ contract ERC5164Connector is Connector, CrossChainEnabled {
     uint256 public counterpartChainId;
     address public erc5164Messenger;
 
-    constructor(
-        uint256 _counterpartChainId,
+    function initialize(
+        address target,
+        address counterpart,
         address _erc5164Messenger,
-        address target
-    )
-        Connector(target)
-    {
-        counterpartChainId = _counterpartChainId;
+        uint256 _counterpartChainId
+    ) external {
+        initialize(target, counterpart);
         erc5164Messenger = _erc5164Messenger;
+        counterpartChainId = _counterpartChainId;
     }
 
     function _forwardCrossDomainMessage() internal override {

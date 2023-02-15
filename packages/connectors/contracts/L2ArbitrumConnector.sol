@@ -7,8 +7,6 @@ import "./interfaces/arbitrum/messengers/IBridge.sol";
 import "./Connector.sol";
 
 contract L2ArbitrumConnector is Connector {
-    constructor(address target) Connector(target) {}
-
     function _forwardCrossDomainMessage() internal override {
         IArbSys arbSys = IArbSys(LibArbitrumL2.ARBSYS);
         arbSys.sendTxToL1(

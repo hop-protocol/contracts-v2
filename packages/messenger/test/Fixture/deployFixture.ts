@@ -143,10 +143,10 @@ async function connectHubAndSpoke(
   const Connector = await ethers.getContractFactory('MockConnector')
   const FeeDistributor = await ethers.getContractFactory('ETHFeeDistributor')
 
-  const hubConnector = await Connector.deploy(hubBridge.address)
-  const spokeConnector = await Connector.deploy(spokeBridge.address)
-  await hubConnector.setCounterpart(spokeConnector.address)
-  await spokeConnector.setCounterpart(hubConnector.address)
+  const hubConnector = await Connector.deploy()
+  const spokeConnector = await Connector.deploy()
+  await hubConnector.initialize(hubBridge.address, spokeConnector.address)
+  await spokeConnector.initialize(spokeBridge.address, hubConnector.address)
 
   const feeDistributor = await FeeDistributor.deploy(
     hubBridge.address,

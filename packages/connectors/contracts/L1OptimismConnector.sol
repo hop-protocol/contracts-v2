@@ -7,17 +7,13 @@ import "./Connector.sol";
 import "./interfaces/optimism/messengers/iOVM_L1CrossDomainMessenger.sol";
 
 contract L1OptimismConnector is Connector, Ownable {
-    address public l1CrossDomainMessenger;
-    uint256 public defaultL2GasLimit;
+    address public immutable l1CrossDomainMessenger;
+    uint256 public immutable defaultL2GasLimit;
     mapping (bytes4 => uint256) public l2GasLimitForSignature;
 
-    constructor(
-        address target,
-        address _l1CrossDomainMessenger
-    )
-        Connector(target) 
-    {
+    constructor(address _l1CrossDomainMessenger, uint256 _defaultL2GasLimit) {
         l1CrossDomainMessenger = _l1CrossDomainMessenger;
+        defaultL2GasLimit = _defaultL2GasLimit;
     }
 
     function setL2GasLimitForSignature(uint256 _l2GasLimit, bytes4 signature) external onlyOwner {

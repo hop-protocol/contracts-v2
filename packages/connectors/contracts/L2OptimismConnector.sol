@@ -6,16 +6,12 @@ import "./Connector.sol";
 import "./interfaces/optimism/messengers/iOVM_L2CrossDomainMessenger.sol";
 
 contract L2OptimismConnector is Connector {
-    address public l2CrossDomainMessenger;
-    uint32 public defaultGasLimit;
+    address public immutable l2CrossDomainMessenger;
+    uint32 public immutable defaultGasLimit;
 
-    constructor(
-        address target,
-        address _l2CrossDomainMessenger
-    )
-        Connector(target) 
-    {
+    constructor(address _l2CrossDomainMessenger, uint32 _defaultGasLimit) {
         l2CrossDomainMessenger = _l2CrossDomainMessenger;
+        defaultGasLimit = _defaultGasLimit;
     }
 
     function _forwardCrossDomainMessage() internal override {

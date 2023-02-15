@@ -97,17 +97,17 @@ async function deployConnectors(
   )
 
   const l1Connector = await L1OptimismConnector.connect(l1Signer).deploy(
-    l1Target,
     externalContracts.optimism.l1CrossDomainMessenger,
-    { gasLimit: 5000000 }
+    500_000,
+    { gasLimit: 5_000_000 }
   )
 
   await logContractDeployed('L1Connector', l1Connector)
 
   const l2Connector = await L2OptimismConnector.connect(l2Signer).deploy(
-    l2Target,
     externalContracts.optimism.l2CrossDomainMessenger,
-    { gasLimit: 5000000 }
+    500_000,
+    { gasLimit: 5_000_000 }
   )
 
   await logContractDeployed('L2Connector', l2Connector)
@@ -115,10 +115,10 @@ async function deployConnectors(
   console.log('Connecting L1Connector and L2Connector...')
   await l1Connector
     .connect(l1Signer)
-    .setCounterpart(l2Connector.address, { gasLimit: 5000000 })
+    .initialize(l1Target, l2Connector.address, { gasLimit: 5000000 })
   await l2Connector
     .connect(l2Signer)
-    .setCounterpart(l1Connector.address, { gasLimit: 5000000 })
+    .initialize(l2Target, l1Connector.address, { gasLimit: 5000000 })
 
   console.log('L1Connector and L2Connector connected')
 
@@ -128,8 +128,6 @@ async function deployConnectors(
   }
 }
 
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
 main().catch(error => {
   console.error(error)
   process.exitCode = 1

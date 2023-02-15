@@ -10,10 +10,17 @@ abstract contract Connector {
     address public target;
     address public counterpart;
 
-    constructor(address _target) {
+    function initialize(address _target, address _counterpart) public {
+        require(target == address(0), "CNR: Target address has already been set");
+        require(counterpart == address(0), "CNR: Counterpart has already been set");
+        require(_target != address(0), "CNR: Target cannot be zero address");
+        require(_counterpart != address(0), "CNR: Counterpart cannot be zero address");
+
         target = _target;
+        counterpart = _counterpart;
     }
 
+    // ToDo: Forward value
     fallback () external {
         if (msg.sender == target) {
             _forwardCrossDomainMessage();

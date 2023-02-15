@@ -6,13 +6,7 @@ import "./polygon/tunnel/FxBaseChildTunnel.sol";
 import "./Connector.sol";
 
 contract L2PolygonConnector is Connector, FxBaseChildTunnel, ReentrancyGuard {
-    constructor(
-        address target,
-        address fxChild
-    )
-        Connector(target)
-        FxBaseChildTunnel(fxChild)
-    {}
+    constructor(address fxChild) FxBaseChildTunnel(fxChild) {}
 
     function _forwardCrossDomainMessage() internal override {
         _sendMessageToRoot(msg.data);

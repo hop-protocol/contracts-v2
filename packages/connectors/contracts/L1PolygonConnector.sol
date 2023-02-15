@@ -5,15 +5,11 @@ import "./polygon/tunnel/FxBaseRootTunnel.sol";
 import "./Connector.sol";
 
 contract L1PolygonConnector is Connector, FxBaseRootTunnel {
-    address public fxRootTunnel;
-
     constructor(
-        address target,
         address _checkpointManager,
         address _fxRoot,
         address _fxChildTunnel
     )
-        Connector(target)
         FxBaseRootTunnel(_checkpointManager, _fxRoot)
     {
         setFxChildTunnel(_fxChildTunnel);

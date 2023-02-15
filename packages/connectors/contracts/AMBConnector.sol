@@ -6,10 +6,10 @@ import "./interfaces/xDai/messengers/IArbitraryMessageBridge.sol";
 import "./Connector.sol";
 
 contract AMBConnector is Connector {
-    address public arbitraryMessageBridge;
+    address public immutable arbitraryMessageBridge;
     uint256 public immutable defaultGasLimit;
 
-    constructor(address target, address _arbitraryMessageBridge, uint256 _defaultGasLimit) Connector(target) {
+    constructor(address _arbitraryMessageBridge, uint256 _defaultGasLimit) {
         arbitraryMessageBridge = _arbitraryMessageBridge;
         defaultGasLimit = _defaultGasLimit;
     }

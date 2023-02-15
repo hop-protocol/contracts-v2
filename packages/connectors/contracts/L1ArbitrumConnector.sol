@@ -8,9 +8,9 @@ import "./interfaces/arbitrum/messengers/IOutbox.sol";
 import "./Connector.sol";
 
 contract L1ArbitrumConnector is Connector {
-    address public inbox;
+    address public immutable inbox;
 
-    constructor(address target, address _inbox) Connector(target) {
+    constructor(address _inbox) {
         inbox = _inbox;
     }
 

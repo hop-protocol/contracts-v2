@@ -15,7 +15,9 @@ contract PingPong {
         _;
     }
 
-    constructor(address _counterpart) {
+    function setCounterpart(address _counterpart) external {
+        require(counterpart == address(0), "PingPong: counterpart already set");
+        require(_counterpart != address(0), "PingPong: counterpart cannot be zero address");
         counterpart = _counterpart;
     }
 

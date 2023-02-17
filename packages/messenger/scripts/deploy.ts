@@ -98,7 +98,7 @@ async function deployConnectors(
 
   const l1Connector = await L1OptimismConnector.connect(l1Signer).deploy(
     externalContracts.optimism.l1CrossDomainMessenger,
-    500_000,
+    5_000_000,
     { gasLimit: 5_000_000 }
   )
 

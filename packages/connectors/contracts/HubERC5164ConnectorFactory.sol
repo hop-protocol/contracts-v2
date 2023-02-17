@@ -8,7 +8,7 @@ import "@hop-protocol/ERC5164/contracts/ISingleMessageDispatcher.sol";
 contract HubERC5164ConnectorFactory is ERC5164ConnectorFactory {
     constructor(address _erc5164Messenger) ERC5164ConnectorFactory(_erc5164Messenger) {}
 
-    function connect(
+    function connectTargets(
         uint256 chainId1,
         address target1,
         uint256 chainId2,
@@ -50,6 +50,7 @@ contract HubERC5164ConnectorFactory is ERC5164ConnectorFactory {
                     "deployConnector(address,uint256,address,address)",
                     target,
                     couterpartChainId,
+                    calculatedAddress,
                     counterpartTarget
                 )
             );

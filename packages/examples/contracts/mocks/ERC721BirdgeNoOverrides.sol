@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 
 import "../token/ERC721/ERC721Bridge.sol";
 
-contract ERC721BridgeNoIsHubMock is ERC721Bridge {
+contract ERC721BridgeNoOverrides is ERC721Bridge {
 
     uint256 private chainId;
 

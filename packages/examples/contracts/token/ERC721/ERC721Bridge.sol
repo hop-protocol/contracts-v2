@@ -165,7 +165,7 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
         // From ERC721Burnable
         bool isApprovedOrOwner = _isApprovedOrOwner(_msgSender(), tokenId);
 
-        return !isConfirmed || !isApprovedOrOwner;
+        return !isConfirmed || isApprovedOrOwner;
     }
 
     function shouldConfirmMint(uint256 tokenId) public view returns (bool) {

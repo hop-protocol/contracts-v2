@@ -68,17 +68,17 @@ class Fixture {
     fromSigner: Signer,
     overrides?: Partial<{
       to: string
-      tokenIds: BigNumberish[]
+      tokenId: BigNumberish
       chainId: BigNumberish
     }>
   ) {
     const chainId = overrides?.chainId ?? await fromSigner.getChainId()
     const from = await fromSigner.getAddress()
     const to = overrides?.to ?? from
-    const tokenIds = overrides?.tokenIds ?? []
+    const tokenId = overrides?.tokenId ?? 0
 
     const erc721Bridge = this.getErc721Bridges(chainId)
-    await erc721Bridge.connect(fromSigner).mint(to, tokenIds)
+    await erc721Bridge.connect(fromSigner).mint(to, tokenId)
   }
 
   async send(
@@ -87,17 +87,17 @@ class Fixture {
       fromChainId: BigNumberish
       toChainId: BigNumberish
       to: string
-      tokenIds: BigNumberish[]
+      tokenId: BigNumberish
     }>
   ) {
     const fromChainId = await fromSigner.getChainId()
     const from = await fromSigner.getAddress()
     const toChainId = overrides?.toChainId ?? this.chainIds[1]
     const to = overrides?.to ?? from
-    const tokenIds = overrides?.tokenIds ?? []
+    const tokenId = overrides?.tokenId ?? 0
 
     const erc721Bridge = this.getErc721Bridges(fromChainId)
-    await erc721Bridge.connect(fromSigner).send(toChainId, to, tokenIds)
+    await erc721Bridge.connect(fromSigner).send(toChainId, to, tokenId)
   }
 
   // Contract getters
@@ -115,7 +115,7 @@ class Fixture {
     return erc721Bridge.ownerOf(tokenId)
   }
 
-  async getTokenId(
+  async encodeTokenId(
     overrides?: Partial<{
       chainId: BigNumberish
       owner: string
@@ -127,7 +127,7 @@ class Fixture {
     const tokenId = overrides?.tokenId ?? 0
 
     const erc721Bridge = this.getErc721Bridges(chainId)
-    return erc721Bridge.getUpdatedTokenId(owner, tokenId)
+    return erc721Bridge.encodeTokenId(owner, tokenId)
   }
 
   async getTokenStatus(

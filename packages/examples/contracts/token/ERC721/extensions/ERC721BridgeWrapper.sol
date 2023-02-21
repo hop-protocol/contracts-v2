@@ -27,10 +27,6 @@ abstract contract ERC721BridgeWrapper is ERC721Bridge, IERC721Receiver {
         _underlying = _underlyingToken;
     }
 
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC721Bridge) returns (bool) {
-        return interfaceId == type(IERC721BridgeWrapper).interfaceId || super.supportsInterface(interfaceId);
-    }
-
     function isHub(uint256) public view override returns (bool) {
         return address(underlying()) == address(this);
     }

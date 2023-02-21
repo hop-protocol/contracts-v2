@@ -31,10 +31,6 @@ abstract contract ERC721BridgeNative is ERC721Bridge {
         maxTokenIndex = _maxTokenIndex;
     }
 
-    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return interfaceId == type(IERC721BridgeNative).interfaceId || super.supportsInterface(interfaceId);
-    }
-
     function isHub(uint256 tokenId) public view override returns (bool) {
         (, uint256 tokenIndex) = decodeTokenId(tokenId);
         bool isSpoke = minTokenIndex ==  maxTokenIndex;

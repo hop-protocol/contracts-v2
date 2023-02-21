@@ -13,16 +13,10 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
     mapping (uint256 => bool) public canonicalTokenIndexMinted;
     mapping (uint256 => bool) public supportedChainIds;
 
-    enum TokenState {
-        Unminted,
-        Minted,
-        Sent
-    }
-
     struct TokenStatus {
         bool confirmed;
-        TokenState tokenState;
-        uint256 toChainId;
+        uint256 tokenForwardedCount;
+        uint256[] toChainIds;
     }
 
     mapping (uint256 => TokenStatus) public tokenStatuses;
@@ -69,8 +63,7 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
                 uint256 updatedTokenId = getUpdatedTokenId(to, tokenId);
                 _sendConfirmationCrossChain(updatedTokenId, toChainId);
             } else {
-                tokenStatuses[tokenId].toChainId = toChainId;
-                tokenStatus.tokenState = TokenState.Sent;
+                tokenStatus.toChainIds.push(toChainId);
             }
 
             emit Sent(to, tokenId, toChainId);
@@ -83,11 +76,9 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
 
         // Only forward confirmation if the token has been sent to another chain
         TokenStatus storage tokenStatus = tokenStatuses[tokenId];
-        if (tokenStatus.tokenState == TokenState.Sent) {
-            _sendConfirmationCrossChain(tokenId, tokenStatus.toChainId);
-
-            tokenStatus.tokenState = TokenState.Unminted;
-            tokenStatus.toChainId = 0;
+        if (tokenStatus.toChainIds.length != tokenStatus.tokenForwardedCount){
+            _sendConfirmationCrossChain(tokenId, tokenStatus.toChainIds[tokenStatus.tokenForwardedCount]);
+            unchecked { ++tokenStatus.tokenForwardedCount; }
         } else {
             tokenStatus.confirmed = true;
         }
@@ -108,8 +99,6 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
             require(canMint(to, tokenId), "ERC721B: Cannot mint token");
 
             _safeMint(to, tokenId);
-
-            tokenStatuses[tokenId].tokenState = TokenState.Minted;
 
             (, uint256 tokenIndex) = decodeTokenId(tokenId);
             if (isHub(tokenId) && !canonicalTokenIndexMinted[tokenIndex]) {
@@ -159,14 +148,9 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
         return (owner, uint96(tokenIndex));
     }
 
-    function canMint(address to, uint256 tokenId) public view returns (bool) {
+    function canMint(address to, uint256 tokenId) public pure returns (bool) {
         (address owner,) = decodeTokenId(tokenId);
-        bool isOwnerCaller = owner == to;
-
-        // Cannot mint a token that is in flight
-        bool isMintable = tokenStatuses[tokenId].tokenState == TokenState.Unminted;
-
-        return isOwnerCaller && isMintable;
+        return owner == to;
     }
 
     function canBurn(uint256 tokenId) public view returns (bool) {

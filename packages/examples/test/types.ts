@@ -5,14 +5,9 @@ export type TokenIdEncodingParams = {
   tokenIndex: BigNumber
 }
 
-export enum TokenState {
-  Unminted,
-  Minted,
-  Sent,
-}
-
+// TODO: Get this from the contract ABI
 export type TokenStatuses = {
   confirmed: boolean
-  tokenState: TokenState
-  toChainId: BigNumber
+  tokenForwardedCount: BigNumber
+  toChainId: BigNumber[]
 }

@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { BigNumber, Signer } from 'ethers'
+import { BigNumber, BigNumberish, Signer } from 'ethers'
 import { ethers } from 'hardhat'
 import {
   DEFAULT_CHAIN_ID,
@@ -8,7 +8,6 @@ import {
   DEFAULT_TOKEN_SYMBOL,
 } from './constants'
 import { generateTokenId } from './utils'
-import { TokenState } from './types'
 import Fixture from './Fixture'
 
 type Defaults = {
@@ -73,12 +72,7 @@ describe('ERC721Bridge', function () {
 
       expect(owner).to.eq(await sender.getAddress())
 
-      await expectTokenStatus(
-        _chainId,
-        defaults.tokenId,
-        true,
-        TokenState.Minted
-      )
+      await expectTokenStatus(_chainId, defaults.tokenId, true)
     })
 
     it('Should mint two tokens at the destination', async function () {
@@ -96,7 +90,7 @@ describe('ERC721Bridge', function () {
           tokenId,
         })
         expect(owner).to.eq(await sender.getAddress())
-        await expectTokenStatus(_chainId, tokenId, false, TokenState.Minted)
+        await expectTokenStatus(_chainId, tokenId, false)
       }
     })
 
@@ -115,19 +109,8 @@ describe('ERC721Bridge', function () {
         })
         expect(owner).to.eq(await sender.getAddress())
 
-        const tokenStatus = await fixture.getTokenStatus({
-          chainId,
-          tokenId: defaults.tokenId,
-        })
-
-        expect(tokenStatus.tokenState).to.eq(TokenState.Minted)
         const isConfirmed = chainId.eq(DEFAULT_CHAIN_ID) ? true : false
-        await expectTokenStatus(
-          chainId,
-          defaults.tokenId,
-          isConfirmed,
-          TokenState.Minted
-        )
+        await expectTokenStatus(chainId, defaults.tokenId, isConfirmed)
       }
     })
   })
@@ -149,12 +132,7 @@ describe('ERC721Bridge', function () {
         tokenIds: defaults.tokenIds,
       })
 
-      await expectTokenStatus(
-        toChainId,
-        defaults.tokenId,
-        true,
-        TokenState.Unminted
-      )
+      await expectTokenStatus(toChainId, defaults.tokenId, true)
     })
 
     it('Should mint a token on both chains then send it to the destination and confirm', async function () {
@@ -165,12 +143,7 @@ describe('ERC721Bridge', function () {
         chainId: toChainId,
       })
 
-      await expectTokenStatus(
-        toChainId,
-        defaults.tokenId,
-        false,
-        TokenState.Minted
-      )
+      await expectTokenStatus(toChainId, defaults.tokenId, false)
 
       await fixture.send(sender, {
         toChainId,
@@ -178,12 +151,7 @@ describe('ERC721Bridge', function () {
         tokenIds: defaults.tokenIds,
       })
 
-      await expectTokenStatus(
-        toChainId,
-        defaults.tokenId,
-        true,
-        TokenState.Minted
-      )
+      await expectTokenStatus(toChainId, defaults.tokenId, true)
     })
 
     it('Should not send a token to an unsupported chain', async function () {
@@ -203,7 +171,7 @@ async function expectTokenStatus(
   chainId: BigNumber,
   tokenId: BigNumber,
   isConfirmed: boolean,
-  tokenState: TokenState
+  tokenForwardedCount: BigNumberish = 0
 ): Promise<void> {
   const tokenStatus = await fixture.getTokenStatus({
     chainId,
@@ -211,5 +179,5 @@ async function expectTokenStatus(
   })
 
   expect(tokenStatus.confirmed).to.eq(isConfirmed)
-  expect(tokenStatus.tokenState).to.eq(tokenState)
+  expect(tokenStatus.tokenForwardedCount).to.eq(tokenForwardedCount)
 }

@@ -54,7 +54,7 @@ describe('Token ID', function () {
 
   it('Should generate a new token ID for a new recipient and subsequently return to the old token ID', async function () {
     const newRecipient = '0x0000000000000000000000000000000000000123'
-    let newTokenId = await erc721Bridge.getUpdatedTokenId(
+    let newTokenId = await erc721Bridge.encodeTokenId(
       newRecipient,
       defaultTokenId
     )
@@ -66,7 +66,7 @@ describe('Token ID', function () {
     expect(newTokenId).to.equal(derivedTokenId)
 
     // Re-calculate the old ID based on the new data
-    newTokenId = await erc721Bridge.getUpdatedTokenId(
+    newTokenId = await erc721Bridge.encodeTokenId(
       tokenIdEncodingValues.address,
       defaultTokenId
     )

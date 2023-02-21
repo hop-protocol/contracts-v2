@@ -61,8 +61,8 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
             TokenStatus storage tokenStatus = tokenStatuses[tokenId];
             if (tokenStatus.confirmed) {
                 tokenStatus.confirmed = false;
-                uint256 updatedTokenId = getUpdatedTokenId(to, tokenId);
-                _sendConfirmationCrossChain(updatedTokenId, toChainId);
+                uint256 newTokenId = encodeTokenId(to, tokenId);
+                _sendConfirmationCrossChain(newTokenId, toChainId);
             } else {
                 tokenStatus.toChainIds.push(toChainId);
             }
@@ -143,11 +143,16 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
 
     }
 
+    function encodeTokenId(address to, uint256 tokenId) public pure returns (uint256) {
+        (, uint256 tokenIndex) = decodeTokenId(tokenId);
+        if (tokenIndex > type(uint96).max) revert TokenIndexTooLarge(tokenIndex);
+        return uint256(bytes32(abi.encodePacked(to, uint96(tokenIndex))));
+    }
 
-    function decodeTokenId(uint256 tokenId) public pure returns (address, uint96) {
+    function decodeTokenId(uint256 tokenId) public pure returns (address, uint256) {
         address owner = address(uint160(tokenId >> 96));
         uint256 tokenIndex = tokenId & 0xffffffffffffffffffffffff;
-        return (owner, uint96(tokenIndex));
+        return (owner, tokenIndex);
     }
 
     function canMint(address to, uint256 tokenId) public pure returns (bool) {
@@ -168,11 +173,6 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
 
     function getChainId() public view virtual returns (uint256) {
         return block.chainid;
-    }
-
-    function getUpdatedTokenId(address to, uint256 tokenId) public pure returns (uint256) {
-        (, uint96 tokenIndex) = decodeTokenId(tokenId);
-        return uint256(bytes32(abi.encodePacked(to, tokenIndex)));
     }
 
     // Internal Functions

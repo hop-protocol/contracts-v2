@@ -62,7 +62,7 @@ abstract contract ERC721BridgeWrapper is ERC721Bridge, IERC721Receiver {
         uint256 length = tokenIds.length;
         for (uint256 i = 0; i < length; ++i) {
             uint256 tokenId = tokenIds[i];
-            (, uint96 tokenIndex) = decodeTokenId(tokenId);
+            (, uint256 tokenIndex) = decodeTokenId(tokenId);
 
             // This is an "unsafe" transfer that doesn't call any hook on the receiver. With underlying() being trusted
             // (by design of this contract) and no other contracts expected to be called from there, we are safe.
@@ -82,7 +82,7 @@ abstract contract ERC721BridgeWrapper is ERC721Bridge, IERC721Receiver {
         uint256 length = tokenIds.length;
         for (uint256 i = 0; i < length; ++i) {
             uint256 tokenId = tokenIds[i];
-            (, uint96 tokenIndex) = decodeTokenId(tokenId);
+            (, uint256 tokenIndex) = decodeTokenId(tokenId);
             TokenStatus storage tokenStatus = tokenStatuses[tokenId];
             if (!tokenStatus.confirmed) revert NotConfirmed(tokenId);
 

@@ -24,7 +24,7 @@ contract ERC721BridgeMock is ERC721Bridge {
             _messengerAddress
         )
     {
-        if (_maxTokenIndex > type(uint96).max) revert InvalidTokenIndex(_maxTokenIndex);
+        if (_maxTokenIndex > type(uint96).max) revert TokenIndexTooLarge(_maxTokenIndex);
         maxTokenIndex = _maxTokenIndex;
         chainId = _chainId;
     }
@@ -34,7 +34,7 @@ contract ERC721BridgeMock is ERC721Bridge {
     }
 
     function isHub(uint256 tokenId) public view override returns (bool) {
-        (, uint96 tokenIndex) = decodeTokenId(tokenId);
+        (, uint256 tokenIndex) = decodeTokenId(tokenId);
         return tokenIndex < maxTokenIndex;
     }
 

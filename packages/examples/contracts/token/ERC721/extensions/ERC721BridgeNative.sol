@@ -26,7 +26,7 @@ abstract contract ERC721BridgeNative is ERC721Bridge {
         )
     {
         if (_minTokenIndex > _maxTokenIndex) revert InvalidTokenIndexes(_minTokenIndex, _maxTokenIndex);
-        if (_maxTokenIndex > type(uint96).max) revert InvalidTokenIndex(_maxTokenIndex);
+        if (_maxTokenIndex > type(uint96).max) revert TokenIndexTooLarge(_maxTokenIndex);
         minTokenIndex = _minTokenIndex;
         maxTokenIndex = _maxTokenIndex;
     }
@@ -36,7 +36,7 @@ abstract contract ERC721BridgeNative is ERC721Bridge {
     }
 
     function isHub(uint256 tokenId) public view override returns (bool) {
-        (, uint96 tokenIndex) = decodeTokenId(tokenId);
+        (, uint256 tokenIndex) = decodeTokenId(tokenId);
         bool isSpoke = minTokenIndex ==  maxTokenIndex;
         bool isTokenOnHub = (
             tokenIndex >= minTokenIndex &&

@@ -162,7 +162,7 @@ describe('ERC721Bridge', function () {
           to: await sender.getAddress(),
           tokenIds: defaults.tokenIds,
         })
-      ).to.be.revertedWith('ERC721B: Must send to a supported chain')
+      ).to.be.revertedWith(`UnsupportedChainId(${unsupportedChainId})`)
     })
   })
 })

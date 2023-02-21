@@ -25,8 +25,8 @@ abstract contract ERC721BridgeNative is ERC721Bridge {
             _messengerAddress
         )
     {
-        require(_minTokenIndex <= _maxTokenIndex, "ERC721BN: minTokenIndex must be less than maxTokenIndex");
-        require(_maxTokenIndex <= type(uint96).max, "ERC721BN: maxTokenIndex must be less than 2**96 - 1");
+        if (_minTokenIndex > _maxTokenIndex) revert InvalidTokenIndexes(_minTokenIndex, _maxTokenIndex);
+        if (_maxTokenIndex > type(uint96).max) revert InvalidTokenIndex(_maxTokenIndex);
         minTokenIndex = _minTokenIndex;
         maxTokenIndex = _maxTokenIndex;
     }

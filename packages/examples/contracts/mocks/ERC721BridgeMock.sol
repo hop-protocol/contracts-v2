@@ -24,7 +24,7 @@ contract ERC721BridgeMock is ERC721Bridge {
             _messengerAddress
         )
     {
-        require(_maxTokenIndex <= type(uint96).max, "ERC721B: maxTokenIndex must be less than 2**96 - 1");
+        if (_maxTokenIndex > type(uint96).max) revert InvalidTokenIndex(_maxTokenIndex);
         maxTokenIndex = _maxTokenIndex;
         chainId = _chainId;
     }

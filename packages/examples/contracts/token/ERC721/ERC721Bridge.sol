@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 
 import "../../interfaces/IERC5164.sol";
 import "../../interfaces/IERC721Bridge.sol";
+import "./libraries/Error.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
 abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
@@ -33,8 +34,8 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
         messengerAddress = _messengerAddress;
         for (uint256 i = 0; i < _supportedChainIds.length; i++) {
             uint256 chainId = _supportedChainIds[i];
-            require(chainId != 0, "ERC721B: ChainId 0 is not supported");
-            require(chainId != getChainId(), "ERC721B: Supported chainIds cannot include the current chainId");
+            if (chainId == 0) revert NoZeroChainId();
+            if (chainId == getChainId()) revert InvalidChainId(chainId);
             supportedChainIds[chainId] = true;
         }
     }
@@ -51,8 +52,8 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
         public
         virtual
     {
-        require(tokenIds.length > 0, "ERC721B: Need at least one tokenId");
-        require(supportedChainIds[toChainId], "ERC721B: Must send to a supported chain");
+        if (tokenIds.length == 0) revert NoEmptyTokenIds();
+        if (!supportedChainIds[toChainId]) revert UnsupportedChainId(toChainId);
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
             uint256 tokenId = tokenIds[i];
@@ -72,20 +73,6 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
         burn(tokenIds);
     }
 
-    function confirm(uint256 tokenId) external {
-
-        // Only forward confirmation if the token has been sent to another chain
-        TokenStatus storage tokenStatus = tokenStatuses[tokenId];
-        if (tokenStatus.toChainIds.length != tokenStatus.tokenForwardedCount){
-            _sendConfirmationCrossChain(tokenId, tokenStatus.toChainIds[tokenStatus.tokenForwardedCount]);
-            unchecked { ++tokenStatus.tokenForwardedCount; }
-        } else {
-            tokenStatus.confirmed = true;
-        }
-
-        // emit Confirmed(to, tokenId);
-    }
-
     function mint(
         address to,
         uint256[] calldata tokenIds
@@ -93,10 +80,10 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
         public
         virtual
     {
-        require(tokenIds.length > 0, "ERC721B: Need at least one tokenId");
+        if (tokenIds.length == 0) revert NoEmptyTokenIds();
         for (uint256 i = 0; i < tokenIds.length; i++) {
             uint256 tokenId = tokenIds[i];
-            require(canMint(to, tokenId), "ERC721B: Cannot mint token");
+            if (!canMint(to, tokenId)) revert CannotMint(to, tokenId);
 
             _safeMint(to, tokenId);
 
@@ -116,14 +103,15 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
         public
         virtual
     {
-        require(tokenIds.length > 0, "ERC721B: Need at least one tokenId");
-
+        if (tokenIds.length == 0) revert NoEmptyTokenIds();
         for (uint256 i = 0; i < tokenIds.length; i++) {
             uint256 tokenId = tokenIds[i];
-            require(canBurn(tokenId), "ERC721B: Cannot burn token");
+            if (!canBurn(tokenId)) revert CannotBurn(tokenId);
 
             // From ERC721Burnable
-            require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721B: caller is not token owner or approved");
+            if (!_isApprovedOrOwner(_msgSender(), tokenId)) {
+                revert NotApprovedOrOwner(_msgSender(), tokenId);
+            }
             _burn(tokenId);
 
             tokenStatuses[tokenId].tokenState = TokenState.Unminted;
@@ -142,6 +130,20 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
         send(toChainId, to, tokenIds);
     }
 
+    function confirm(uint256 tokenId) external {
+
+        // Only forward confirmation if the token has been sent to another chain
+        TokenStatus storage tokenStatus = tokenStatuses[tokenId];
+        if (tokenStatus.toChainIds.length != tokenStatus.tokenForwardedCount){
+            _sendConfirmationCrossChain(tokenId, tokenStatus.toChainIds[tokenStatus.tokenForwardedCount]);
+            unchecked { ++tokenStatus.tokenForwardedCount; }
+        } else {
+            tokenStatus.confirmed = true;
+        }
+
+    }
+
+
     function decodeTokenId(uint256 tokenId) public pure returns (address, uint96) {
         address owner = address(uint160(tokenId >> 96));
         uint256 tokenIndex = tokenId & 0xffffffffffffffffffffffff;
@@ -159,7 +161,7 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
     }
 
     function isHub(uint256) public view virtual returns (bool) {
-        require(false, "ERC721B: isHub not implemented");
+        if (true) revert NotImplemented();
     }
 
     // Getters

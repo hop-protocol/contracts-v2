@@ -84,9 +84,12 @@ abstract contract ERC721BridgeWrapper is ERC721Bridge, IERC721Receiver {
             uint256 tokenId = tokenIds[i];
             (, uint96 tokenIndex) = decodeTokenId(tokenId);
             TokenStatus storage tokenStatus = tokenStatuses[tokenId];
-            require(tokenStatus.confirmed, "ERC721BW: token not confirmed");
+            if (!tokenStatus.confirmed) revert NotConfirmed(tokenId);
 
-            require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721BW: caller is not token owner or approved");
+            // From ERC721Burnable
+            if (!_isApprovedOrOwner(_msgSender(), tokenId)) {
+                revert NotApprovedOrOwner(_msgSender(), tokenId);
+            }
 
             // Checks were already performed at this point, and there's no way to retake ownership or approval from
             // the wrapped tokenId after this point, so it's safe to remove the reentrancy check for the next line.

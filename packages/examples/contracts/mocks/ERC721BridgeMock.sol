@@ -40,11 +40,11 @@ contract ERC721BridgeMock is ERC721Bridge {
 
     function mint(
         address to,
-        uint256[] calldata tokenIds
+        uint256 tokenId
     )
         public
         override
     {
-        super.mint(to, tokenIds);
+        super.mint(to, tokenId);
     }
 }

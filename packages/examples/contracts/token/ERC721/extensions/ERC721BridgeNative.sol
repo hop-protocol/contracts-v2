@@ -9,6 +9,7 @@ abstract contract ERC721BridgeNative is ERC721Bridge {
 
     uint256 public immutable minTokenIndex;
     uint256 public immutable maxTokenIndex;
+    mapping (uint256 => bool) public initialMintComplete;
 
     constructor(
         string memory _name,
@@ -39,5 +40,16 @@ abstract contract ERC721BridgeNative is ERC721Bridge {
             tokenIndex <= maxTokenIndex
         );
         return !isSpoke && isTokenOnHub;
+    }
+
+    function isConfirmableMint(uint256 tokenId) public view override returns (bool) {
+        // A mint is confirmable if the index has not yet been minted
+        (, uint256 tokenIndex) = decodeTokenId(tokenId);
+        return !initialMintComplete[tokenIndex];
+    }
+
+    function _afterTokenTransfer(address, address, uint256 tokenId, uint256) internal override {
+        (, uint256 tokenIndex) = decodeTokenId(tokenId);
+        initialMintComplete[tokenIndex] = true;
     }
 }

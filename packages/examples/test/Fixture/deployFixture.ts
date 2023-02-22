@@ -4,7 +4,7 @@ import type {
   ERC721Bridge as IERC721Bridge,
   MessengerMock as IMessengerMock,
 } from '../../typechain'
-import { DEFAULT_CHAIN_ID, DEFAULT_MAX_TOKEN_INDEX } from '../constants'
+import { DEFAULT_CHAIN_ID } from '../constants'
 import Fixture, { Defaults } from '.'
 
 async function deployFixture(
@@ -25,9 +25,7 @@ async function deployFixture(
       return true
     })
 
-    const maxTokenIndex = chainId.eq(DEFAULT_CHAIN_ID)
-      ? DEFAULT_MAX_TOKEN_INDEX
-      : 0
+    const isSpokeChain = chainId.eq(DEFAULT_CHAIN_ID) ? false : true
     const messengerMock = await deployMessengerMock(chainId)
     const erc721Bridge = await deployErc721Bridge(
       _name,
@@ -35,7 +33,7 @@ async function deployFixture(
       chainIdsToSupport,
       messengerMock.address,
       chainId,
-      maxTokenIndex
+      isSpokeChain
     )
 
     messengerMocks.push(messengerMock)
@@ -70,7 +68,7 @@ async function deployErc721Bridge(
   _chainIds: BigNumberish[],
   messengerAddress: string,
   chainId: BigNumber,
-  maxTokenIndex: BigNumberish = DEFAULT_MAX_TOKEN_INDEX
+  isSpokeChain: boolean
 ): Promise<IERC721Bridge> {
   const Erc721Bridge = await ethers.getContractFactory('ERC721BridgeMock')
 
@@ -79,8 +77,8 @@ async function deployErc721Bridge(
     _symbol,
     _chainIds,
     messengerAddress,
-    maxTokenIndex,
-    chainId
+    chainId,
+    isSpokeChain
   ) as Promise<IERC721Bridge>
 }
 

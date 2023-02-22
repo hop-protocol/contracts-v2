@@ -23,20 +23,15 @@ abstract contract ERC721BridgeWrapper is ERC721Bridge, IERC721Receiver {
             _name,
             _symbol,
             _supportedChainIds,
-            _messengerAddress,
-            0
+            _messengerAddress
         )
     {
         _underlying = _underlyingToken;
         _confirmableTokenId = _DEFAULT_TOKEN_ID;
     }
 
-    function isHub(uint256) public view override returns (bool) {
-        return address(underlying()) == address(this);
-    }
-
-    function isConfirmableMint(uint256 tokenId) public view override returns (bool) {
-        return tokenId == _confirmableTokenId;
+    function isSpoke() public view virtual override returns (bool) {
+        return address(underlying()) == address(0);
     }
 
     function depositForAndSend(
@@ -114,6 +109,10 @@ abstract contract ERC721BridgeWrapper is ERC721Bridge, IERC721Receiver {
 
     function underlying() public view virtual returns (IERC721) {
         return _underlying;
+    }
+
+    function _isTokenIdConfirmable(uint256 tokenId) internal view virtual override returns (bool) {
+        return tokenId == _confirmableTokenId;
     }
 
     function _afterTokenMint(uint256 tokenId) internal override {

@@ -7,34 +7,40 @@ import "../ERC721Bridge.sol";
 abstract contract ERC721BridgeMultiHub is ERC721Bridge {
 
     uint256 public immutable minTokenIndex;
+    uint256 public immutable maxTokenIndex;
 
     constructor(
         string memory _name,
         string memory _symbol,
         uint256[] memory _supportedChainIds,
         address _messengerAddress,
-        uint256 _maxTokenIndex,
-        uint256 _minTokenIndex
+        uint256 _minTokenIndex,
+        uint256 _maxTokenIndex
     )
         ERC721Bridge(
             _name,
             _symbol,
             _supportedChainIds,
-            _messengerAddress,
-            _maxTokenIndex
+            _messengerAddress
         )
     {
+        if (_maxTokenIndex > type(uint96).max) revert TokenIndexTooLarge(_maxTokenIndex);
         if (_minTokenIndex > _maxTokenIndex) revert InvalidTokenIndexes(_minTokenIndex, _maxTokenIndex);
         minTokenIndex = _minTokenIndex;
+        maxTokenIndex = _maxTokenIndex;
     }
 
-    function isHub(uint256 tokenId) public view override returns (bool) {
+    function isSpoke() public view virtual override returns (bool) {
+        // Do not check if these are equal, since it is possible to have a 1 of 1 NFT with equal, non-zero min/max token indexes
+        return minTokenIndex == 0 && maxTokenIndex == 0;
+    }
+
+    function _isTokenIdConfirmable(uint256 tokenId) internal view virtual override returns (bool) {
         (, uint256 tokenIndex) = decodeTokenId(tokenId);
-        bool isSpoke = minTokenIndex == maxTokenIndex;
-        bool isTokenOnHub = (
+        bool isTokenIndexWithinBounds = (
             tokenIndex >= minTokenIndex &&
             tokenIndex <= maxTokenIndex
         );
-        return !isSpoke && isTokenOnHub;
+        return isTokenIndexWithinBounds;
     }
 }

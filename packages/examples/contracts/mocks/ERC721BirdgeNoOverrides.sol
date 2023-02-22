@@ -13,15 +13,13 @@ contract ERC721BridgeNoOverrides is ERC721Bridge {
         string memory _symbol,
         uint256[] memory _supportedChainIds,
         address _messengerAddress,
-        uint256 _maxTokenIndex,
         uint256 _chainId
     )
         ERC721Bridge(
             _name,
             _symbol,
             _supportedChainIds,
-            _messengerAddress,
-            _maxTokenIndex
+            _messengerAddress
         )
     {
         chainId = _chainId;

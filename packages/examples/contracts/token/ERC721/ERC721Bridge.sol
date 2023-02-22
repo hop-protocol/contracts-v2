@@ -39,10 +39,10 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
 
     /* constants */
     address public immutable messengerAddress;
-    uint256 public immutable maxTokenIndex;
 
     /* config */
     mapping (uint256 => bool) public supportedChainIds;
+    mapping (uint256 => address) public targetAddressByChainId;
 
     /* state */
     mapping (uint256 => TokenStatus) public tokenStatuses;
@@ -57,21 +57,18 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
         string memory _name,
         string memory _symbol,
         uint256[] memory _supportedChainIds,
-        address _messengerAddress,
-        uint256 _maxTokenIndex
-
+        address _messengerAddress
     )
         ERC721(_name, _symbol)
     {
-        if (_maxTokenIndex > type(uint96).max) revert TokenIndexTooLarge(_maxTokenIndex);
         messengerAddress = _messengerAddress;
-        maxTokenIndex = _maxTokenIndex;
 
         for (uint256 i = 0; i < _supportedChainIds.length; i++) {
             uint256 chainId = _supportedChainIds[i];
             if (chainId == 0) revert NoZeroChainId();
             if (chainId == getChainId()) revert InvalidChainId(chainId);
             supportedChainIds[chainId] = true;
+            targetAddressByChainId[chainId] = address(this);
         }
     }
 
@@ -150,8 +147,8 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
         // Only forward confirmation if the token has been sent to another chain
         TokenStatus storage tokenStatus = tokenStatuses[tokenId];
         if (tokenStatus.tokenForwardCount != tokenStatus.tokenForwardDatas.length){
-            (uint256 toChainId, uint256 tokenId) = getNextTokenForwardData(tokenId);
-            _sendConfirmationCrossChain(toChainId, tokenId);
+            (uint256 toChainId, uint256 tokenIdToForward) = getNextTokenForwardData(tokenId);
+            _sendConfirmationCrossChain(toChainId, tokenIdToForward);
             unchecked { ++tokenStatus.tokenForwardCount; }
         } else {
             tokenStatus.confirmed = true;
@@ -187,21 +184,23 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
     }
 
     function shouldConfirmMint(uint256 tokenId) public view returns (bool) {
-        return isHub(tokenId) && isConfirmableMint(tokenId);
+        return !isSpoke() && isTokenIdConfirmable(tokenId);
     }
 
-    function isHub(uint256 tokenId) public view virtual returns (bool) {
-        // TODO: Verify that this is valid in all cases
-        (, uint256 tokenIndex) = decodeTokenId(tokenId);
-        bool isSpoke = maxTokenIndex == 0;
-        bool isTokenOnHub = tokenIndex <= maxTokenIndex;
-        return !isSpoke && isTokenOnHub;
+    function isSpoke() public view virtual returns (bool) {
+        if (true) revert NotImplemented();
     }
 
-    function isConfirmableMint(uint256 tokenId) public view virtual returns (bool) {
-        // A mint is confirmable if the index has not yet been minted
+    function isTokenIdConfirmable(uint256 tokenId) public view virtual returns (bool) {
+        // In most cases, a mint is confirmable if the index has not yet been minted on the hub
+        bool initialMintComplete = isInitialMintOnHubComplete(tokenId);
+        bool isConfirmable = _isTokenIdConfirmable(tokenId);
+        return !initialMintComplete && isConfirmable;
+    }
+
+    function isInitialMintOnHubComplete(uint256 tokenId) public view returns (bool) {
         (, uint256 tokenIndex) = decodeTokenId(tokenId);
-        return !initialMintOnHubComplete[tokenIndex];
+        return initialMintOnHubComplete[tokenIndex];
     }
 
     /* Batch */
@@ -277,17 +276,21 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
     /* Internal */
     function _sendConfirmationCrossChain(uint256 toChainId, uint256 tokenId) internal {
         bytes memory data = abi.encodeWithSelector(this.confirm.selector, tokenId);
-        IERC5164(messengerAddress).dispatchMessage(toChainId, address(this), data);
+        address targetAddress = targetAddressByChainId[toChainId];
+        IERC5164(messengerAddress).dispatchMessage(toChainId, targetAddress, data);
         emit ConfirmationSent(toChainId, tokenId);
     }
 
     function _afterTokenMint(uint256 tokenId) internal virtual {
         // Initial mint is not a concern for spoke chains
-        if (!isHub(tokenId)) return;
+        if (isSpoke()) return;
 
         (, uint256 tokenIndex) = decodeTokenId(tokenId);
         if (initialMintOnHubComplete[tokenIndex]) return;
 
         initialMintOnHubComplete[tokenIndex] = true;
+    }
+    function _isTokenIdConfirmable(uint256) internal view virtual returns (bool) {
+        return true;
     }
 }

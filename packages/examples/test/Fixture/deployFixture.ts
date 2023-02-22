@@ -79,8 +79,8 @@ async function deployErc721Bridge(
     _symbol,
     _chainIds,
     messengerAddress,
-    chainId,
-    maxTokenIndex
+    maxTokenIndex,
+    chainId
   ) as Promise<IERC721Bridge>
 }
 

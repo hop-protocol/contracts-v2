@@ -39,12 +39,14 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
 
     /* constants */
     address public immutable messengerAddress;
+    uint256 public immutable maxTokenIndex;
 
     /* config */
     mapping (uint256 => bool) public supportedChainIds;
 
     /* state */
     mapping (uint256 => TokenStatus) public tokenStatuses;
+    mapping (uint256 => bool) public initialMintOnHubComplete;
 
     modifier noEmptyTokenIds(uint256[] memory tokenIds) {
         if (tokenIds.length == 0) revert NoEmptyTokenIds();
@@ -55,12 +57,16 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
         string memory _name,
         string memory _symbol,
         uint256[] memory _supportedChainIds,
-        address _messengerAddress
+        address _messengerAddress,
+        uint256 _maxTokenIndex
 
     )
         ERC721(_name, _symbol)
     {
+        if (_maxTokenIndex > type(uint96).max) revert TokenIndexTooLarge(_maxTokenIndex);
         messengerAddress = _messengerAddress;
+        maxTokenIndex = _maxTokenIndex;
+
         for (uint256 i = 0; i < _supportedChainIds.length; i++) {
             uint256 chainId = _supportedChainIds[i];
             if (chainId == 0) revert NoZeroChainId();
@@ -172,12 +178,18 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
         return isHub(tokenId) && isConfirmableMint(tokenId);
     }
 
-    function isHub(uint256) public view virtual returns (bool) {
-        if (true) revert NotImplemented();
+    function isHub(uint256 tokenId) public view virtual returns (bool) {
+        // TODO: Verify that this is valid in all cases
+        (, uint256 tokenIndex) = decodeTokenId(tokenId);
+        bool isSpoke = maxTokenIndex == 0;
+        bool isTokenOnHub = tokenIndex <= maxTokenIndex;
+        return !isSpoke && isTokenOnHub;
     }
 
-    function isConfirmableMint(uint256) public view virtual returns (bool) {
-        if (true) revert NotImplemented();
+    function isConfirmableMint(uint256 tokenId) public view virtual returns (bool) {
+        // A mint is confirmable if the index has not yet been minted
+        (, uint256 tokenIndex) = decodeTokenId(tokenId);
+        return !initialMintOnHubComplete[tokenIndex];
     }
 
 
@@ -248,5 +260,15 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
         bytes memory data = abi.encodeWithSelector(this.confirm.selector, tokenId);
         IERC5164(messengerAddress).dispatchMessage(toChainId, address(this), data);
         emit ConfirmationSent(toChainId, tokenId);
+    }
+
+    function _afterTokenTransfer(address, address, uint256 tokenId, uint256) internal virtual override {
+        // Initial mint is not a concern for spoke chains
+        if (!isHub(tokenId)) return;
+
+        (, uint256 tokenIndex) = decodeTokenId(tokenId);
+        if (initialMintOnHubComplete[tokenIndex]) return;
+
+        initialMintOnHubComplete[tokenIndex] = true;
     }
 }

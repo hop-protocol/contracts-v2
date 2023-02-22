@@ -19,3 +19,4 @@ error InvalidTokenIndexes(uint256 minTokenIndex, uint256 maxTokenIndex);
 
 // ERC721BridgeWrapper
 error NotConfirmed(uint256 tokenId);
+error CallerNotUnderlying(address caller);

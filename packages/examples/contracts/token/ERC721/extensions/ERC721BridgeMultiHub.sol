@@ -35,7 +35,7 @@ abstract contract ERC721BridgeMultiHub is ERC721Bridge {
         return minTokenIndex == 0 && maxTokenIndex == 0;
     }
 
-    function _isTokenIdConfirmable(uint256 tokenId) internal view virtual override returns (bool) {
+    function isTokenIdConfirmableAdditionalChecks(uint256 tokenId) public view virtual override returns (bool) {
         (, uint256 tokenIndex) = decodeTokenId(tokenId);
         bool isTokenIndexWithinBounds = (
             tokenIndex >= minTokenIndex &&

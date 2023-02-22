@@ -34,76 +34,65 @@ abstract contract ERC721BridgeWrapper is ERC721Bridge, IERC721Receiver {
         return address(underlying()) == address(0);
     }
 
+    function isTokenIdConfirmable(uint256 tokenId) public view virtual override returns (bool) {
+        return tokenId == _confirmableTokenId;
+    }
+
     function depositForAndSend(
         uint256 toChainId,
         address to,
-        uint256 tokenId
+        uint256[] memory tokenIds
     )
         public
     {
-        depositFor(to, tokenId);
-        send(toChainId, to, tokenId);
+        depositFor(to, tokenIds);
+        sendBatch(toChainId, to, tokenIds);
     }
 
     function mintAndWithdrawTo(
         address to,
-        uint256 tokenId
+        uint256[] memory tokenIds
     )
         public
     {
-
-
-        mint(to, tokenId);
-        withdrawTo(to, tokenId);
+        mintBatch(to, tokenIds);
+        withdrawTo(to, tokenIds);
     }
 
 
-    function depositFor(address to, uint256 tokenId) public returns (bool) {
-        (, uint256 tokenIndex) = decodeTokenId(tokenId);
+    function depositFor(address to, uint256[] memory tokenIds) public returns (bool) {
+        uint256 length = tokenIds.length;
+        for (uint256 i = 0; i < length; ++i) {
+            uint256 tokenId = tokenIds[i];
+            (, uint256 tokenIndex) = decodeTokenId(tokenId);
 
-        // This is an "unsafe" transfer that doesn't call any hook on the receiver. With underlying() being trusted
-        // (by design of this contract) and no other contracts expected to be called from there, we are safe.
-        // slither-disable-next-line reentrancy-no-eth
-        underlying().transferFrom(_msgSender(), address(this), tokenIndex);
-
-
-        // Replace with transient storage when available on all chains
-        _confirmableTokenId = tokenId;
-        mint(to, tokenId);
-        _confirmableTokenId = _DEFAULT_TOKEN_ID;
-
+            underlying().safeTransferFrom(_msgSender(), address(this), tokenIndex);
+            _mintWithConfirmationUpdate(to, tokenId);
+        }
         return true;
     }
 
-    function withdrawTo(address to, uint256 tokenId) public returns (bool) {
-        (, uint256 tokenIndex) = decodeTokenId(tokenId);
-        TokenStatus storage tokenStatus = tokenStatuses[tokenId];
-        if (!tokenStatus.confirmed) revert NotConfirmed(tokenId);
+    function withdrawTo(address to, uint256[] memory tokenIds) public returns (bool) {
+        uint256 length = tokenIds.length;
+        for (uint256 i = 0; i < length; ++i) {
+            uint256 tokenId = tokenIds[i];
+            (, uint256 tokenIndex) = decodeTokenId(tokenId);
 
-        // Checks were already performed at this point, and there's no way to retake ownership or approval from
-        // the wrapped tokenId after this point, so it's safe to remove the reentrancy check for the next line.
-        // slither-disable-next-line reentrancy-no-eth
-        underlying().safeTransferFrom(address(this), to, tokenIndex);
-
-        burn(tokenId);
-
-        // Withdrawing the underlying will always represent the canonical token, so this value can be reset so that
-        // the token can be burned
-        tokenStatus.confirmed = false;
-
+            _burnWithConfirmationUpdate(tokenId);
+            underlying().safeTransferFrom(address(this), to, tokenIndex);
+        }
         return true;
     }
 
     function onERC721Received(
         address,
-        address,
-        uint256,
+        address from,
+        uint256 tokenIndex,
         bytes memory
     ) public virtual override returns (bytes4) {
-        // NOTE: Consider using OZ logic here to mint the token. It would be convenient, but would require encoding of
-        // the sender and the index, which the contract is currently unconcerned with. If this design decision changes,
-        // update this function to reflect that.
-        // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC721/extensions/ERC721Wrapper.sol#L59-L78
+        if(address(underlying()) != _msgSender()) revert CallerNotUnderlying(msg.sender);
+        uint256 tokenId = encodeTokenIndex(from, tokenIndex);
+        _mintWithConfirmationUpdate(from, tokenId);
         return IERC721Receiver.onERC721Received.selector;
     }
 
@@ -111,8 +100,22 @@ abstract contract ERC721BridgeWrapper is ERC721Bridge, IERC721Receiver {
         return _underlying;
     }
 
-    function _isTokenIdConfirmable(uint256 tokenId) internal view virtual override returns (bool) {
-        return tokenId == _confirmableTokenId;
+    /* Internal */
+    function _mintWithConfirmationUpdate(address to, uint256 tokenId) internal {
+        // Replace with transient storage when available on all chains
+        _confirmableTokenId = tokenId;
+        mint(to, tokenId);
+        _confirmableTokenId = _DEFAULT_TOKEN_ID;
+    }
+
+    function _burnWithConfirmationUpdate(uint256 tokenId) internal {
+        TokenStatus storage tokenStatus = tokenStatuses[tokenId];
+        if (!tokenStatus.confirmed) revert NotConfirmed(tokenId);
+
+        burn(tokenId);
+        // Withdrawing the underlying will always represent the canonical token, so this value can be reset so that
+        // the token can be burned
+        tokenStatus.confirmed = false;
     }
 
     function _afterTokenMint(uint256 tokenId) internal override {

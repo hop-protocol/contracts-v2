@@ -86,7 +86,7 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
         if (!canMint(to, tokenId)) revert CannotMint(to, tokenId);
 
         // The confirmation check needs to be done before the mint so that an extension can override
-        // the _afterTokenMint hook and update state based on their implementation
+        // the _afterTokenMint hook and update state based on their implementation, if desired
         if (shouldConfirmMint(tokenId)) {
             tokenStatuses[tokenId].confirmed = true;
             emit TokenConfirmed(tokenId);
@@ -160,6 +160,10 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
 
     function encodeTokenId(address to, uint256 tokenId) public pure returns (uint256) {
         (, uint256 tokenIndex) = decodeTokenId(tokenId);
+        return encodeTokenIndex(to, tokenIndex);
+    }
+
+    function encodeTokenIndex(address to, uint256 tokenIndex) public pure returns (uint256) {
         if (tokenIndex > type(uint96).max) revert TokenIndexTooLarge(tokenIndex);
         return uint256(bytes32(abi.encodePacked(to, uint96(tokenIndex))));
     }
@@ -194,8 +198,8 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
     function isTokenIdConfirmable(uint256 tokenId) public view virtual returns (bool) {
         // In most cases, a mint is confirmable if the index has not yet been minted on the hub
         bool initialMintComplete = isInitialMintOnHubComplete(tokenId);
-        bool isConfirmable = _isTokenIdConfirmable(tokenId);
-        return !initialMintComplete && isConfirmable;
+        bool isConfirmableAdditionalChecks = isTokenIdConfirmableAdditionalChecks(tokenId);
+        return !initialMintComplete && isConfirmableAdditionalChecks;
     }
 
     function isInitialMintOnHubComplete(uint256 tokenId) public view returns (bool) {
@@ -203,43 +207,50 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
         return initialMintOnHubComplete[tokenIndex];
     }
 
+    function isTokenIdConfirmableAdditionalChecks(uint256) public view virtual returns (bool) {
+        return true;
+    }
+
     /* Batch */
     function sendBatch(
         uint256 toChainId,
         address to,
-        uint256[] calldata tokenIds
+        uint256[] memory tokenIds
     )
         public
         virtual
         noEmptyTokenIds(tokenIds)
     {
-        if (tokenIds.length == 0) revert NoEmptyTokenIds();
-        for (uint256 i = 0; i < tokenIds.length; i++) {
+        uint256 length = tokenIds.length;
+        if (length == 0) revert NoEmptyTokenIds();
+        for (uint256 i = 0; i < length; i++) {
             send(toChainId, to, tokenIds[i]);
         }
     }
 
     function mintBatch(
         address to,
-        uint256[] calldata tokenIds
+        uint256[] memory tokenIds
     )
         public
         virtual
         noEmptyTokenIds(tokenIds)
     {
-        for (uint256 i = 0; i < tokenIds.length; i++) {
+        uint256 length = tokenIds.length;
+        for (uint256 i = 0; i < length; i++) {
             mint(to, tokenIds[i]);
         }
     }
 
     function burnBatch(
-        uint256[] calldata tokenIds
+        uint256[] memory tokenIds
     )
         public
         virtual
         noEmptyTokenIds(tokenIds)
     {
-        for (uint256 i = 0; i < tokenIds.length; i++) {
+        uint256 length = tokenIds.length;
+        for (uint256 i = 0; i < length; i++) {
             burn(tokenIds[i]);
         }
     }
@@ -247,13 +258,14 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
     function mintAndSendBatch(
         uint256 toChainId,
         address to,
-        uint256[] calldata tokenIds
+        uint256[] memory tokenIds
     )
         public
         virtual
         noEmptyTokenIds(tokenIds)
     {
-        for (uint256 i = 0; i < tokenIds.length; i++) {
+        uint256 length = tokenIds.length;
+        for (uint256 i = 0; i < length; i++) {
             mintAndSend(toChainId, to, tokenIds[i]);
         }
     }
@@ -289,8 +301,5 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
         if (initialMintOnHubComplete[tokenIndex]) return;
 
         initialMintOnHubComplete[tokenIndex] = true;
-    }
-    function _isTokenIdConfirmable(uint256) internal view virtual returns (bool) {
-        return true;
     }
 }

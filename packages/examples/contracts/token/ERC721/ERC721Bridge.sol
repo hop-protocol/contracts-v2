@@ -132,6 +132,18 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
         emit TokenSent(toChainId, to, tokenId, newTokenId);
     }
 
+    function mintAndSend(
+        uint256 toChainId,
+        address to,
+        uint256 tokenId
+    )
+        public
+        virtual
+    {
+        mint(to, tokenId);
+        send(toChainId, to, tokenId);
+    }
+
 
     function confirm(uint256 tokenId) external {
 
@@ -193,8 +205,8 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
         return !initialMintOnHubComplete[tokenIndex];
     }
 
-
-    function sendMany(
+    /* Batch */
+    function sendBatch(
         uint256 toChainId,
         address to,
         uint256[] calldata tokenIds
@@ -209,7 +221,7 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
         }
     }
 
-    function mintMany(
+    function mintBatch(
         address to,
         uint256[] calldata tokenIds
     )
@@ -222,7 +234,7 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
         }
     }
 
-    function burnMany(
+    function burnBatch(
         uint256[] calldata tokenIds
     )
         public
@@ -234,7 +246,7 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
         }
     }
 
-    function mintAndSendMany(
+    function mintAndSendBatch(
         uint256 toChainId,
         address to,
         uint256[] calldata tokenIds
@@ -244,19 +256,16 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
         noEmptyTokenIds(tokenIds)
     {
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            mint(to, tokenIds[i]);
-            send(toChainId, to, tokenIds[i]);
+            mintAndSend(toChainId, to, tokenIds[i]);
         }
     }
 
-    // Getters
-
+    /* Getters */
     function getChainId() public view virtual returns (uint256) {
         return block.chainid;
     }
 
-    // Internal Functions
-
+    /* Internal */
     function _sendConfirmationCrossChain(uint256 toChainId, uint256 tokenId) internal {
         bytes memory data = abi.encodeWithSelector(this.confirm.selector, tokenId);
         IERC5164(messengerAddress).dispatchMessage(toChainId, address(this), data);

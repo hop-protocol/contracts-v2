@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.0;
 
-import "./../../../interfaces/IERC721BridgeWrapper.sol";
 import "./../ERC721Bridge.sol";
 
 abstract contract ERC721BridgeWrapper is ERC721Bridge, IERC721Receiver {
@@ -117,7 +116,7 @@ abstract contract ERC721BridgeWrapper is ERC721Bridge, IERC721Receiver {
         return _underlying;
     }
 
-    function _afterTokenTransfer(address, address, uint256 tokenId, uint256) internal override {
-        // There is no action needed after a token transfer with this extension..
+    function _afterTokenMint(uint256 tokenId) internal override {
+        // There is no action needed after a token mint with this extension.
     }
 }

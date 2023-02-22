@@ -89,13 +89,14 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
         if (!canMint(to, tokenId)) revert CannotMint(to, tokenId);
 
         // The confirmation check needs to be done before the mint so that an extension can override
-        // the _afterTokenTransfer hook and update state based on their implementation
+        // the _afterTokenMint hook and update state based on their implementation
         if (shouldConfirmMint(tokenId)) {
             tokenStatuses[tokenId].confirmed = true;
             emit TokenConfirmed(tokenId);
         }
 
         _safeMint(to, tokenId);
+        _afterTokenMint(tokenId);
     }
 
     function burn(
@@ -262,7 +263,7 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
         emit ConfirmationSent(toChainId, tokenId);
     }
 
-    function _afterTokenTransfer(address, address, uint256 tokenId, uint256) internal virtual override {
+    function _afterTokenMint(uint256 tokenId) internal virtual {
         // Initial mint is not a concern for spoke chains
         if (!isHub(tokenId)) return;
 

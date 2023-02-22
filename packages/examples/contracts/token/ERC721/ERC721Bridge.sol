@@ -16,7 +16,7 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
 
     struct TokenStatus {
         bool confirmed;
-        uint256 tokenForwardedCount;
+        uint256 tokenForwardCount;
         TokenForwardData[] tokenForwardDatas;
     }
 
@@ -149,10 +149,10 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
 
         // Only forward confirmation if the token has been sent to another chain
         TokenStatus storage tokenStatus = tokenStatuses[tokenId];
-        if (tokenStatus.tokenForwardDatas.length != tokenStatus.tokenForwardedCount){
-            TokenForwardData memory tokenForwardDatas = tokenStatus.tokenForwardDatas[tokenStatus.tokenForwardedCount];
-            _sendConfirmationCrossChain(tokenForwardDatas.toChainId, tokenForwardDatas.tokenId);
-            unchecked { ++tokenStatus.tokenForwardedCount; }
+        if (tokenStatus.tokenForwardCount != tokenStatus.tokenForwardDatas.length){
+            (uint256 toChainId, uint256 tokenId) = getNextTokenForwardData(tokenId);
+            _sendConfirmationCrossChain(toChainId, tokenId);
+            unchecked { ++tokenStatus.tokenForwardCount; }
         } else {
             tokenStatus.confirmed = true;
         }
@@ -181,7 +181,6 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
     function canBurn(uint256 tokenId) public view returns (bool) {
         // A confirmed token represents the canonical token and cannot be burnt without being sent to another chain
         bool isConfirmed = tokenStatuses[tokenId].confirmed;
-        // From ERC721Burnable
         bool isApprovedOrOwner = _isApprovedOrOwner(_msgSender(), tokenId);
 
         return !isConfirmed || isApprovedOrOwner;
@@ -263,6 +262,16 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
     /* Getters */
     function getChainId() public view virtual returns (uint256) {
         return block.chainid;
+    }
+
+    function getTokenForwardData(uint256 tokenId, uint256 index) public view returns (uint256, uint256) {
+        TokenForwardData memory tokenForwardData = tokenStatuses[tokenId].tokenForwardDatas[index];
+        return (tokenForwardData.toChainId, tokenForwardData.tokenId);
+    }
+
+    function getNextTokenForwardData(uint256 tokenId) public view returns (uint256, uint256) {
+        TokenStatus storage tokenStatus = tokenStatuses[tokenId];
+        return getTokenForwardData(tokenId, tokenStatus.tokenForwardCount);
     }
 
     /* Internal */

@@ -8,10 +8,8 @@ error InvalidChainId(uint256 chainId);
 error UnsupportedChainId(uint256 chainId);
 
 error TokenIndexTooLarge(uint256 tokenIndex);
-error NotApprovedOrOwner(address msgSender, uint256 tokenId);
 error CannotMint(address to, uint256 tokenId);
 error CannotBurn(uint256 tokenId);
-error NotImplemented();
 
 /* Extensions */
 

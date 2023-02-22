@@ -14,6 +14,6 @@ export type TokenForwardData = {
 // TODO: Get this from the contract ABI
 export type TokenStatuses = {
   confirmed: boolean
-  tokenForwardedCount: BigNumber
+  tokenForwardCount: BigNumber
   tokenForwardDatas: TokenForwardData[]
 }

@@ -162,7 +162,7 @@ async function expectTokenStatus(
   chainId: BigNumber,
   tokenId: BigNumber,
   isConfirmed: boolean,
-  tokenForwardedCount: BigNumberish = 0
+  tokenForwardCount: BigNumberish = 0
 ): Promise<void> {
   const tokenStatus = await fixture.getTokenStatus({
     chainId,
@@ -170,5 +170,5 @@ async function expectTokenStatus(
   })
 
   expect(tokenStatus.confirmed).to.eq(isConfirmed)
-  expect(tokenStatus.tokenForwardedCount).to.eq(tokenForwardedCount)
+  expect(tokenStatus.tokenForwardCount).to.eq(tokenForwardCount)
 }

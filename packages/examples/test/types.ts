@@ -1,6 +1,6 @@
 import { BigNumber } from 'ethers'
 
-export type TokenIdEncodingParams = {
+export type DecodedTokenIdParams = {
   address: string
   tokenIndex: BigNumber
 }

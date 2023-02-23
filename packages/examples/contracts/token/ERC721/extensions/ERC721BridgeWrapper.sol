@@ -11,6 +11,7 @@ abstract contract ERC721BridgeWrapper is ERC721Bridge, IERC721Receiver {
     // Replace with transient storage when available on all chains
     uint256 private constant _DEFAULT_TOKEN_ID = uint256(keccak256(abi.encode("ERC721BridgeWrapper")));
     uint256 private _confirmableTokenId;
+
     constructor(
         string memory _name,
         string memory _symbol,

@@ -7,7 +7,7 @@ import {
   DEFAULT_TOKEN_NAME,
   DEFAULT_TOKEN_SYMBOL,
 } from './constants'
-import { generateTokenId } from './utils'
+import { encodeTokenIndex } from './utils'
 import Fixture from './Fixture'
 
 type Defaults = {
@@ -39,7 +39,7 @@ beforeEach(async function () {
   fixture = deployment.fixture
 
   const defaultTokenIndex = DEFAULT_TOKEN_INDEX
-  const defaultTokenId = generateTokenId(
+  const defaultTokenId = encodeTokenIndex(
     await sender.getAddress(),
     defaultTokenIndex
   )

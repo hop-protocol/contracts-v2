@@ -21,14 +21,16 @@ contract PingPong {
         counterpart = _counterpart;
     }
 
-    function ping(uint256 rallyCount) public {
+    function ping(uint256 rallyCount) public payable {
         // Track number of messages sent for demonstration purposes
         messagesSent++;
         emit Ping(rallyCount);
-        PingPong(counterpart).pong(rallyCount);
+
+        // The message fee (msg.value) is forwarded to the connector
+        PingPong(counterpart).pong{value: msg.value}(rallyCount);
     }
 
-    function pong(uint256 rallyCount) external {
+    function pong(uint256 rallyCount) external payable onlyCounterpart {
         // Track number of messages received for demonstration purposes
         messagesReceived++;
         emit Pong(rallyCount);

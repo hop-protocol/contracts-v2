@@ -5,13 +5,14 @@ import type {
   MessengerMock as IMessengerMock,
 } from '../../typechain'
 import { DEFAULT_CHAIN_ID } from '../constants'
-import Fixture, { Defaults } from '.'
+import { FixtureDefaults } from '../types'
+import Fixture from '.'
 
 async function deployFixture(
   _chainIds: BigNumberish[],
   _name: string,
   _symbol: string,
-  _defaults: Partial<Defaults> = {}
+  _defaults: FixtureDefaults
 ) {
   const chainIds = _chainIds.map(n => BigNumber.from(n))
 
@@ -46,12 +47,14 @@ async function deployFixture(
   await messengerMocks[0].setCounterpart(messengerMocks[1].address)
   await messengerMocks[1].setCounterpart(messengerMocks[0].address)
 
-  const defaultDefaults: Defaults = {}
-  const defaults = Object.assign(defaultDefaults, _defaults)
+  const fixture = new Fixture(
+    chainIds,
+    erc721Bridges,
+    messengerMocks,
+    _defaults
+  )
 
-  const fixture = new Fixture(chainIds, erc721Bridges, messengerMocks, defaults)
-
-  return { fixture, erc721Bridges, messengerMocks }
+  return { fixture, erc721Bridges, messengerMocks, defaults: _defaults }
 }
 
 async function deployMessengerMock(

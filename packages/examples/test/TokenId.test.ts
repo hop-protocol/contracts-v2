@@ -93,6 +93,27 @@ describe('Token ID', function () {
     expect(newTokenId).to.equal(defaultTokenId)
   })
 
+  it('Should encodeTokenIndex with the min and max values for tokenIndex', async function () {
+    const minTokenIndex = BigNumber.from(0)
+    let encodedTokenIndex = await erc721Bridge.encodeTokenIndex(
+      await sender.getAddress(),
+      minTokenIndex
+    )
+    let expectedValues = encodeTokenIndex(
+      await sender.getAddress(),
+      minTokenIndex
+    )
+    expect(encodedTokenIndex).to.equal(expectedValues)
+
+    const maxTokenIndex = BigNumber.from(2).pow(96).sub(1)
+    encodedTokenIndex = await erc721Bridge.encodeTokenIndex(
+      await sender.getAddress(),
+      maxTokenIndex
+    )
+    expectedValues = encodeTokenIndex(await sender.getAddress(), maxTokenIndex)
+    expect(encodedTokenIndex).to.equal(expectedValues)
+  })
+
   it('Should return true when checking mintability', async function () {
     const canMint = await erc721Bridge.canMint(
       await sender.getAddress(),

@@ -1,5 +1,12 @@
 import { BigNumber } from 'ethers'
 
+export type FixtureDefaults = {
+  to: string
+  tokenId: BigNumber
+  tokenIndex: BigNumber
+  chainId: BigNumber
+}
+
 export type DecodedTokenIdParams = {
   address: string
   tokenIndex: BigNumber

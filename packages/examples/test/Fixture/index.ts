@@ -1,14 +1,11 @@
 import { BigNumber, BigNumberish, Signer, constants } from 'ethers'
-import { TokenStatuses } from '../types'
+import { FixtureDefaults, TokenStatuses } from '../types'
 import type {
   ERC721Bridge as IERC721Bridge,
   MessengerMock as IMessengerMock,
 } from '../../typechain'
 
 import deployFixture from './deployFixture'
-
-export type Defaults = {
-}
 
 export type MessageSentEvent = {
   messageId: string
@@ -23,13 +20,13 @@ class Fixture {
   chainIds: BigNumber[]
   erc721Bridges: { [key: string]: IERC721Bridge }
   messengerMocks: { [key: string]: IMessengerMock }
-  defaults: Defaults
+  defaults: FixtureDefaults
 
   constructor(
     _chainIds: BigNumber[],
     _erc721Bridges: IERC721Bridge[],
     _messengerMocks: IMessengerMock[],
-    _defaults: Defaults
+    _defaults: FixtureDefaults
   ) {
     if (_chainIds.length !== 2) {
       throw new Error('only 2 supported chains allowed for tests')
@@ -59,30 +56,29 @@ class Fixture {
     _chainIds: BigNumberish[],
     _name: string,
     _symbol: string,
-    _defaults: Partial<Defaults> = {}
+    _defaults: FixtureDefaults
   ) {
     return deployFixture(_chainIds, _name, _symbol, _defaults)
   }
 
   async mint(
-    fromSigner: Signer,
+    signer: Signer,
     overrides?: Partial<{
       to: string
       tokenId: BigNumberish
       chainId: BigNumberish
     }>
   ) {
-    const chainId = overrides?.chainId ?? await fromSigner.getChainId()
-    const from = await fromSigner.getAddress()
-    const to = overrides?.to ?? from
-    const tokenId = overrides?.tokenId ?? 0
+    const chainId = overrides?.chainId ?? this.defaults.chainId
+    const to = overrides?.to ?? this.defaults.to
+    const tokenId = overrides?.tokenId ?? this.defaults.tokenId
 
     const erc721Bridge = this.getErc721Bridges(chainId)
-    await erc721Bridge.connect(fromSigner).mint(to, tokenId)
+    await erc721Bridge.connect(signer).mint(to, tokenId)
   }
 
   async send(
-    fromSigner: Signer,
+    signer: Signer,
     overrides?: Partial<{
       fromChainId: BigNumberish
       toChainId: BigNumberish
@@ -90,14 +86,14 @@ class Fixture {
       tokenId: BigNumberish
     }>
   ) {
-    const fromChainId = await fromSigner.getChainId()
-    const from = await fromSigner.getAddress()
-    const toChainId = overrides?.toChainId ?? this.chainIds[1]
-    const to = overrides?.to ?? from
-    const tokenId = overrides?.tokenId ?? 0
+    const fromChainId = overrides?.fromChainId ?? this.defaults.chainId
+    const defaultDestinationChainId = this.chainIds[1]
+    const toChainId = overrides?.toChainId ?? defaultDestinationChainId
+    const to = overrides?.to ?? (await signer.getAddress())
+    const tokenId = overrides?.tokenId ?? this.defaults.tokenId
 
     const erc721Bridge = this.getErc721Bridges(fromChainId)
-    await erc721Bridge.connect(fromSigner).send(toChainId, to, tokenId)
+    await erc721Bridge.connect(signer).send(toChainId, to, tokenId)
   }
 
   // Contract getters
@@ -108,8 +104,8 @@ class Fixture {
       tokenId: BigNumberish
     }>
   ): Promise<string> {
-    const chainId = overrides?.chainId ?? this.chainIds[0]
-    const tokenId = overrides?.tokenId ?? 0
+    const chainId = overrides?.chainId ?? this.defaults.chainId
+    const tokenId = overrides?.tokenId ?? this.defaults.tokenId
 
     const erc721Bridge = this.getErc721Bridges(chainId)
     return erc721Bridge.ownerOf(tokenId)
@@ -122,9 +118,9 @@ class Fixture {
       tokenId: BigNumberish
     }>
   ): Promise<BigNumber> {
-    const chainId = overrides?.chainId ?? this.chainIds[0]
+    const chainId = overrides?.chainId ?? this.defaults.chainId
     const owner = overrides?.owner ?? constants.AddressZero
-    const tokenId = overrides?.tokenId ?? 0
+    const tokenId = overrides?.tokenId ?? this.defaults.tokenId
 
     const erc721Bridge = this.getErc721Bridges(chainId)
     return erc721Bridge.encodeTokenId(owner, tokenId)
@@ -133,15 +129,27 @@ class Fixture {
   async getTokenStatus(
     overrides?: Partial<{
       chainId: BigNumberish
-      owner: string
       tokenId: BigNumberish
     }>
   ): Promise<TokenStatuses> {
-    const chainId = overrides?.chainId ?? this.chainIds[0]
-    const tokenId = overrides?.tokenId ?? 0
+    const chainId = overrides?.chainId ?? this.defaults.chainId
+    const tokenId = overrides?.tokenId ?? this.defaults.tokenId
 
     const erc721Bridge = this.getErc721Bridges(chainId)
     return erc721Bridge.tokenStatuses(tokenId)
+  }
+
+  async isInitialMintOnHubComplete(
+    overrides?: Partial<{
+      chainId: BigNumberish
+      tokenId: BigNumberish
+    }>
+  ): Promise<TokenStatuses> {
+    const chainId = overrides?.chainId ?? this.defaults.chainId
+    const tokenId = overrides?.tokenId ?? this.defaults.tokenId
+
+    const erc721Bridge = this.getErc721Bridges(chainId)
+    return erc721Bridge.isInitialMintOnHubComplete(tokenId)
   }
 
   // Other getters

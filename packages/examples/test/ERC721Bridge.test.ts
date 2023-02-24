@@ -11,8 +11,8 @@ import { encodeTokenIndex } from './utils'
 import { FixtureDefaults } from './types'
 import Fixture from './Fixture'
 
-let fixture: Fixture
 let sender: Signer
+let fixture: Fixture
 let defaults: FixtureDefaults
 
 beforeEach(async function () {
@@ -31,9 +31,11 @@ beforeEach(async function () {
     defaultTokenIndex
   )
   const _defaults = {
+    signer: sender,
+    chainId: DEFAULT_CHAIN_ID,
+    toChainId: DEFAULT_CHAIN_ID.add(1),
     to: await sender.getAddress(),
     tokenId: defaultTokenId,
-    chainId: DEFAULT_CHAIN_ID,
     tokenIndex: defaultTokenIndex,
   }
 
@@ -50,7 +52,7 @@ beforeEach(async function () {
 describe('ERC721Bridge', function () {
   describe('mint', function () {
     it('Should mint a token at the source', async function () {
-      await fixture.mint(sender, {})
+      await fixture.mint()
 
       const owner = await fixture.getTokenOwner()
       expect(owner).to.eq(await sender.getAddress())
@@ -61,7 +63,7 @@ describe('ERC721Bridge', function () {
 
     it('Should mint a token at the destination', async function () {
       const _chainId = defaults.chainId.add(1)
-      await fixture.mint(sender, {
+      await fixture.mint({
         chainId: _chainId,
       })
 
@@ -76,7 +78,7 @@ describe('ERC721Bridge', function () {
     it('Should mint a token with the same ID on two different chains', async function () {
       const chainIds = [defaults.chainId, defaults.chainId.add(1)]
       for (const chainId of chainIds) {
-        await fixture.mint(sender, {
+        await fixture.mint({
           chainId,
         })
 
@@ -102,13 +104,13 @@ describe('ERC721Bridge', function () {
 
   describe('send', function () {
     beforeEach(async function () {
-      await fixture.mint(sender)
+      await fixture.mint()
       await expectTokenStatus(DEFAULT_CHAIN_ID, defaults.tokenId, true)
     })
 
     it('Should send a token to the destination and confirm', async function () {
       const toChainId = defaults.chainId.add(1)
-      await fixture.send(sender, {
+      await fixture.send({
         toChainId,
       })
 
@@ -118,14 +120,14 @@ describe('ERC721Bridge', function () {
 
     it('Should mint a token on both chains then send it to the destination and confirm', async function () {
       const toChainId = defaults.chainId.add(1)
-      await fixture.mint(sender, {
+      await fixture.mint({
         chainId: toChainId,
       })
 
       await expectTokenStatus(toChainId, defaults.tokenId, false)
       await expectInitialMintOnHub(toChainId, defaults.tokenId, false)
 
-      await fixture.send(sender, {
+      await fixture.send({
         toChainId,
       })
 
@@ -136,7 +138,7 @@ describe('ERC721Bridge', function () {
     it('Should not send a token to an unsupported chain', async function () {
       const unsupportedChainId = 123
       await expect(
-        fixture.send(sender, {
+        fixture.send({
           toChainId: unsupportedChainId,
         })
       ).to.be.revertedWith(`UnsupportedChainId(${unsupportedChainId})`)

@@ -1,17 +1,22 @@
 import { expect } from 'chai'
-import { BigNumber, BigNumberish, Signer, providers } from 'ethers'
+import { BigNumber, BigNumberish } from 'ethers'
 import { DecodedTokenIdParams } from './types'
 import { ethers } from 'hardhat'
 const { getAddress, solidityPack, defaultAbiCoder: abi } = ethers.utils
 
-// This attempts to mimic the expect interface. There are a few things to note here:
-// 1. await can be used when calling this function, but it technically is not used
-// 2. The tx needs to be populated (with await and populateTransaction) before calling this function
-export function expectCall(
-  tx: providers.TransactionRequest,
-  sender: Signer
-): Chai.Assertion {
-  return expect(sender.sendTransaction(tx))
+export async function expectCallRevert(
+  tx: any,
+  errorSignature: string,
+  errorArgs: any[] = []
+) {
+  try {
+    await tx
+  } catch (err: any) {
+    expect(errorSignature).to.eq(err.errorSignature)
+    for (const [index, errorArg] of errorArgs.entries()) {
+      expect(errorArg).to.eq(err.errorArgs[index])
+    }
+  }
 }
 
 export function encodeTokenId(address: string, tokenId: BigNumber): BigNumber {

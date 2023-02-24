@@ -1,10 +1,12 @@
-import { BigNumber } from 'ethers'
+import { BigNumber, Signer } from 'ethers'
 
 export type FixtureDefaults = {
+  signer: Signer
+  chainId: BigNumber
+  toChainId: BigNumber
   to: string
   tokenId: BigNumber
   tokenIndex: BigNumber
-  chainId: BigNumber
 }
 
 export type DecodedTokenIdParams = {

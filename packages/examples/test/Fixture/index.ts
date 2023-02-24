@@ -74,6 +74,18 @@ class Fixture {
     await erc721Bridge.connect(signer).mint(to, tokenId)
   }
 
+  async burn(
+    overrides?: Partial<{
+      signer: Signer
+      tokenId: BigNumberish
+      chainId: BigNumberish
+    }>
+  ) {
+    const { signer, chainId, tokenId } = this.getOverridesOrDefaults(overrides)
+    const erc721Bridge = this.getErc721Bridges(chainId)
+    await erc721Bridge.connect(signer).burn(tokenId)
+  }
+
   async send(
     overrides?: Partial<{
       signer: Signer

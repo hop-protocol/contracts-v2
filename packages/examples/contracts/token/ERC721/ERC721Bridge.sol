@@ -116,8 +116,6 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
     {
         if (!supportedChainIds[toChainId]) revert UnsupportedChainId(toChainId);
 
-        burn(tokenId);
-
         uint256 newTokenId = encodeTokenId(to, tokenId);
         TokenStatus storage tokenStatus = tokenStatuses[tokenId];
         if (tokenStatus.confirmed) {
@@ -126,6 +124,9 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
         } else {
             tokenStatus.tokenForwardDatas.push(TokenForwardData(toChainId, newTokenId));
         }
+
+        burn(tokenId);
+
         emit TokenSent(toChainId, to, tokenId, newTokenId);
     }
 
@@ -184,7 +185,7 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
         bool isConfirmed = tokenStatuses[tokenId].confirmed;
         bool isApprovedOrOwner = _isApprovedOrOwner(_msgSender(), tokenId);
 
-        return !isConfirmed || isApprovedOrOwner;
+        return !isConfirmed && isApprovedOrOwner;
     }
 
     function shouldConfirmMint(uint256 tokenId) public view returns (bool) {

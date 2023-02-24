@@ -87,7 +87,7 @@ describe('Token ID', function () {
     // Re-calculate the old ID based on the new data
     newTokenId = await fixture.encodeTokenId({
       tokenId: derivedTokenId,
-  })
+    })
     expect(newTokenId).to.equal(defaults.tokenId)
   })
 

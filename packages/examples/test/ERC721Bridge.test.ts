@@ -7,7 +7,7 @@ import {
   DEFAULT_TOKEN_NAME,
   DEFAULT_TOKEN_SYMBOL,
 } from './constants'
-import { encodeTokenIndex } from './utils'
+import { decodeTokenId, encodeTokenIndex } from './utils'
 import { FixtureDefaults } from './types'
 import Fixture from './Fixture'
 
@@ -93,13 +93,73 @@ describe('ERC721Bridge', function () {
       }
     })
 
-    // Should fail because the token ID is already minted
-    // Should allow another user to mint the same tokenIndex on a spoke
-    // Should allow another user to mint the same tokenIndex on the hub
+    it('Should fail to mint a token because the tokenId is already minted', async function () {
+      await fixture.mint()
+      await expect(fixture.mint()).to.be.revertedWith('ERC721: token already minted')
+    })
+
+    it('Should allow two users to mint the same tokenIndex on a spoke', async function () {
+      await fixture.mint({
+        chainId: defaults.toChainId,
+      })
+
+      const otherUser = (await ethers.getSigners())[1]
+      const otherUserTokenId = encodeTokenIndex(
+        await otherUser.getAddress(),
+        defaults.tokenIndex
+      )
+      await fixture.mint({
+        signer: otherUser,
+        to: await otherUser.getAddress(),
+        tokenId: otherUserTokenId,
+        chainId: defaults.toChainId,
+      })
+
+      const otherUserTokenIndex = decodeTokenId(otherUserTokenId).tokenIndex
+      expect(otherUserTokenIndex).to.eq(defaults.tokenIndex)
+      await expectTokenStatus(defaults.chainId, defaults.tokenId, false)
+      await expectTokenStatus(defaults.chainId, otherUserTokenId, false)
+    })
+
+    it('Should allow two users to mint the same tokenIndex on a hub', async function () {
+      await fixture.mint()
+
+      const otherUser = (await ethers.getSigners())[1]
+      const otherUserTokenId = encodeTokenIndex(
+        await otherUser.getAddress(),
+        defaults.tokenIndex
+      )
+      await fixture.mint({
+        signer: otherUser,
+        to: await otherUser.getAddress(),
+        tokenId: otherUserTokenId,
+      })
+
+      const otherUserTokenIndex = decodeTokenId(otherUserTokenId).tokenIndex
+      expect(otherUserTokenIndex).to.eq(defaults.tokenIndex)
+      await expectTokenStatus(defaults.chainId, defaults.tokenId, true)
+      await expectTokenStatus(defaults.chainId, otherUserTokenId, false)
+    })
   })
 
   describe('burn', function () {
-    // Should burn an unconfirmed token
+    it('Should burn an unconfirmed token', async function () {
+      // Tokens on the spoke are not confirmed upon mint
+      await fixture.mint({
+        chainId: defaults.toChainId,
+      })
+      await fixture.burn({
+        chainId: defaults.toChainId,
+      })
+    })
+
+    it('Should not burn a confirmed token', async function () {
+      await fixture.mint()
+      await expect(fixture.burn()).to.be.revertedWith(`CannotBurn(${defaults.tokenId})`)
+    })
+
+    // TODO: Should not allow a user to burn someone else's token
+    // TODO: Should allow a contract to burn someone else's token
   })
 
   describe('send', function () {

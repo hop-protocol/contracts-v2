@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { BigNumber, BigNumberish } from 'ethers'
+import { BigNumber } from 'ethers'
 import { DecodedTokenIdParams } from './types'
 import { ethers } from 'hardhat'
 const { getAddress, solidityPack, defaultAbiCoder: abi } = ethers.utils
@@ -35,7 +35,7 @@ export function encodeTokenIndex(
   return BigNumber.from(encodedTokenIndex)
 }
 
-export function decodeTokenId(tokenId: BigNumberish): DecodedTokenIdParams {
+export function decodeTokenId(tokenId: BigNumber): DecodedTokenIdParams {
   const tokenIdBn: BigNumber = BigNumber.from(tokenId)
   const bytes32EncodedTokenId = abi.encode(['bytes32'], [tokenIdBn])
 

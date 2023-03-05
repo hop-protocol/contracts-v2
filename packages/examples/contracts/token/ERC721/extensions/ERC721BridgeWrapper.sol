@@ -110,13 +110,13 @@ abstract contract ERC721BridgeWrapper is ERC721Bridge, IERC721Receiver {
     }
 
     function _burnWithConfirmationUpdate(uint256 tokenId) internal {
-        TokenStatus storage tokenStatus = tokenStatuses[tokenId];
-        if (!tokenStatus.confirmed) revert NotConfirmed(tokenId);
+        bool isConfirmed = getIsTokenConfirmed(tokenId);
+        if (!isConfirmed) revert NotConfirmed(tokenId);
 
         burn(tokenId);
         // Withdrawing the underlying will always represent the canonical token, so this value can be reset so that
         // the token can be burned
-        tokenStatus.confirmed = false;
+        setIsTokenConfirmed(tokenId, false);
     }
 
     function _afterTokenMint(uint256 tokenId) internal override {

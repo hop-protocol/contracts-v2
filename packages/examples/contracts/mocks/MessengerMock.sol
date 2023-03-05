@@ -7,6 +7,7 @@ contract MessengerMock is Ownable {
 
     address public target;
     address public counterpart;
+    bytes public pendingMessage;
     uint256 public immutable chainId;
 
     constructor(uint256 _chainId) {
@@ -30,7 +31,16 @@ contract MessengerMock is Ownable {
         payable
         returns (bytes32 messageId)
     {
-        counterpart.call(data);
+        // toChainId and to are ignored for the mock. The rest of the data is mocked.
+        bytes32 messageId = keccak256(abi.encodePacked(msg.sender, block.number, block.timestamp));
+        uint256 fromChainId = getChainId();
+        address from = msg.sender;
+
+        pendingMessage = abi.encodePacked(data, messageId, fromChainId, from);
+    }
+
+    function executePendingMessage() public {
+        counterpart.call(pendingMessage);
     }
 
     function setCounterpart(address _counterpart) external onlyOwner {
@@ -39,5 +49,9 @@ contract MessengerMock is Ownable {
 
     function setTarget(address _target) external onlyOwner {
         target = _target;
+    }
+
+    function getChainId() public view virtual returns (uint256) {
+        return chainId;
     }
 }

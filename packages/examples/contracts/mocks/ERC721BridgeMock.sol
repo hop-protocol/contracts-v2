@@ -37,4 +37,8 @@ contract ERC721BridgeMock is ERC721Bridge {
     function isSpoke() public view override returns (bool) {
         return isSpokeChain;
     }
+
+    function setTargetAddressByChainId(uint256 _chainId, address _targetAddress) public {
+        targetAddressByChainId[_chainId] = _targetAddress;
+    }
 }

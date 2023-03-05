@@ -2,12 +2,13 @@
 
 pragma solidity ^0.8.0;
 
-import "../../interfaces/IERC5164.sol";
+import "../common/ERC5164/ISingleMessageDispatcher.sol";
+import "../common/ERC5164/CrossChainEnabled.sol";
 import "../../interfaces/IERC721Bridge.sol";
 import "./libraries/Error.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
-abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
+abstract contract ERC721Bridge is IERC721Bridge, ERC721, CrossChainEnabled {
 
     struct TokenForwardData {
         uint256 toChainId;
@@ -45,8 +46,8 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
     mapping (uint256 => address) public targetAddressByChainId;
 
     /* state */
-    mapping (uint256 => TokenStatus) public tokenStatuses;
-    mapping (uint256 => bool) public initialMintOnHubComplete;
+    mapping (uint256 => TokenStatus) private _tokenStatuses;
+    mapping (uint256 => bool) private _initialMintOnHubComplete;
 
     modifier noEmptyTokenIds(uint256[] memory tokenIds) {
         if (tokenIds.length == 0) revert NoEmptyTokenIds();
@@ -88,7 +89,7 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
         // The confirmation check needs to be done before the mint so that an extension can override
         // the _afterTokenMint hook and update state based on their implementation, if desired
         if (shouldConfirmMint(tokenId)) {
-            tokenStatuses[tokenId].confirmed = true;
+            setIsTokenConfirmed(tokenId, true);
             emit TokenConfirmed(tokenId);
         }
 
@@ -117,12 +118,11 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
         if (!supportedChainIds[toChainId]) revert UnsupportedChainId(toChainId);
 
         uint256 newTokenId = encodeTokenId(to, tokenId);
-        TokenStatus storage tokenStatus = tokenStatuses[tokenId];
-        if (tokenStatus.confirmed) {
-            tokenStatus.confirmed = false;
+        if (getIsTokenConfirmed(tokenId)) {
+            setIsTokenConfirmed(tokenId, false);
             _sendConfirmationCrossChain(toChainId, newTokenId);
         } else {
-            tokenStatus.tokenForwardDatas.push(TokenForwardData(toChainId, newTokenId));
+            _tokenStatuses[tokenId].tokenForwardDatas.push(TokenForwardData(toChainId, newTokenId));
         }
 
         burn(tokenId);
@@ -144,15 +144,19 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
 
 
     function confirm(uint256 tokenId) external {
+        // Validate the cross-chain caller
+        (, uint256 fromChainId, address from) = _crossChainContext();
+        require(msg.sender == messengerAddress, "Invalid sender");
+        require(from == targetAddressByChainId[fromChainId], "Invalid cross-chain sender");
 
         // Only forward confirmation if the token has been sent to another chain
-        TokenStatus storage tokenStatus = tokenStatuses[tokenId];
+        TokenStatus storage tokenStatus = _tokenStatuses[tokenId];
         if (tokenStatus.tokenForwardCount != tokenStatus.tokenForwardDatas.length){
             (uint256 toChainId, uint256 tokenIdToForward) = getNextTokenForwardData(tokenId);
             _sendConfirmationCrossChain(toChainId, tokenIdToForward);
             unchecked { ++tokenStatus.tokenForwardCount; }
         } else {
-            tokenStatus.confirmed = true;
+            setIsTokenConfirmed(tokenId, true);
         }
 
         // Even though the confirmed flag is not set in some cases, the token is still considered confirmed, even if instantaneously
@@ -182,7 +186,7 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
 
     function canBurn(uint256 tokenId) public view returns (bool) {
         // A confirmed token represents the canonical token and cannot be burnt without being sent to another chain
-        bool isConfirmed = tokenStatuses[tokenId].confirmed;
+        bool isConfirmed = getIsTokenConfirmed(tokenId);
         bool isApprovedOrOwner = _isApprovedOrOwner(_msgSender(), tokenId);
 
         return !isConfirmed && isApprovedOrOwner;
@@ -198,14 +202,9 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
 
     function isTokenIdConfirmable(uint256 tokenId) public view virtual returns (bool) {
         // In most cases, a mint is confirmable if the index has not yet been minted on the hub
-        bool initialMintComplete = isInitialMintOnHubComplete(tokenId);
+        bool initialMintComplete = getInitialMintOnHubComplete(tokenId);
         bool isConfirmableAdditionalChecks = isTokenIdConfirmableAdditionalChecks(tokenId);
         return !initialMintComplete && isConfirmableAdditionalChecks;
-    }
-
-    function isInitialMintOnHubComplete(uint256 tokenId) public view returns (bool) {
-        (, uint256 tokenIndex) = decodeTokenId(tokenId);
-        return initialMintOnHubComplete[tokenIndex];
     }
 
     function isTokenIdConfirmableAdditionalChecks(uint256) public view virtual returns (bool) {
@@ -271,26 +270,42 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
         }
     }
 
+    function setIsTokenConfirmed(uint256 tokenId, bool isConfirmed) public virtual returns (uint256) {
+        _tokenStatuses[tokenId].confirmed = isConfirmed;
+    }
+
     /* Getters */
     function getChainId() public view virtual returns (uint256) {
         return block.chainid;
     }
 
     function getTokenForwardData(uint256 tokenId, uint256 index) public view returns (uint256, uint256) {
-        TokenForwardData memory tokenForwardData = tokenStatuses[tokenId].tokenForwardDatas[index];
+        TokenForwardData memory tokenForwardData = getTokenStatus(tokenId).tokenForwardDatas[index];
         return (tokenForwardData.toChainId, tokenForwardData.tokenId);
     }
 
     function getNextTokenForwardData(uint256 tokenId) public view returns (uint256, uint256) {
-        TokenStatus storage tokenStatus = tokenStatuses[tokenId];
+        TokenStatus storage tokenStatus = _tokenStatuses[tokenId];
         return getTokenForwardData(tokenId, tokenStatus.tokenForwardCount);
     }
 
+    function getTokenStatus(uint256 tokenId) public view returns(TokenStatus memory) {
+        return _tokenStatuses[tokenId];
+    }
+
+    function getIsTokenConfirmed(uint256 tokenId) public view returns (bool) {
+        return _tokenStatuses[tokenId].confirmed;
+    }
+
+    function getInitialMintOnHubComplete(uint256 tokenId) public view returns (bool) {
+        (, uint256 tokenIndex) = decodeTokenId(tokenId);
+        return _initialMintOnHubComplete[tokenIndex];
+    }
     /* Internal */
     function _sendConfirmationCrossChain(uint256 toChainId, uint256 tokenId) internal {
         bytes memory data = abi.encodeWithSelector(this.confirm.selector, tokenId);
         address targetAddress = targetAddressByChainId[toChainId];
-        IERC5164(messengerAddress).dispatchMessage(toChainId, targetAddress, data);
+        ISingleMessageDispatcher(messengerAddress).dispatchMessage(toChainId, targetAddress, data);
         emit ConfirmationSent(toChainId, tokenId);
     }
 
@@ -299,8 +314,8 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721 {
         if (isSpoke()) return;
 
         (, uint256 tokenIndex) = decodeTokenId(tokenId);
-        if (initialMintOnHubComplete[tokenIndex]) return;
+        if (getInitialMintOnHubComplete(tokenIndex)) return;
 
-        initialMintOnHubComplete[tokenIndex] = true;
+        _initialMintOnHubComplete[tokenIndex] = true;
     }
 }

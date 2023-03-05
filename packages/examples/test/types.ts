@@ -7,6 +7,7 @@ export type FixtureDefaults = {
   to: string
   tokenId: BigNumber
   tokenIndex: BigNumber
+  autoExecute: boolean
 }
 
 export type DecodedTokenIdParams = {

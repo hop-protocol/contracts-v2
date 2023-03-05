@@ -1,4 +1,4 @@
-import { BigNumber, BigNumberish } from 'ethers'
+import { BigNumber } from 'ethers'
 import { ethers } from 'hardhat'
 import type {
   ERC721Bridge as IERC721Bridge,
@@ -9,19 +9,17 @@ import { FixtureDefaults } from '../types'
 import Fixture from '.'
 
 async function deployFixture(
-  _chainIds: BigNumberish[],
+  _chainIds: BigNumber[],
   _name: string,
   _symbol: string,
   _defaults: FixtureDefaults
 ) {
-  const chainIds = _chainIds.map(n => BigNumber.from(n))
-
   const messengerMocks: IMessengerMock[] = []
   const erc721Bridges: IERC721Bridge[] = []
-  for (let i = 0; i < chainIds.length; i++) {
+  for (let i = 0; i < _chainIds.length; i++) {
     // Set chainId on the mocks for testing purposes
-    const chainId = chainIds[i]
-    const chainIdsToSupport = chainIds.filter((element, index) => {
+    const chainId = _chainIds[i]
+    const chainIdsToSupport = _chainIds.filter((element, index) => {
       if (index === i) return false
       return true
     })
@@ -47,8 +45,17 @@ async function deployFixture(
   await messengerMocks[0].setCounterpart(messengerMocks[1].address)
   await messengerMocks[1].setCounterpart(messengerMocks[0].address)
 
+  await erc721Bridges[0].setTargetAddressByChainId(
+    _chainIds[1],
+    erc721Bridges[1].address
+  )
+  await erc721Bridges[1].setTargetAddressByChainId(
+    _chainIds[0],
+    erc721Bridges[0].address
+  )
+
   const fixture = new Fixture(
-    chainIds,
+    _chainIds,
     erc721Bridges,
     messengerMocks,
     _defaults
@@ -68,7 +75,7 @@ async function deployMessengerMock(
 async function deployErc721Bridge(
   _name: string,
   _symbol: string,
-  _chainIds: BigNumberish[],
+  _chainIds: BigNumber[],
   messengerAddress: string,
   chainId: BigNumber,
   isSpokeChain: boolean

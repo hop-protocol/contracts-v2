@@ -7,6 +7,8 @@ error NoEmptyTokenIds();
 error InvalidChainId(uint256 chainId);
 error UnsupportedChainId(uint256 chainId);
 
+error InvalidSender(address sender);
+error InvalidCrossChainSender(address sender);
 error TokenIndexTooLarge(uint256 tokenIndex);
 error CannotMint(address to, uint256 tokenId);
 error CannotBurn(uint256 tokenId);

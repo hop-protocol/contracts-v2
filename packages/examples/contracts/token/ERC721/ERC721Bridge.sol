@@ -146,8 +146,8 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721, CrossChainEnabled {
     function confirm(uint256 tokenId) external {
         // Validate the cross-chain caller
         (, uint256 fromChainId, address from) = _crossChainContext();
-        require(msg.sender == messengerAddress, "Invalid sender");
-        require(from == targetAddressByChainId[fromChainId], "Invalid cross-chain sender");
+        if (msg.sender != messengerAddress) revert InvalidSender(msg.sender);
+        if (from != targetAddressByChainId[fromChainId]) revert InvalidCrossChainSender(from);
 
         // Only forward confirmation if the token has been sent to another chain
         TokenStatus storage tokenStatus = _tokenStatuses[tokenId];

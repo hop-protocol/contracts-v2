@@ -338,6 +338,12 @@ describe('ERC721Bridge', function () {
       await expectTokenStatus(defaults.chainId, defaults.tokenId, true)
     })
 
+    it('Should not allow an arbitrary address to call this function', async function () {
+      await expect(fixture.confirm(defaults.tokenId)).to.be.revertedWith(
+        `InvalidSender("${await sender.getAddress()}")`
+      )
+    })
+
     it.skip('Should not allow a non-cross-chain call to call this function', async function () {
       // TODO: validation required
     })

@@ -121,6 +121,24 @@ class Fixture {
     }
   }
 
+  async confirm(
+    overrides?: Partial<{
+      signer: Signer
+      chainId: BigNumber
+      tokenId: BigNumber
+      autoExecute: boolean
+    }>
+  ) {
+    // Note: this function should never be called externally, as it should only be reached by cross-chain
+    // messages. This function is exposed here only for testing purposes.
+    const { signer, chainId, tokenId, autoExecute } = this.getOverridesOrDefaults(overrides)
+    const erc721Bridge = this.getErc721Bridges(chainId)
+    await erc721Bridge.connect(signer).confirm(tokenId)
+    if (autoExecute) {
+      await this.executePendingMessage(chainId)
+    }
+  }
+
   async canMint(
     overrides?: Partial<{
       signer: Signer

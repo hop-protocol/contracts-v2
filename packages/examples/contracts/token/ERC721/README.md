@@ -23,7 +23,7 @@ Some key concepts:
 You can create an NFT by minting it:
 
 ```solidity
-mint(address to, uint256 tokenId);
+mint(uint256 tokenId);
 ```
 
 You can send an NFT to any supported chain:

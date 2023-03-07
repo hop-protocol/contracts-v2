@@ -41,59 +41,59 @@ abstract contract ERC721BridgeWrapper is ERC721Bridge, IERC721Receiver {
 
     function depositForAndSend(
         uint256 toChainId,
-        address to,
+        address account,
         uint256[] memory tokenIds
     )
         public
     {
-        depositFor(to, tokenIds);
-        sendBatch(toChainId, to, tokenIds);
+        depositFor(account, tokenIds);
+        sendBatch(toChainId, account, tokenIds);
     }
 
     function mintAndWithdrawTo(
-        address to,
+        address account,
         uint256[] memory tokenIds
     )
         public
     {
-        mintBatch(to, tokenIds);
-        withdrawTo(to, tokenIds);
+        mintBatch(tokenIds);
+        withdrawTo(account, tokenIds);
     }
 
 
-    function depositFor(address to, uint256[] memory tokenIds) public returns (bool) {
+    function depositFor(address account, uint256[] memory tokenIds) public returns (bool) {
         uint256 length = tokenIds.length;
         for (uint256 i = 0; i < length; ++i) {
             uint256 tokenId = tokenIds[i];
             (, uint256 tokenIndex) = decodeTokenId(tokenId);
 
             underlying().safeTransferFrom(_msgSender(), address(this), tokenIndex);
-            _mintWithConfirmationUpdate(to, tokenId);
+            _mintWithConfirmationUpdate(account, tokenId);
         }
         return true;
     }
 
-    function withdrawTo(address to, uint256[] memory tokenIds) public returns (bool) {
+    function withdrawTo(address account, uint256[] memory tokenIds) public returns (bool) {
         uint256 length = tokenIds.length;
         for (uint256 i = 0; i < length; ++i) {
             uint256 tokenId = tokenIds[i];
             (, uint256 tokenIndex) = decodeTokenId(tokenId);
 
             _burnWithConfirmationUpdate(tokenId);
-            underlying().safeTransferFrom(address(this), to, tokenIndex);
+            underlying().safeTransferFrom(address(this), account, tokenIndex);
         }
         return true;
     }
 
     function onERC721Received(
         address,
-        address from,
+        address account,
         uint256 tokenIndex,
         bytes memory
     ) public virtual override returns (bytes4) {
         if(address(underlying()) != _msgSender()) revert CallerNotUnderlying(msg.sender);
-        uint256 tokenId = encodeTokenIndex(from, tokenIndex);
-        _mintWithConfirmationUpdate(from, tokenId);
+        uint256 tokenId = encodeTokenIndex(account, tokenIndex);
+        _mintWithConfirmationUpdate(account, tokenId);
         return IERC721Receiver.onERC721Received.selector;
     }
 

@@ -78,6 +78,15 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721, CrossChainEnabled {
     }
 
     function mint(
+        uint256 tokenId
+    )
+        public
+        virtual
+    {
+        mint(msg.sender, tokenId);
+    }
+
+    function mint(
         address to,
         uint256 tokenId
     )
@@ -138,7 +147,7 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721, CrossChainEnabled {
         public
         virtual
     {
-        mint(to, tokenId);
+        mint(tokenId);
         send(toChainId, to, tokenId);
     }
 
@@ -229,6 +238,16 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721, CrossChainEnabled {
     }
 
     function mintBatch(
+        uint256[] memory tokenIds
+    )
+        public
+        virtual
+        noEmptyTokenIds(tokenIds)
+    {
+        mintBatch(msg.sender, tokenIds);
+    }
+
+    function mintBatch(
         address to,
         uint256[] memory tokenIds
     )
@@ -301,6 +320,7 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721, CrossChainEnabled {
         (, uint256 tokenIndex) = decodeTokenId(tokenId);
         return _initialMintOnHubComplete[tokenIndex];
     }
+
     /* Internal */
     function _sendConfirmationCrossChain(uint256 toChainId, uint256 tokenId) internal {
         bytes memory data = abi.encodeWithSelector(this.confirm.selector, tokenId);

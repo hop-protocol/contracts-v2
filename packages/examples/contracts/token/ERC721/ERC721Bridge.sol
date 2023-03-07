@@ -83,17 +83,7 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721, CrossChainEnabled {
         public
         virtual
     {
-        mint(msg.sender, tokenId);
-    }
-
-    function mint(
-        address to,
-        uint256 tokenId
-    )
-        public
-        virtual
-    {
-        if (!canMint(to, tokenId)) revert CannotMint(to, tokenId);
+        if (!canMint(msg.sender, tokenId)) revert CannotMint(msg.sender, tokenId);
 
         // The confirmation check needs to be done before the mint so that an extension can override
         // the _afterTokenMint hook and update state based on their implementation, if desired
@@ -102,7 +92,7 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721, CrossChainEnabled {
             emit TokenConfirmed(tokenId);
         }
 
-        _safeMint(to, tokenId);
+        _safeMint(msg.sender, tokenId);
         _afterTokenMint(tokenId);
     }
 
@@ -244,21 +234,7 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721, CrossChainEnabled {
         virtual
         noEmptyTokenIds(tokenIds)
     {
-        mintBatch(msg.sender, tokenIds);
-    }
-
-    function mintBatch(
-        address to,
-        uint256[] memory tokenIds
-    )
-        public
-        virtual
-        noEmptyTokenIds(tokenIds)
-    {
-        uint256 length = tokenIds.length;
-        for (uint256 i = 0; i < length; i++) {
-            mint(to, tokenIds[i]);
-        }
+        mintBatch(tokenIds);
     }
 
     function burnBatch(

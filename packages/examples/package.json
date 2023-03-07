@@ -19,6 +19,7 @@
     "prettier": "prettier '**/*.{json,sol,md}' --check",
     "solhint": "solhint 'contracts/**/*.sol'",
     "coverage": "npx hardhat coverage --solcoverjs .solcover.js",
+    "clean": "rimraf cache artifacts",
     "test": "npx hardhat test"
   },
   "dependencies": {

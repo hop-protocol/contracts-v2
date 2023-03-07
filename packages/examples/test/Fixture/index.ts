@@ -63,14 +63,13 @@ class Fixture {
   async mint(
     overrides?: Partial<{
       signer: Signer
-      to: string
       tokenId: BigNumber
       chainId: BigNumber
     }>
   ) {
-    const { signer, chainId, to, tokenId } = this.getOverridesOrDefaults(overrides)
+    const { signer, chainId, tokenId } = this.getOverridesOrDefaults(overrides)
     const erc721Bridge = this.getErc721Bridges(chainId)
-    await erc721Bridge.connect(signer).mint(to, tokenId)
+    await erc721Bridge.connect(signer).mint(tokenId)
   }
 
   async burn(

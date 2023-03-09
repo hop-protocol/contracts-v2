@@ -24,15 +24,13 @@ async function deployFixture(
       return true
     })
 
-    const isSpokeChain = chainId.eq(DEFAULT_CHAIN_ID) ? false : true
     const messengerMock = await deployMessengerMock(chainId)
     const erc721Bridge = await deployErc721Bridge(
       _name,
       _symbol,
       chainIdsToSupport,
       messengerMock.address,
-      chainId,
-      isSpokeChain
+      chainId
     )
 
     messengerMocks.push(messengerMock)
@@ -77,8 +75,7 @@ async function deployErc721Bridge(
   _symbol: string,
   _chainIds: BigNumber[],
   messengerAddress: string,
-  chainId: BigNumber,
-  isSpokeChain: boolean
+  chainId: BigNumber
 ): Promise<IERC721Bridge> {
   const Erc721Bridge = await ethers.getContractFactory('ERC721BridgeMock')
 
@@ -87,8 +84,7 @@ async function deployErc721Bridge(
     _symbol,
     _chainIds,
     messengerAddress,
-    chainId,
-    isSpokeChain
+    chainId
   ) as Promise<IERC721Bridge>
 }
 

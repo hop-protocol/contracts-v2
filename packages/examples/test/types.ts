@@ -6,24 +6,15 @@ export type FixtureDefaults = {
   toChainId: BigNumber
   to: string
   tokenId: BigNumber
-  tokenIndex: BigNumber
+  previousTokenId: BigNumber
+  serialNumber: BigNumber
   autoExecute: boolean
 }
 
-export type DecodedTokenIdParams = {
-  address: string
-  tokenIndex: BigNumber
-}
-
 // TODO: Get this from the contract ABI
-export type TokenForwardData = {
+export type TokenData = {
+  serialNumber: BigNumber
   toChainId: BigNumber
-  tokenId: BigNumber
-}
-
-// TODO: Get this from the contract ABI
-export type TokenStatuses = {
   confirmed: boolean
-  tokenForwardCount: BigNumber
-  tokenForwardDatas: TokenForwardData[]
+  spent: boolean
 }

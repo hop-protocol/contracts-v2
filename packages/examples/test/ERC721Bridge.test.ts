@@ -3,14 +3,13 @@ import { BigNumber, Signer, constants } from 'ethers'
 import { ethers } from 'hardhat'
 import {
   DEFAULT_CHAIN_ID,
-  DEFAULT_TOKEN_INDEX,
+  DEFAULT_PREVIOUS_TOKEN_ID,
+  DEFAULT_SERIAL_NUMBER,
   DEFAULT_TOKEN_NAME,
   DEFAULT_TOKEN_SYMBOL,
 } from './constants'
 import {
-  decodeTokenId,
-  encodeTokenId,
-  encodeTokenIndex,
+  getTokenId,
   expectCallRevert,
 } from './utils'
 import { FixtureDefaults, TokenForwardData } from './types'
@@ -24,30 +23,35 @@ let defaults: FixtureDefaults
 beforeEach(async function () {
   const signers = await ethers.getSigners()
   sender = signers[0]
-  const chainIds = [DEFAULT_CHAIN_ID, DEFAULT_CHAIN_ID.add(1)]
 
   // Sanity check
   if ((await sender.getChainId()) !== DEFAULT_CHAIN_ID.toNumber()) {
     throw new Error('Sender is not on the default chain ID')
   }
 
-  const defaultTokenIndex = DEFAULT_TOKEN_INDEX
-  const defaultTokenId = encodeTokenIndex(
+  const defaultChainId = DEFAULT_CHAIN_ID
+  const defaultChainIds = [defaultChainId, defaultChainId.add(1)]
+  const defaultPreviousTokenId = DEFAULT_PREVIOUS_TOKEN_ID
+  const defaultSerialNumber = DEFAULT_SERIAL_NUMBER
+  const defaultTokenId = getTokenId(
+    defaultChainId,
     await sender.getAddress(),
-    defaultTokenIndex
+    defaultPreviousTokenId,
+    defaultSerialNumber
   )
   const _defaults = {
     signer: sender,
-    chainId: DEFAULT_CHAIN_ID,
-    toChainId: DEFAULT_CHAIN_ID.add(1),
+    chainId: defaultChainId,
+    toChainId: defaultChainId.add(1),
     to: await sender.getAddress(),
     tokenId: defaultTokenId,
-    tokenIndex: defaultTokenIndex,
+    previousTokenId: defaultPreviousTokenId,
+    serialNumber: defaultSerialNumber,
     autoExecute: true,
   }
 
   const deployment = await Fixture.deploy(
-    chainIds,
+    defaultChainIds,
     DEFAULT_TOKEN_NAME,
     DEFAULT_TOKEN_SYMBOL,
     _defaults
@@ -57,160 +61,132 @@ beforeEach(async function () {
 })
 
 describe('ERC721Bridge', function () {
-  describe('mint', function () {
+  describe('mintWrapper', function () {
     it('Should mint a token at the source', async function () {
-      await fixture.mint()
+      await fixture.mintWrapper()
 
       const owner = await fixture.ownerOf()
       expect(owner).to.eq(await sender.getAddress())
 
-      await expectTokenStatus(defaults.chainId, defaults.tokenId, true)
-      await expectInitialMintOnHub(defaults.chainId, defaults.tokenId, true)
+      await expectTokenStatus(defaults.chainId, defaults.tokenId, false, false)
     })
 
     it('Should mint a token at the destination', async function () {
       const _chainId = defaults.chainId.add(1)
-      await fixture.mint({
+      await fixture.mintWrapper({
         chainId: _chainId,
       })
 
+      const _tokenId = await fixture.getTokenId({
+        chainId: _chainId,
+      })
       const owner = await fixture.ownerOf({
         chainId: _chainId,
+        tokenId: _tokenId,
       })
       expect(owner).to.eq(await sender.getAddress())
-      await expectTokenStatus(_chainId, defaults.tokenId, false)
-      await expectInitialMintOnHub(_chainId, defaults.tokenId, false)
+      await expectTokenStatus(_chainId, defaults.tokenId, false, false)
     })
 
-    it('Should mint a token with the same ID on two different chains', async function () {
+    it('Should mint a token with the same serial number on two different chains', async function () {
       const chainIds = [defaults.chainId, defaults.chainId.add(1)]
       for (const chainId of chainIds) {
-        await fixture.mint({
+        await fixture.mintWrapper({
           chainId,
         })
 
+        const _tokenId = await fixture.getTokenId({
+          chainId,
+        })
         const owner = await fixture.ownerOf({
           chainId,
+          tokenId: _tokenId,
         })
         expect(owner).to.eq(await sender.getAddress())
 
-        const isConfirmed = chainId.eq(DEFAULT_CHAIN_ID) ? true : false
-        await expectTokenStatus(chainId, defaults.tokenId, isConfirmed)
-        await expectInitialMintOnHub(chainId, defaults.tokenId, isConfirmed)
+        await expectTokenStatus(chainId, _tokenId, false, false)
       }
     })
 
     it('Should fail to mint a token because the tokenId is already minted', async function () {
-      await fixture.mint()
-      await expect(fixture.mint()).to.be.revertedWith('ERC721: token already minted')
+      await fixture.mintWrapper()
+      await expect(fixture.mintWrapper()).to.be.revertedWith('ERC721: token already minted')
     })
 
-    it('Should allow two users to mint the same tokenIndex on a spoke', async function () {
-      await fixture.mint({
+    it('Should allow two users to mint the same serial number', async function () {
+      await fixture.mintWrapper({
         chainId: defaults.toChainId,
       })
 
       const otherUser = (await ethers.getSigners())[1]
-      const otherUserTokenId = encodeTokenIndex(
-        await otherUser.getAddress(),
-        defaults.tokenIndex
-      )
-      await fixture.mint({
+      const otherUserTokenId = await fixture.getTokenId({
+        to: otherUser.address,
+      })
+      await fixture.mintWrapper({
         signer: otherUser,
-        to: await otherUser.getAddress(),
-        tokenId: otherUserTokenId,
         chainId: defaults.toChainId,
       })
 
-      const otherUserTokenIndex = decodeTokenId(otherUserTokenId).tokenIndex
-      expect(otherUserTokenIndex).to.eq(defaults.tokenIndex)
-      await expectTokenStatus(defaults.chainId, defaults.tokenId, false)
-      await expectTokenStatus(defaults.chainId, otherUserTokenId, false)
-    })
-
-    it('Should allow two users to mint the same tokenIndex on a hub', async function () {
-      await fixture.mint()
-
-      const otherUser = (await ethers.getSigners())[1]
-      const otherUserTokenId = encodeTokenIndex(
-        await otherUser.getAddress(),
-        defaults.tokenIndex
-      )
-      await fixture.mint({
-        signer: otherUser,
-        to: await otherUser.getAddress(),
-        tokenId: otherUserTokenId,
-      })
-
-      const otherUserTokenIndex = decodeTokenId(otherUserTokenId).tokenIndex
-      expect(otherUserTokenIndex).to.eq(defaults.tokenIndex)
-      await expectTokenStatus(defaults.chainId, defaults.tokenId, true)
-      await expectTokenStatus(defaults.chainId, otherUserTokenId, false)
-    })
-  })
-
-  describe('burn', function () {
-    it('Should burn an unconfirmed token', async function () {
-      // Tokens on the spoke are not confirmed upon mint
-      await fixture.mint({
-        chainId: defaults.toChainId,
-      })
-      await fixture.burn({
-        chainId: defaults.toChainId,
-      })
-    })
-
-    it('Should not burn a confirmed token', async function () {
-      await fixture.mint()
-      await expect(fixture.burn()).to.be.revertedWith(`CannotBurn(${defaults.tokenId})`)
-    })
-
-    it('Should not allow a user to burn a token owned by someone else', async function () {
-      await fixture.mint()
-      const otherUser = (await ethers.getSigners())[1]
-      await expect(
-        fixture.burn({
-          signer: otherUser,
-        })
-      ).to.be.revertedWith(`CannotBurn(${defaults.tokenId})`)
-    })
-
-    it.skip('Should allow a contract to burn a token owned by someone else', async function () {
-      // TODO
+      await expectTokenStatus(defaults.chainId, defaults.tokenId, false, false)
+      await expectTokenStatus(defaults.chainId, otherUserTokenId, false, false)
     })
   })
 
   describe('send', function () {
     beforeEach(async function () {
-      await fixture.mint()
-      await expectTokenStatus(DEFAULT_CHAIN_ID, defaults.tokenId, true)
+      await fixture.mintWrapperAndConfirm()
+      await expectTokenStatus(defaults.chainId, defaults.tokenId, true, false)
     })
 
     it('Should send a token to the destination and confirm', async function () {
-      const toChainId = defaults.chainId.add(1)
-      await fixture.send({
-        toChainId,
-      })
+      const _chainId = defaults.chainId.add(1)
 
-      await expectTokenStatus(toChainId, defaults.tokenId, true)
-      await expectInitialMintOnHub(toChainId, defaults.tokenId, false)
+      await fixture.send({
+        toChainId: _chainId,
+      })
+      await expectTokenStatus(defaults.chainId, defaults.tokenId, false, true)
+
+      const _tokenId = await fixture.getTokenId({
+        chainId: _chainId,
+        previousTokenId: defaults.tokenId,
+      })
+      await expectTokenStatus(_chainId, _tokenId, true, false)
     })
 
-    it('Should mint a token on both chains then send it to the destination and confirm', async function () {
-      const toChainId = defaults.chainId.add(1)
-      await fixture.mint({
-        chainId: toChainId,
+    it('Should send from the source chain to the destination chain, then back to the source chain', async function () {
+      // Send the wrapper from the default to the destination
+      await fixture.send()
+      await expectTokenStatus(defaults.chainId, defaults.tokenId, false, true)
+
+      // Check that the token is confirmed on the destination chain
+      const _chainId = defaults.chainId.add(1)
+      let _tokenId = await fixture.getTokenId({
+        chainId: _chainId,
+        previousTokenId: defaults.tokenId,
       })
+      await expectTokenStatus(_chainId, _tokenId, true, false)
 
-      await expectTokenStatus(toChainId, defaults.tokenId, false)
-      await expectInitialMintOnHub(toChainId, defaults.tokenId, false)
-
+      // Mint the wrapper at the destination chain and send it back to the source
+      await fixture.mintWrapper({
+        chainId: _chainId,
+        previousTokenId: defaults.tokenId,
+      })
+      await expectTokenStatus(_chainId, _tokenId, true, false)
       await fixture.send({
-        toChainId,
+        chainId: _chainId,
+        toChainId: defaults.chainId,
+        tokenId: _tokenId,
       })
+      await expectTokenStatus(_chainId, _tokenId, false, true)
 
-      await expectTokenStatus(toChainId, defaults.tokenId, true)
-      await expectInitialMintOnHub(toChainId, defaults.tokenId, false)
+      // Mint the new wrapper back at the source chain
+      _tokenId = await fixture.getTokenId({
+        previousTokenId: _tokenId,
+      })
+      await fixture.mintWrapper({
+        previousTokenId: _tokenId,
+      })
+      await expectTokenStatus(defaults.chainId, _tokenId, true, false)
     })
 
     it('Should not send a token to an unsupported chain', async function () {
@@ -234,65 +210,42 @@ describe('ERC721Bridge', function () {
     it.skip('Should allow a user to send the same token to two different chains', async function () {
       // TODO: Add a third chain to the test suite
     })
-
-    it('Should mint a token at the destination and send it, appending to the tokenForwardDatas', async function () {
-      const toChainId = defaults.chainId.add(1)
-      await fixture.mint({
-        chainId: toChainId,
-      })
-      const owner = await fixture.ownerOf({ chainId: toChainId })
-      expect(owner).to.eq(await sender.getAddress())
-      await expectTokenStatus(toChainId, defaults.tokenId, false)
-
-      await fixture.send({
-        chainId: toChainId,
-        toChainId: defaults.chainId,
-      })
-
-      const tokenForwardData: TokenForwardData = {
-        toChainId: defaults.chainId,
-        tokenId: defaults.tokenId,
-      }
-      await expectTokenStatus(
-        toChainId,
-        defaults.tokenId,
-        false,
-        BigNumber.from(0),
-        [tokenForwardData]
-      )
-    })
-  })
-
-  describe('mintAndSend', function () {
-    it('Should mintAndSend in a single transaction', async function () {
-      await fixture.mintAndSend()
-
-      const exists = await fixture.exists()
-      expect(exists).to.be.false
-      await expectTokenStatus(defaults.chainId, defaults.tokenId, false)
-    })
   })
 
   describe('confirm', function () {
     it('Should confirm the token at the destination', async function () {
-      await fixture.mintAndSend()
-      await expectTokenStatus(defaults.chainId, defaults.tokenId, false)
-      await expectTokenStatus(defaults.chainId.add(1), defaults.tokenId, true)
+      const _chainId = defaults.chainId.add(1)
+      await fixture.mintWrapperAndConfirm()
+      await fixture.send({
+        toChainId: _chainId,
+      })
+      await expectTokenStatus(defaults.chainId, defaults.tokenId, false, true)
+      const _tokenId = await fixture.getTokenId({
+        chainId: _chainId,
+        previousTokenId: defaults.tokenId,
+      })
+      await expectTokenStatus(_chainId, _tokenId, true, false)
     })
 
     it('Should forward a confirmation onto a future chain', async function () {
       // Mint at the default chain
-      await fixture.mint()
-      await expectTokenStatus(defaults.chainId, defaults.tokenId, true)
+      await fixture.mintWrapperAndConfirm()
+      await expectTokenStatus(defaults.chainId, defaults.tokenId, true, false)
 
       // Mint at the destination chain
       const _chainId = defaults.chainId.add(1)
-      await fixture.mint({
+      await fixture.mintWrapper({
         chainId: _chainId,
+        previousTokenId: defaults.tokenId,
       })
-      await expectTokenStatus(defaults.chainId.add(1), defaults.tokenId, false)
+      const _tokenId = await fixture.getTokenId({
+        chainId: _chainId,
+        previousTokenId: defaults.tokenId,
+      })
+      await expectTokenStatus(_chainId, _tokenId, false, false)
       const owner = await fixture.ownerOf({
         chainId: _chainId,
+        tokenId: _tokenId,
       })
       expect(owner).to.eq(await sender.getAddress())
 
@@ -300,42 +253,57 @@ describe('ERC721Bridge', function () {
       await fixture.send({
         chainId: _chainId,
         toChainId: defaults.chainId,
+        tokenId: _tokenId,
       })
-      const expectedTokenForwardData = [
-        { toChainId: defaults.chainId, tokenId: defaults.tokenId },
-      ]
-      await expectTokenStatus(
-        _chainId,
-        defaults.tokenId,
-        false,
-        BigNumber.from(0),
-        expectedTokenForwardData
-      )
+      await expectTokenStatus(_chainId, _tokenId, false, true)
 
+      // Send the wrapper from the default to the destination
+      // Do not auto-forward so that the mock does not make the round trip atomically
       await fixture.send({
         autoExecute: false,
       })
-      await expectTokenStatus(defaults.chainId, defaults.tokenId, false)
+      await expectTokenStatus(defaults.chainId, defaults.tokenId, false, true)
       // There will not be a confirmation since the message was not auto-forwarded
-      await expectTokenStatus(
-        _chainId,
-        defaults.tokenId,
-        false,
-        BigNumber.from(0),
-        expectedTokenForwardData
-      )
+      await expectTokenStatus(_chainId, _tokenId, false, true)
 
       // Manually execute the expected chain of confirmations
       const chainIdsToForward = [defaults.chainId, _chainId]
       await fixture.executeMultiplePendingMessages(chainIdsToForward)
-      await expectTokenStatus(
-        _chainId,
-        defaults.tokenId,
-        false,
-        BigNumber.from(1),
-        expectedTokenForwardData
-      )
-      await expectTokenStatus(defaults.chainId, defaults.tokenId, true)
+      await expectTokenStatus(_chainId, _tokenId, false, true)
+      await expectTokenStatus(defaults.chainId, defaults.tokenId, false, true)
+      const _tokenId2 = await fixture.getTokenId({
+        previousTokenId: _tokenId,
+      })
+      await expectTokenStatus(defaults.chainId, _tokenId2, true, false)
+    })
+
+    it('Should confirm a token that has not yet been minted', async function () {
+      // Mint at the default chain
+      await fixture.mintWrapperAndConfirm()
+      await expectTokenStatus(defaults.chainId, defaults.tokenId, true, false)
+
+      // Get the status at the destination
+      const _chainId = defaults.chainId.add(1)
+      const _tokenId = await fixture.getTokenId({
+        chainId: _chainId,
+        previousTokenId: defaults.tokenId,
+      })
+      await expectTokenStatus(_chainId, _tokenId, false, false)
+
+      // Send the wrapper from the destination to the default
+      await fixture.send({
+        toChainId: _chainId,
+      })
+      await expectTokenStatus(defaults.chainId, defaults.tokenId, false, true)
+
+      // Get the status of the unminted token at the destination
+      await expectTokenStatus(_chainId, _tokenId, true, false)
+      // Should not be minted
+      const tokenData = await fixture.getTokenData({
+        tokenId: _tokenId,
+      })
+      expect(tokenData.serialNumber).to.eq(BigNumber.from(0))
+      expect(tokenData.toChainId).to.eq(BigNumber.from(0))
     })
 
     it('Should not allow an arbitrary address to call this function', async function () {
@@ -355,123 +323,32 @@ describe('ERC721Bridge', function () {
     it.skip('Should not allow an invalid chainId to call this function', async function () {
       // TODO: validation required
     })
+
     // TODO: Test validation
-  })
-
-  describe('canMint', function () {
-    it('Should return false on a canMint call because the caller is not the owner', async function () {
-      const randomAddress = '0x0000000000000000000000000000000000000123'
-      const randomTokenId = encodeTokenId(randomAddress, defaults.tokenId)
-      const canMint = await fixture.canMint({
-        tokenId: randomTokenId,
-      })
-      expect(canMint).to.be.false
-    })
-  })
-
-  describe('canBurn', function () {
-    // Should revert because token is confirmed
-    // Should revert because user is not approved
-    // Should revert because user is not owner
-  })
-
-  describe('shouldConfirmMint', function () {
-    // Should confirm because the chain is the hub and the tokenId is confirmable
-    // Should not confirm because the chain is the spoke
-    // Should not confirm because the tokenId is not confirmable
-  })
-
-  describe('isSpoke', function () {
-    // Should return true for the spoke and false for the hub
-  })
-
-  describe('isTokenIdConfirmable', function () {
-    // Should return true since mint is complete and additional checks are passed
-    // Should return false since mint is not complete
-  })
-
-  describe('isInitialMintOnHubComplete', function () {
-    // TODO
-    // Should return false when the mint is not complete and true when it is
-  })
-
-  describe('isTokenIdConfirmableAdditionalChecks', function () {
-    // Should return true since it is unimplemented on this contract
-    // TODO
-  })
-
-  describe('sendBatch', function () {
-    // Should send a batch of tokens
-    // Should not allow the same tokenId to be used twice
-    // Should allow one tokenId to work and the next to fail if the tokenId does not represent the sender
-  })
-
-  describe('mintBatch', function () {
-    // Should mint a batch of tokens
-    // Should not allow the same tokenId to be used twice
-    // Should allow one tokenId to work and the next to fail if the tokenId does not represent the sender
-  })
-
-  describe('burnBatch', function () {
-    // Should burn a batch of tokens
-    // Should not allow the same tokenId to be used twice
-  })
-
-  describe('mintAndSendBatch', function () {
-    // Should mint a batch of tokens
-    // Should allow the same tokenId to be used twice
-    // Should allow one tokenId to work and the next to fail if the tokenId does not represent the sender
   })
 
   describe('getChainId', function () {
     // Should return the chainId
   })
 
-  describe('getTokenForwardData', function () {
-    // Should return the tokenForwardData for an active token
-    // Should return the empty tokenForwardData for a token that has never been minted
-  })
-
-  describe('getNextTokenForwardData', function () {
-    // Should return the nextTokenForwardData for an active token
-    // Should return the empty nextTokenForwardData for a token that has been minted but not forwarded
-    // Should return the empty nextTokenForwardData for a token that has never been minted
-  })
+  // TODO: Get token datas tests
 })
 
 async function expectTokenStatus(
   chainId: BigNumber,
   tokenId: BigNumber,
   isConfirmed: boolean,
-  tokenForwardCount: BigNumber = BigNumber.from(0),
-  tokenForwardDatas: TokenForwardData[] = []
+  isSpent: boolean
 ): Promise<void> {
-  const tokenStatus = await fixture.getTokenStatus({
+  const confirmed = await fixture.getIsConfirmed({
+    chainId,
+    tokenId,
+  })
+  const spent = await fixture.getIsSpent({
     chainId,
     tokenId,
   })
 
-  expect(tokenStatus.confirmed).to.eq(isConfirmed)
-  expect(tokenStatus.tokenForwardCount).to.eq(tokenForwardCount)
-  for (let i = 0; i < tokenForwardDatas.length; i++) {
-    expect(tokenStatus.tokenForwardDatas[i].toChainId).to.eq(
-      tokenForwardDatas[i].toChainId
-    )
-    expect(tokenStatus.tokenForwardDatas[i].tokenId).to.eq(
-      tokenForwardDatas[i].tokenId
-    )
-  }
-}
-
-async function expectInitialMintOnHub(
-  chainId: BigNumber,
-  tokenId: BigNumber,
-  isSet = true
-): Promise<void> {
-  const isInitialMintOnHubComplete = await fixture.getInitialMintOnHubComplete({
-    chainId,
-    tokenId,
-  })
-
-  expect(isInitialMintOnHubComplete).to.eq(isSet)
+  expect(isConfirmed).to.eq(confirmed)
+  expect(isSpent).to.eq(spent)
 }

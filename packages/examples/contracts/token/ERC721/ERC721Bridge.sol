@@ -10,15 +10,11 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
 abstract contract ERC721Bridge is IERC721Bridge, ERC721, CrossChainEnabled {
 
-    struct TokenForwardData {
+    struct TokenData {
+        uint256 serialNumber;
         uint256 toChainId;
-        uint256 tokenId;
-    }
-
-    struct TokenStatus {
         bool confirmed;
-        uint256 tokenForwardCount;
-        TokenForwardData[] tokenForwardDatas;
+        bool spent;
     }
 
     /* events */
@@ -46,8 +42,7 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721, CrossChainEnabled {
     mapping (uint256 => address) public targetAddressByChainId;
 
     /* state */
-    mapping (uint256 => TokenStatus) private _tokenStatuses;
-    mapping (uint256 => bool) private _initialMintOnHubComplete;
+    mapping (uint256 => TokenData) private _tokenDatas;
 
     modifier noEmptyTokenIds(uint256[] memory tokenIds) {
         if (tokenIds.length == 0) revert NoEmptyTokenIds();
@@ -77,33 +72,26 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721, CrossChainEnabled {
         return interfaceId == type(IERC721Bridge).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    function mint(
-        uint256 tokenId
+    function mintWrapper(
+        uint256 previousTokenId,
+        uint256 serialNumber
     )
         public
         virtual
+        returns (uint256)
     {
-        if (!canMint(msg.sender, tokenId)) revert CannotMint(msg.sender, tokenId);
+        uint256 tokenId = getTokenId(
+            getChainId(),
+            msg.sender,
+            previousTokenId,
+            serialNumber
+        );
 
-        // The confirmation check needs to be done before the mint so that an extension can override
-        // the _afterTokenMint hook and update state based on their implementation, if desired
-        if (shouldConfirmMint(tokenId)) {
-            setIsTokenConfirmed(tokenId, true);
-            emit TokenConfirmed(tokenId);
-        }
 
+        // The rest of a token's data is either default or already set
+        _tokenDatas[tokenId].serialNumber = serialNumber;
         _safeMint(msg.sender, tokenId);
-        _afterTokenMint(tokenId);
-    }
-
-    function burn(
-        uint256 tokenId
-    )
-        public
-        virtual
-    {
-        if (!canBurn(tokenId)) revert CannotBurn(tokenId);
-        _burn(tokenId);
+        return tokenId;
     }
 
     function send(
@@ -116,31 +104,26 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721, CrossChainEnabled {
     {
         if (!supportedChainIds[toChainId]) revert UnsupportedChainId(toChainId);
 
-        uint256 newTokenId = encodeTokenId(to, tokenId);
-        if (getIsTokenConfirmed(tokenId)) {
-            setIsTokenConfirmed(tokenId, false);
-            _sendConfirmationCrossChain(toChainId, newTokenId);
-        } else {
-            _tokenStatuses[tokenId].tokenForwardDatas.push(TokenForwardData(toChainId, newTokenId));
-        }
 
-        burn(tokenId);
+        TokenData storage tokenData = _tokenDatas[tokenId];
+        uint256 newTokenId = getTokenId(
+            toChainId,
+            to,
+            tokenId,
+            tokenData.serialNumber
+        );
+
+        _sendConfirmationCrossChain(toChainId, newTokenId);
+
+
+        tokenData.toChainId = toChainId;
+        tokenData.confirmed = false;
+        tokenData.spent = true;
+
+        _burn(tokenId);
 
         emit TokenSent(toChainId, to, tokenId, newTokenId);
     }
-
-    function mintAndSend(
-        uint256 toChainId,
-        address to,
-        uint256 tokenId
-    )
-        public
-        virtual
-    {
-        mint(tokenId);
-        send(toChainId, to, tokenId);
-    }
-
 
     function confirm(uint256 tokenId) external {
         // Validate the cross-chain caller
@@ -149,155 +132,40 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721, CrossChainEnabled {
         if (from != targetAddressByChainId[fromChainId]) revert InvalidCrossChainSender(from);
 
         // Only forward confirmation if the token has been sent to another chain
-        TokenStatus storage tokenStatus = _tokenStatuses[tokenId];
-        if (tokenStatus.tokenForwardCount != tokenStatus.tokenForwardDatas.length){
-            (uint256 toChainId, uint256 tokenIdToForward) = getNextTokenForwardData(tokenId);
-            _sendConfirmationCrossChain(toChainId, tokenIdToForward);
-            unchecked { ++tokenStatus.tokenForwardCount; }
+        TokenData storage tokenData = _tokenDatas[tokenId];
+        if (!tokenData.spent) {
+            _tokenDatas[tokenId].confirmed = true;
         } else {
-            setIsTokenConfirmed(tokenId, true);
+            _sendConfirmationCrossChain(tokenData.toChainId, tokenId);
         }
 
-        // Even though the confirmed flag is not set in some cases, the token is still considered confirmed, even if instantaneously
         emit TokenConfirmed(tokenId);
     }
 
-    function encodeTokenId(address to, uint256 tokenId) public pure returns (uint256) {
-        (, uint256 tokenIndex) = decodeTokenId(tokenId);
-        return encodeTokenIndex(to, tokenIndex);
-    }
-
-    function encodeTokenIndex(address to, uint256 tokenIndex) public pure returns (uint256) {
-        if (tokenIndex > type(uint96).max) revert TokenIndexTooLarge(tokenIndex);
-        return uint256(bytes32(abi.encodePacked(to, uint96(tokenIndex))));
-    }
-
-    function decodeTokenId(uint256 tokenId) public pure returns (address, uint256) {
-        address owner = address(uint160(tokenId >> 96));
-        uint256 tokenIndex = tokenId & 0xffffffffffffffffffffffff;
-        return (owner, tokenIndex);
-    }
-
-    function canMint(address to, uint256 tokenId) public pure returns (bool) {
-        (address owner,) = decodeTokenId(tokenId);
-        return owner == to;
-    }
-
-    function canBurn(uint256 tokenId) public view returns (bool) {
-        // A confirmed token represents the canonical token and cannot be burnt without being sent to another chain
-        bool isConfirmed = getIsTokenConfirmed(tokenId);
-        bool isApprovedOrOwner = _isApprovedOrOwner(_msgSender(), tokenId);
-
-        return !isConfirmed && isApprovedOrOwner;
-    }
-
-    function shouldConfirmMint(uint256 tokenId) public view returns (bool) {
-        return !isSpoke() && isTokenIdConfirmable(tokenId);
-    }
-
-    function isSpoke() public view virtual returns (bool) {
-        if (true) revert NotImplemented();
-    }
-
-    function isTokenIdConfirmable(uint256 tokenId) public view virtual returns (bool) {
-        // In most cases, a mint is confirmable if the index has not yet been minted on the hub
-        bool initialMintComplete = getInitialMintOnHubComplete(tokenId);
-        bool isConfirmableAdditionalChecks = isTokenIdConfirmableAdditionalChecks(tokenId);
-        return !initialMintComplete && isConfirmableAdditionalChecks;
-    }
-
-    function isTokenIdConfirmableAdditionalChecks(uint256) public view virtual returns (bool) {
-        return true;
-    }
-
-    /* Batch */
-    function sendBatch(
-        uint256 toChainId,
-        address to,
-        uint256[] memory tokenIds
-    )
-        public
-        virtual
-        noEmptyTokenIds(tokenIds)
-    {
-        uint256 length = tokenIds.length;
-        if (length == 0) revert NoEmptyTokenIds();
-        for (uint256 i = 0; i < length; i++) {
-            send(toChainId, to, tokenIds[i]);
-        }
-    }
-
-    function mintBatch(
-        uint256[] memory tokenIds
-    )
-        public
-        virtual
-        noEmptyTokenIds(tokenIds)
-    {
-        mintBatch(tokenIds);
-    }
-
-    function burnBatch(
-        uint256[] memory tokenIds
-    )
-        public
-        virtual
-        noEmptyTokenIds(tokenIds)
-    {
-        uint256 length = tokenIds.length;
-        for (uint256 i = 0; i < length; i++) {
-            burn(tokenIds[i]);
-        }
-    }
-
-    function mintAndSendBatch(
-        uint256 toChainId,
-        address to,
-        uint256[] memory tokenIds
-    )
-        public
-        virtual
-        noEmptyTokenIds(tokenIds)
-    {
-        uint256 length = tokenIds.length;
-        for (uint256 i = 0; i < length; i++) {
-            mintAndSend(toChainId, to, tokenIds[i]);
-        }
-    }
-
-    function setIsTokenConfirmed(uint256 tokenId, bool isConfirmed) public virtual returns (uint256) {
-        _tokenStatuses[tokenId].confirmed = isConfirmed;
-    }
-
     /* Getters */
+
     function getChainId() public view virtual returns (uint256) {
         return block.chainid;
     }
 
-    function getTokenForwardData(uint256 tokenId, uint256 index) public view returns (uint256, uint256) {
-        TokenForwardData memory tokenForwardData = getTokenStatus(tokenId).tokenForwardDatas[index];
-        return (tokenForwardData.toChainId, tokenForwardData.tokenId);
+    function getTokenId(uint256 chainId, address owner, uint256 previousTokenId, uint256 serialNumber) public pure returns (uint256) {
+        return uint256(keccak256(abi.encodePacked(chainId, owner, previousTokenId, serialNumber)));
     }
 
-    function getNextTokenForwardData(uint256 tokenId) public view returns (uint256, uint256) {
-        TokenStatus storage tokenStatus = _tokenStatuses[tokenId];
-        return getTokenForwardData(tokenId, tokenStatus.tokenForwardCount);
+    function getIsConfirmed(uint256 tokenId) public view returns (bool) {
+        return _tokenDatas[tokenId].confirmed;
     }
 
-    function getTokenStatus(uint256 tokenId) public view returns(TokenStatus memory) {
-        return _tokenStatuses[tokenId];
+    function getIsSpent(uint256 tokenId) public view returns (bool) {
+        return _tokenDatas[tokenId].spent;
     }
 
-    function getIsTokenConfirmed(uint256 tokenId) public view returns (bool) {
-        return _tokenStatuses[tokenId].confirmed;
-    }
-
-    function getInitialMintOnHubComplete(uint256 tokenId) public view returns (bool) {
-        (, uint256 tokenIndex) = decodeTokenId(tokenId);
-        return _initialMintOnHubComplete[tokenIndex];
+    function getTokenData(uint256 tokenId) public view returns (TokenData memory) {
+        return _tokenDatas[tokenId];
     }
 
     /* Internal */
+
     function _sendConfirmationCrossChain(uint256 toChainId, uint256 tokenId) internal {
         bytes memory data = abi.encodeWithSelector(this.confirm.selector, tokenId);
         address targetAddress = targetAddressByChainId[toChainId];
@@ -305,13 +173,15 @@ abstract contract ERC721Bridge is IERC721Bridge, ERC721, CrossChainEnabled {
         emit ConfirmationSent(toChainId, tokenId);
     }
 
-    function _afterTokenMint(uint256 tokenId) internal virtual {
-        // Initial mint is not a concern for spoke chains
-        if (isSpoke()) return;
-
-        (, uint256 tokenIndex) = decodeTokenId(tokenId);
-        if (getInitialMintOnHubComplete(tokenIndex)) return;
-
-        _initialMintOnHubComplete[tokenIndex] = true;
+    function _mintWrapperAndConfirm(
+        uint256 previousTokenId,
+        uint256 serialNumber
+    )
+        internal
+        virtual
+        returns (uint256)
+    {
+        uint256 tokenId = mintWrapper(previousTokenId, serialNumber);
+         _tokenDatas[tokenId].confirmed = true;
     }
 }

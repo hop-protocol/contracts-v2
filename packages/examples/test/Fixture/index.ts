@@ -68,9 +68,12 @@ class Fixture {
       chainId: BigNumber
     }>
   ) {
-    const { signer, chainId, serialNumber, previousTokenId } = this.getOverridesOrDefaults(overrides)
+    const { signer, chainId, serialNumber, previousTokenId } =
+      this.getOverridesOrDefaults(overrides)
     const erc721Bridge = this.getErc721Bridges(chainId)
-    await erc721Bridge.connect(signer).mintWrapper(serialNumber, previousTokenId)
+    await erc721Bridge
+      .connect(signer)
+      .mintWrapper(serialNumber, previousTokenId)
   }
 
   async send(
@@ -83,7 +86,8 @@ class Fixture {
       autoExecute: boolean
     }>
   ) {
-    const { signer, chainId, tokenId, toChainId, to, autoExecute } = this.getOverridesOrDefaults(overrides)
+    const { signer, chainId, tokenId, toChainId, to, autoExecute } =
+      this.getOverridesOrDefaults(overrides)
     const erc721Bridge = this.getErc721Bridges(chainId)
     await erc721Bridge.connect(signer).send(tokenId, toChainId, to)
     if (autoExecute) {
@@ -101,7 +105,8 @@ class Fixture {
   ) {
     // Note: this function should never be called externally, as it should only be reached by cross-chain
     // messages. This function is exposed here only for testing purposes.
-    const { signer, chainId, tokenId, autoExecute } = this.getOverridesOrDefaults(overrides)
+    const { signer, chainId, tokenId, autoExecute } =
+      this.getOverridesOrDefaults(overrides)
     const erc721Bridge = this.getErc721Bridges(chainId)
     await erc721Bridge.connect(signer).confirm(tokenId)
     if (autoExecute) {
@@ -118,9 +123,12 @@ class Fixture {
       previousTokenId: BigNumber
     }>
   ): Promise<BigNumber> {
-    const { signer, chainId, to, serialNumber, previousTokenId } = this.getOverridesOrDefaults(overrides)
+    const { signer, chainId, to, serialNumber, previousTokenId } =
+      this.getOverridesOrDefaults(overrides)
     const erc721Bridge = this.getErc721Bridges(chainId)
-    return erc721Bridge.connect(signer).getTokenId(chainId, to, serialNumber, previousTokenId)
+    return erc721Bridge
+      .connect(signer)
+      .getTokenId(chainId, to, serialNumber, previousTokenId)
   }
 
   async getTokenData(
@@ -140,7 +148,7 @@ class Fixture {
       signer: Signer
       chainId: BigNumber
     }>
-  ): Promise<TokenData> {
+  ): Promise<BigNumber> {
     const { signer, chainId } = this.getOverridesOrDefaults(overrides)
     const erc721Bridge = this.getErc721Bridges(chainId)
     return erc721Bridge.connect(signer).getChainId()
@@ -155,7 +163,9 @@ class Fixture {
   ): Promise<boolean> {
     const { signer, chainId } = this.getOverridesOrDefaults(overrides)
     const erc721Bridge = this.getErc721Bridges(chainId)
-    return erc721Bridge.connect(signer).getIsChainIdSupported(overrides!.maybeChainIdSupported!)
+    return erc721Bridge
+      .connect(signer)
+      .getIsChainIdSupported(overrides!.maybeChainIdSupported!)
   }
 
   async getTargetAddressByChainId(
@@ -164,10 +174,12 @@ class Fixture {
       chainId: BigNumber
       chainIdForTarget: BigNumber
     }>
-  ): Promise<TokenData> {
+  ): Promise<string> {
     const { signer, chainId } = this.getOverridesOrDefaults(overrides)
     const erc721Bridge = this.getErc721Bridges(chainId)
-    return erc721Bridge.connect(signer).getTargetAddressByChainId(overrides!.chainIdForTarget!)
+    return erc721Bridge
+      .connect(signer)
+      .getTargetAddressByChainId(overrides!.chainIdForTarget!)
   }
 
   // Mock functions
@@ -179,7 +191,8 @@ class Fixture {
       chainId: BigNumber
     }>
   ) {
-    const { signer, chainId, serialNumber } = this.getOverridesOrDefaults(overrides)
+    const { signer, chainId, serialNumber } =
+      this.getOverridesOrDefaults(overrides)
     const erc721Bridge = this.getErc721Bridges(chainId)
     await erc721Bridge.connect(signer).mintWrapperAndConfirm(serialNumber)
   }

@@ -8,10 +8,7 @@ import {
   DEFAULT_TOKEN_NAME,
   DEFAULT_TOKEN_SYMBOL,
 } from './constants'
-import {
-  getTokenId,
-  expectCallRevert,
-} from './utils'
+import { getTokenId } from './utils'
 import { FixtureDefaults, TokenData } from './types'
 import Fixture from './Fixture'
 const { AddressZero } = constants
@@ -611,7 +608,7 @@ describe('ERC721Bridge', function () {
       let targetAddress = await fixture.getTargetAddressByChainId({
         chainIdForTarget: chainId,
       })
-      const expectedTargetAddress = (await fixture.getErc721Bridges(defaults.toChainId)).address
+      const expectedTargetAddress = (fixture.getErc721Bridges(defaults.toChainId)).address
       expect(targetAddress).to.equal(expectedTargetAddress)
       chainId = BigNumber.from(123)
       targetAddress = await fixture.getTargetAddressByChainId({

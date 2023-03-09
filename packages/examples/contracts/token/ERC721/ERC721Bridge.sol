@@ -91,7 +91,6 @@ abstract contract ERC721Bridge is CrossChainEnabled, ERC721, IERC721Bridge {
         // This implicitly ensures that there is an assigned serialNumber, even if it is 0
         if (!_exists(tokenId)) revert TokenDoesNotExist(tokenId);
 
-
         // Update state
         TokenData storage tokenData = _tokenDatas[tokenId];
         bool wasConfirmed = tokenData.confirmed;

@@ -4,7 +4,6 @@ import type {
   ERC721Bridge as IERC721Bridge,
   MessengerMock as IMessengerMock,
 } from '../../typechain'
-import { DEFAULT_CHAIN_ID } from '../constants'
 import { FixtureDefaults } from '../types'
 import Fixture from '.'
 

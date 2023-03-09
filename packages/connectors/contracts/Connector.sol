@@ -21,18 +21,22 @@ abstract contract Connector {
     }
 
     // ToDo: Forward value
-    fallback () external {
+    fallback () external payable {
         if (msg.sender == target) {
             _forwardCrossDomainMessage();
         } else {
             _verifyCrossDomainSender();
 
-            (bool success, bytes memory res) = target.call(msg.data);
+            (bool success, bytes memory res) = payable(target).call{value: msg.value}(msg.data);
             if (!success) {
                 // Bubble up error message
                 assembly { revert(add(res,0x20), res) }
             }
         }
+    }
+
+    receive () external payable {
+        revert("Do not send ETH to this contract");
     }
 
     /**

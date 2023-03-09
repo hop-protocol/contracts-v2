@@ -20,14 +20,14 @@ export async function expectCallRevert(
 
 export function getTokenId(
   chainId: BigNumber,
-  address: string,
-  previousTokenId: BigNumber,
-  serialNumber: BigNumber
+  minter: string,
+  serialNumber: BigNumber,
+  previousTokenId: BigNumber
 ): BigNumber {
   const tokenIdHash = keccak256(
     solidityPack(
       ['uint256', 'address', 'uint256', 'uint256'],
-      [chainId, address, previousTokenId, serialNumber]
+      [chainId, minter, serialNumber, previousTokenId]
     )
   )
   return BigNumber.from(tokenIdHash)

@@ -63,29 +63,29 @@ class Fixture {
   async mintWrapper(
     overrides?: Partial<{
       signer: Signer
-      previousTokenId: BigNumber
       serialNumber: BigNumber
+      previousTokenId: BigNumber
       chainId: BigNumber
     }>
   ) {
-    const { signer, chainId, previousTokenId, serialNumber } = this.getOverridesOrDefaults(overrides)
+    const { signer, chainId, serialNumber, previousTokenId } = this.getOverridesOrDefaults(overrides)
     const erc721Bridge = this.getErc721Bridges(chainId)
-    await erc721Bridge.connect(signer).mintWrapper(previousTokenId, serialNumber)
+    await erc721Bridge.connect(signer).mintWrapper(serialNumber, previousTokenId)
   }
 
   async send(
     overrides?: Partial<{
       signer: Signer
       chainId: BigNumber
+      tokenId: BigNumber
       toChainId: BigNumber
       to: string
-      tokenId: BigNumber
       autoExecute: boolean
     }>
   ) {
-    const { signer, chainId, toChainId, to, tokenId, autoExecute } = this.getOverridesOrDefaults(overrides)
+    const { signer, chainId, tokenId, toChainId, to, autoExecute } = this.getOverridesOrDefaults(overrides)
     const erc721Bridge = this.getErc721Bridges(chainId)
-    await erc721Bridge.connect(signer).send(toChainId, to, tokenId)
+    await erc721Bridge.connect(signer).send(tokenId, toChainId, to)
     if (autoExecute) {
       await this.executePendingMessage(chainId)
     }
@@ -114,37 +114,13 @@ class Fixture {
       signer: Signer
       chainId: BigNumber
       to: string
-      previousTokenId: BigNumber
       serialNumber: BigNumber
+      previousTokenId: BigNumber
     }>
   ): Promise<BigNumber> {
-    const { signer, chainId, to, previousTokenId, serialNumber } = this.getOverridesOrDefaults(overrides)
+    const { signer, chainId, to, serialNumber, previousTokenId } = this.getOverridesOrDefaults(overrides)
     const erc721Bridge = this.getErc721Bridges(chainId)
-    return erc721Bridge.connect(signer).getTokenId(chainId, to, previousTokenId, serialNumber)
-  }
-
-  async getIsConfirmed(
-    overrides?: Partial<{
-      signer: Signer
-      chainId: BigNumber
-      tokenId: BigNumber
-    }>
-  ): Promise<boolean> {
-    const { signer, chainId, tokenId } = this.getOverridesOrDefaults(overrides)
-    const erc721Bridge = this.getErc721Bridges(chainId)
-    return erc721Bridge.connect(signer).getIsConfirmed(tokenId)
-  }
-
-  async getIsSpent(
-    overrides?: Partial<{
-      signer: Signer
-      chainId: BigNumber
-      tokenId: BigNumber
-    }>
-  ): Promise<boolean> {
-    const { signer, chainId, tokenId } = this.getOverridesOrDefaults(overrides)
-    const erc721Bridge = this.getErc721Bridges(chainId)
-    return erc721Bridge.connect(signer).getIsSpent(tokenId)
+    return erc721Bridge.connect(signer).getTokenId(chainId, to, serialNumber, previousTokenId)
   }
 
   async getTokenData(
@@ -157,6 +133,41 @@ class Fixture {
     const { signer, chainId, tokenId } = this.getOverridesOrDefaults(overrides)
     const erc721Bridge = this.getErc721Bridges(chainId)
     return erc721Bridge.connect(signer).getTokenData(tokenId)
+  }
+
+  async getChainId(
+    overrides?: Partial<{
+      signer: Signer
+      chainId: BigNumber
+    }>
+  ): Promise<TokenData> {
+    const { signer, chainId } = this.getOverridesOrDefaults(overrides)
+    const erc721Bridge = this.getErc721Bridges(chainId)
+    return erc721Bridge.connect(signer).getChainId()
+  }
+
+  async getIsChainIdSupported(
+    overrides?: Partial<{
+      signer: Signer
+      chainId: BigNumber
+      maybeChainIdSupported: BigNumber
+    }>
+  ): Promise<boolean> {
+    const { signer, chainId } = this.getOverridesOrDefaults(overrides)
+    const erc721Bridge = this.getErc721Bridges(chainId)
+    return erc721Bridge.connect(signer).getIsChainIdSupported(overrides!.maybeChainIdSupported!)
+  }
+
+  async getTargetAddressByChainId(
+    overrides?: Partial<{
+      signer: Signer
+      chainId: BigNumber
+      chainIdForTarget: BigNumber
+    }>
+  ): Promise<TokenData> {
+    const { signer, chainId } = this.getOverridesOrDefaults(overrides)
+    const erc721Bridge = this.getErc721Bridges(chainId)
+    return erc721Bridge.connect(signer).getTargetAddressByChainId(overrides!.chainIdForTarget!)
   }
 
   // Mock functions
@@ -237,11 +248,12 @@ class Fixture {
     return {
       signer: overrides?.signer ?? this.defaults.signer,
       chainId: overrides?.chainId ?? this.defaults.chainId,
+      tokenId: overrides?.tokenId ?? this.defaults.tokenId,
       toChainId: overrides?.toChainId ?? this.defaults.toChainId,
       to: overrides?.to ?? this.defaults.to,
-      tokenId: overrides?.tokenId ?? this.defaults.tokenId,
-      previousTokenId: overrides?.previousTokenId ?? this.defaults.previousTokenId,
       serialNumber: overrides?.serialNumber ?? this.defaults.serialNumber,
+      previousTokenId: overrides?.previousTokenId ?? this.defaults.previousTokenId,
+      owner: overrides?.owner ?? this.defaults.owner,
       autoExecute: overrides?.autoExecute ?? this.defaults.autoExecute,
     }
   }

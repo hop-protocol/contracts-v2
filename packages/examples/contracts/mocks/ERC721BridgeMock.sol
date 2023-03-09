@@ -8,8 +8,6 @@ contract ERC721BridgeMock is ERC721Bridge {
 
     uint256 private chainId;
 
-    // TODO: Add note that the token indexes cannot exceed uint96 but should still be uint256 to respect the standard
-    // TODO: Add a note that if both are 0 then it represents a spoke chain
     constructor(
         string memory _name,
         string memory _symbol,
@@ -32,12 +30,13 @@ contract ERC721BridgeMock is ERC721Bridge {
     }
 
     function mintWrapperAndConfirm(uint256 serialNumber) public {
-        _mintWrapperAndConfirm(0, serialNumber);
+        _mintWrapperAndConfirm(serialNumber, 0);
     }
 
-    function setTargetAddressByChainId(uint256 _chainId, address _targetAddress) public {
-        targetAddressByChainId[_chainId] = _targetAddress;
-    function setTargetAddressByChainId(uint256 chainId, address targetAddress) public {
-        targetAddressByChainId[chainId] = targetAddress;
+    function setTargetAddressesByChainId(uint256[] memory chainIds, address[] memory targetAddresses) public {
+        require(chainIds.length == targetAddresses.length, "ERC721BridgeMock: chainIds and targetAddresses must be the same length");
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            _setTargetAddressByChainId(chainIds[i], targetAddresses[i]);
+        }
     }
 }

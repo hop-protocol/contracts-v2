@@ -3,11 +3,12 @@ import { BigNumber, Signer } from 'ethers'
 export type FixtureDefaults = {
   signer: Signer
   chainId: BigNumber
+  tokenId: BigNumber
   toChainId: BigNumber
   to: string
-  tokenId: BigNumber
-  previousTokenId: BigNumber
   serialNumber: BigNumber
+  previousTokenId: BigNumber
+  owner: string
   autoExecute: boolean
 }
 
@@ -15,6 +16,7 @@ export type FixtureDefaults = {
 export type TokenData = {
   serialNumber: BigNumber
   toChainId: BigNumber
+  to: string
   confirmed: boolean
   spent: boolean
 }

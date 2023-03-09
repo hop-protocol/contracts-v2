@@ -43,13 +43,13 @@ async function deployFixture(
   await messengerMocks[0].setCounterpart(messengerMocks[1].address)
   await messengerMocks[1].setCounterpart(messengerMocks[0].address)
 
-  await erc721Bridges[0].setTargetAddressByChainId(
-    _chainIds[1],
-    erc721Bridges[1].address
+  await erc721Bridges[0].setTargetAddressesByChainId(
+    [_chainIds[1]],
+    [erc721Bridges[1].address]
   )
-  await erc721Bridges[1].setTargetAddressByChainId(
-    _chainIds[0],
-    erc721Bridges[0].address
+  await erc721Bridges[1].setTargetAddressesByChainId(
+    [_chainIds[0]],
+    [erc721Bridges[0].address]
   )
 
   const fixture = new Fixture(

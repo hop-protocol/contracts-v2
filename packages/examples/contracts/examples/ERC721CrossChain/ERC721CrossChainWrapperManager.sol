@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "../../libraries/token/ERC721CrossChain/ERC721CrossChain.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract ERC721CrossChainWrapperManager is ERC721CrossChain, Ownable, IERC721Receiver {
+abstract contract ERC721CrossChainWrapperManager is ERC721CrossChain, Ownable, IERC721Receiver {
 
     IERC721 private immutable _underlying;
     mapping(uint256 => uint256) private _burnNonce;

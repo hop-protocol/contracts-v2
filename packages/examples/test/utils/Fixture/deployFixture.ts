@@ -14,10 +14,12 @@ import {
 import { getTokenId } from '../../utils/utils'
 
 async function deployFixture(
+  _erc721CrossChainArtifactName: string,
   _sender: Signer,
   _chainIds: BigNumber[],
   _name: string,
   _symbol: string,
+  _additionalParams: any[] = [],
   _defaults: FixtureDefaults | undefined = undefined
 ) {
   const messengerMocks: IMessengerMock[] = []
@@ -32,11 +34,13 @@ async function deployFixture(
 
     const messengerMock = await deployMessengerMock(chainId)
     const erc721CrossChain = await deployErc721CrossChain(
+      _erc721CrossChainArtifactName,
       _name,
       _symbol,
       chainIdsToSupport,
       messengerMock.address,
-      chainId
+      chainId,
+      _additionalParams
     )
 
     messengerMocks.push(messengerMock)
@@ -80,20 +84,25 @@ async function deployMessengerMock(
 }
 
 async function deployErc721CrossChain(
+  _erc721CrossChainArtifactName: string,
   _name: string,
   _symbol: string,
   _chainIds: BigNumber[],
   messengerAddress: string,
-  chainId: BigNumber
+  chainId: BigNumber,
+  _additionalParams: any[] = []
 ): Promise<IERC721CrossChain> {
-  const Erc721CrossChain = await ethers.getContractFactory('ERC721CrossChainMock')
+  const Erc721CrossChain = await ethers.getContractFactory(
+    _erc721CrossChainArtifactName
+  )
 
   return Erc721CrossChain.deploy(
     _name,
     _symbol,
     _chainIds,
     messengerAddress,
-    chainId
+    chainId,
+    ..._additionalParams
   ) as Promise<IERC721CrossChain>
 }
 

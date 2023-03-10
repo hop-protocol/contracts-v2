@@ -52,13 +52,23 @@ class Fixture {
   }
 
   static async deploy(
+    _erc721CrossChainArtifactName: string,
     _sender: Signer,
     _chainIds: BigNumber[],
     _name: string,
     _symbol: string,
+    _additionalParams: any[] = [],
     _defaults: FixtureDefaults | undefined = undefined
   ) {
-    return deployFixture(_sender, _chainIds, _name, _symbol, _defaults)
+    return deployFixture(
+      _erc721CrossChainArtifactName,
+      _sender,
+      _chainIds,
+      _name,
+      _symbol,
+      _additionalParams,
+      _defaults
+    )
   }
 
   async mintWrapper(

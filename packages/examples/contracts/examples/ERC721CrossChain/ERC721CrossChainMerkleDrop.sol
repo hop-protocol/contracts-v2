@@ -6,7 +6,7 @@ import "../../libraries/token/ERC721CrossChain/ERC721CrossChain.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/structs/BitMaps.sol";
 
-contract ERC721CrossChainMerkleDrop is ERC721CrossChain, Ownable {
+abstract contract ERC721CrossChainMerkleDrop is ERC721CrossChain, Ownable {
     using BitMaps for BitMaps.BitMap;
 
     bytes32 public immutable merkleRoot;

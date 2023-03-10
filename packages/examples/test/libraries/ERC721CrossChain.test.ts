@@ -18,9 +18,12 @@ let defaults: FixtureDefaults
 beforeEach(async function () {
   const signers = await ethers.getSigners()
   sender = signers[0]
+
+  const erc721CrossChainArtifactName = 'ERC721CrossChainMock'
   const defaultChainIds = [DEFAULT_CHAIN_ID, DEFAULT_CHAIN_ID.add(1)]
 
   const deployment = await Fixture.deploy(
+    erc721CrossChainArtifactName,
     sender,
     defaultChainIds,
     DEFAULT_TOKEN_NAME,

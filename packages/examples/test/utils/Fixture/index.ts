@@ -1,5 +1,5 @@
 import { BigNumber, Signer } from 'ethers'
-import { FixtureDefaults, TokenData } from '../types'
+import { FixtureDefaults, TokenData } from '../../libraries/types'
 import type {
   ERC721CrossChain as IERC721CrossChain,
   MessengerMock as IMessengerMock,
@@ -52,12 +52,13 @@ class Fixture {
   }
 
   static async deploy(
+    _sender: Signer,
     _chainIds: BigNumber[],
     _name: string,
     _symbol: string,
-    _defaults: FixtureDefaults
+    _defaults: FixtureDefaults | undefined = undefined
   ) {
-    return deployFixture(_chainIds, _name, _symbol, _defaults)
+    return deployFixture(_sender, _chainIds, _name, _symbol, _defaults)
   }
 
   async mintWrapper(

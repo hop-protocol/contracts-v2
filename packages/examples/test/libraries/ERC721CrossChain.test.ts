@@ -3,14 +3,12 @@ import { BigNumber, Signer, constants } from 'ethers'
 import { ethers } from 'hardhat'
 import {
   DEFAULT_CHAIN_ID,
-  DEFAULT_PREVIOUS_TOKEN_ID,
-  DEFAULT_SERIAL_NUMBER,
   DEFAULT_TOKEN_NAME,
   DEFAULT_TOKEN_SYMBOL,
-} from './constants'
-import { getTokenId } from './utils'
-import { FixtureDefaults, TokenData } from './types'
-import Fixture from './Fixture'
+} from '../utils/constants'
+import { getTokenId } from '../utils/utils'
+import { FixtureDefaults, TokenData } from '../utils/types'
+import Fixture from '../utils/Fixture'
 const { AddressZero } = constants
 
 let sender: Signer
@@ -20,40 +18,13 @@ let defaults: FixtureDefaults
 beforeEach(async function () {
   const signers = await ethers.getSigners()
   sender = signers[0]
-
-  // Sanity check
-  if ((await sender.getChainId()) !== DEFAULT_CHAIN_ID.toNumber()) {
-    throw new Error('Sender is not on the default chain ID')
-  }
-
-  const defaultChainId = DEFAULT_CHAIN_ID
-  const defaultToChainId = defaultChainId.add(1)
-  const defaultChainIds = [defaultChainId, defaultToChainId]
-  const defaultPreviousTokenId = DEFAULT_PREVIOUS_TOKEN_ID
-  const defaultSerialNumber = DEFAULT_SERIAL_NUMBER
-  const defaultTokenId = getTokenId(
-    defaultChainId,
-    await sender.getAddress(),
-    defaultPreviousTokenId,
-    defaultSerialNumber
-  )
-  const _defaults = {
-    signer: sender,
-    chainId: defaultChainId,
-    toChainId: defaultToChainId,
-    to: await sender.getAddress(),
-    tokenId: defaultTokenId,
-    previousTokenId: defaultPreviousTokenId,
-    serialNumber: defaultSerialNumber,
-    owner: await sender.getAddress(),
-    autoExecute: true,
-  }
+  const defaultChainIds = [DEFAULT_CHAIN_ID, DEFAULT_CHAIN_ID.add(1)]
 
   const deployment = await Fixture.deploy(
+    sender,
     defaultChainIds,
     DEFAULT_TOKEN_NAME,
-    DEFAULT_TOKEN_SYMBOL,
-    _defaults
+    DEFAULT_TOKEN_SYMBOL
   )
   fixture = deployment.fixture
   defaults = deployment.defaults

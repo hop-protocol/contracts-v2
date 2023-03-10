@@ -1,4 +1,4 @@
-import { BigNumber } from 'ethers'
+import { BigNumber, Signer } from 'ethers'
 import { ethers } from 'hardhat'
 import type {
   ERC721CrossChain as IERC721CrossChain,
@@ -6,12 +6,19 @@ import type {
 } from '../../../typechain'
 import { FixtureDefaults } from '../types'
 import Fixture from '.'
+import {
+  DEFAULT_CHAIN_ID,
+  DEFAULT_PREVIOUS_TOKEN_ID,
+  DEFAULT_SERIAL_NUMBER,
+} from '../../utils/constants'
+import { getTokenId } from '../../utils/utils'
 
 async function deployFixture(
+  _sender: Signer,
   _chainIds: BigNumber[],
   _name: string,
   _symbol: string,
-  _defaults: FixtureDefaults
+  _defaults: FixtureDefaults | undefined = undefined
 ) {
   const messengerMocks: IMessengerMock[] = []
   const erc721CrossChains: IERC721CrossChain[] = []
@@ -51,6 +58,9 @@ async function deployFixture(
     [erc721CrossChains[0].address]
   )
 
+  if (!_defaults) {
+    _defaults = await getFixtureDefaults(_sender, _chainIds)
+  }
   const fixture = new Fixture(
     _chainIds,
     erc721CrossChains,
@@ -85,6 +95,39 @@ async function deployErc721CrossChain(
     messengerAddress,
     chainId
   ) as Promise<IERC721CrossChain>
+}
+
+async function getFixtureDefaults(
+  sender: Signer,
+  chainIds: BigNumber[]
+): Promise<FixtureDefaults> {
+  // Sanity check
+  if ((await sender.getChainId()) !== DEFAULT_CHAIN_ID.toNumber()) {
+    throw new Error('Sender is not on the default chain ID')
+  }
+
+  const defaultChainId = chainIds[0]
+  const defaultToChainId = chainIds[1]
+  const defaultPreviousTokenId = DEFAULT_PREVIOUS_TOKEN_ID
+  const defaultSerialNumber = DEFAULT_SERIAL_NUMBER
+  const defaultTokenId = getTokenId(
+    defaultChainId,
+    await sender.getAddress(),
+    defaultPreviousTokenId,
+    defaultSerialNumber
+  )
+
+  return {
+    signer: sender,
+    chainId: defaultChainId,
+    toChainId: defaultToChainId,
+    to: await sender.getAddress(),
+    tokenId: defaultTokenId,
+    previousTokenId: defaultPreviousTokenId,
+    serialNumber: defaultSerialNumber,
+    owner: await sender.getAddress(),
+    autoExecute: true,
+  }
 }
 
 export default deployFixture

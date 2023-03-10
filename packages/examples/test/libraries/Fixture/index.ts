@@ -1,9 +1,9 @@
 import { BigNumber, Signer } from 'ethers'
 import { FixtureDefaults, TokenData } from '../types'
 import type {
-  ERC721Bridge as IERC721Bridge,
+  ERC721CrossChain as IERC721CrossChain,
   MessengerMock as IMessengerMock,
-} from '../../typechain'
+} from '../../../typechain'
 import deployFixture from './deployFixture'
 
 export type MessageSentEvent = {
@@ -17,35 +17,35 @@ export type MessageSentEvent = {
 class Fixture {
   // static state
   chainIds: BigNumber[]
-  erc721Bridges: { [key: string]: IERC721Bridge }
+  erc721CrossChains: { [key: string]: IERC721CrossChain }
   messengerMocks: { [key: string]: IMessengerMock }
   defaults: FixtureDefaults
 
   constructor(
     _chainIds: BigNumber[],
-    _erc721Bridges: IERC721Bridge[],
+    _erc721CrossChains: IERC721CrossChain[],
     _messengerMocks: IMessengerMock[],
     _defaults: FixtureDefaults
   ) {
     if (_chainIds.length !== 2) {
       throw new Error('only 2 supported chains allowed for tests')
     }
-    if (_erc721Bridges.length !== _messengerMocks.length) {
-      throw new Error('bridges and messengers must be same length')
+    if (_erc721CrossChains.length !== _messengerMocks.length) {
+      throw new Error('crossChain contracts and messengers must be same length')
     }
 
     this.chainIds = _chainIds
 
-    const erc721Bridges: { [key: string]: IERC721Bridge } = {}
+    const erc721CrossChains: { [key: string]: IERC721CrossChain } = {}
     const messengerMocks: { [key: string]: IMessengerMock } = {}
 
     for (let i = 0; i < _chainIds.length; i++) {
       const chainId = _chainIds[i].toString()
-      erc721Bridges[chainId] = _erc721Bridges[i]
+      erc721CrossChains[chainId] = _erc721CrossChains[i]
       messengerMocks[chainId] = _messengerMocks[i]
     }
 
-    this.erc721Bridges = erc721Bridges
+    this.erc721CrossChains = erc721CrossChains
     this.messengerMocks = messengerMocks
 
     this.defaults = _defaults
@@ -70,8 +70,8 @@ class Fixture {
   ) {
     const { signer, chainId, serialNumber, previousTokenId } =
       this.getOverridesOrDefaults(overrides)
-    const erc721Bridge = this.getErc721Bridges(chainId)
-    await erc721Bridge
+    const erc721CrossChain = this.getErc721CrossChain(chainId)
+    await erc721CrossChain
       .connect(signer)
       .mintWrapper(serialNumber, previousTokenId)
   }
@@ -88,8 +88,8 @@ class Fixture {
   ) {
     const { signer, chainId, tokenId, toChainId, to, autoExecute } =
       this.getOverridesOrDefaults(overrides)
-    const erc721Bridge = this.getErc721Bridges(chainId)
-    await erc721Bridge.connect(signer).send(tokenId, toChainId, to)
+    const erc721CrossChain = this.getErc721CrossChain(chainId)
+    await erc721CrossChain.connect(signer).send(tokenId, toChainId, to)
     if (autoExecute) {
       await this.executePendingMessage(chainId)
     }
@@ -107,8 +107,8 @@ class Fixture {
     // messages. This function is exposed here only for testing purposes.
     const { signer, chainId, tokenId, autoExecute } =
       this.getOverridesOrDefaults(overrides)
-    const erc721Bridge = this.getErc721Bridges(chainId)
-    await erc721Bridge.connect(signer).confirm(tokenId)
+    const erc721CrossChain = this.getErc721CrossChain(chainId)
+    await erc721CrossChain.connect(signer).confirm(tokenId)
     if (autoExecute) {
       await this.executePendingMessage(chainId)
     }
@@ -125,8 +125,8 @@ class Fixture {
   ): Promise<BigNumber> {
     const { signer, chainId, to, serialNumber, previousTokenId } =
       this.getOverridesOrDefaults(overrides)
-    const erc721Bridge = this.getErc721Bridges(chainId)
-    return erc721Bridge
+    const erc721CrossChain = this.getErc721CrossChain(chainId)
+    return erc721CrossChain
       .connect(signer)
       .getTokenId(chainId, to, serialNumber, previousTokenId)
   }
@@ -139,8 +139,8 @@ class Fixture {
     }>
   ): Promise<TokenData> {
     const { signer, chainId, tokenId } = this.getOverridesOrDefaults(overrides)
-    const erc721Bridge = this.getErc721Bridges(chainId)
-    return erc721Bridge.connect(signer).getTokenData(tokenId)
+    const erc721CrossChain = this.getErc721CrossChain(chainId)
+    return erc721CrossChain.connect(signer).getTokenData(tokenId)
   }
 
   async getChainId(
@@ -150,8 +150,8 @@ class Fixture {
     }>
   ): Promise<BigNumber> {
     const { signer, chainId } = this.getOverridesOrDefaults(overrides)
-    const erc721Bridge = this.getErc721Bridges(chainId)
-    return erc721Bridge.connect(signer).getChainId()
+    const erc721CrossChain = this.getErc721CrossChain(chainId)
+    return erc721CrossChain.connect(signer).getChainId()
   }
 
   async getIsChainIdSupported(
@@ -162,13 +162,13 @@ class Fixture {
     }>
   ): Promise<boolean> {
     const { signer, chainId } = this.getOverridesOrDefaults(overrides)
-    const erc721Bridge = this.getErc721Bridges(chainId)
-    return erc721Bridge
+    const erc721CrossChain = this.getErc721CrossChain(chainId)
+    return erc721CrossChain
       .connect(signer)
       .getIsChainIdSupported(overrides!.maybeChainIdSupported!)
   }
 
-  async getTargetAddressByChainId(
+  async getCrossChain721AddressByChainId(
     overrides?: Partial<{
       signer: Signer
       chainId: BigNumber
@@ -176,10 +176,10 @@ class Fixture {
     }>
   ): Promise<string> {
     const { signer, chainId } = this.getOverridesOrDefaults(overrides)
-    const erc721Bridge = this.getErc721Bridges(chainId)
-    return erc721Bridge
+    const erc721CrossChain = this.getErc721CrossChain(chainId)
+    return erc721CrossChain
       .connect(signer)
-      .getTargetAddressByChainId(overrides!.chainIdForTarget!)
+      .getCrossChain721AddressByChainId(overrides!.chainIdForTarget!)
   }
 
   // Mock functions
@@ -193,8 +193,8 @@ class Fixture {
   ) {
     const { signer, chainId, serialNumber } =
       this.getOverridesOrDefaults(overrides)
-    const erc721Bridge = this.getErc721Bridges(chainId)
-    await erc721Bridge.connect(signer).mintWrapperAndConfirm(serialNumber)
+    const erc721CrossChain = this.getErc721CrossChain(chainId)
+    await erc721CrossChain.connect(signer).mintWrapperAndConfirm(serialNumber)
   }
 
   // ERC721 functions
@@ -207,8 +207,8 @@ class Fixture {
     }>
   ): Promise<string> {
     const { signer, chainId, tokenId } = this.getOverridesOrDefaults(overrides)
-    const erc721Bridge = this.getErc721Bridges(chainId)
-    return erc721Bridge.connect(signer).ownerOf(tokenId)
+    const erc721CrossChain = this.getErc721CrossChain(chainId)
+    return erc721CrossChain.connect(signer).ownerOf(tokenId)
   }
 
   async exists(
@@ -219,11 +219,11 @@ class Fixture {
     }>
   ): Promise<boolean> {
     const { signer, chainId, tokenId } = this.getOverridesOrDefaults(overrides)
-    const erc721Bridge = this.getErc721Bridges(chainId)
+    const erc721CrossChain = this.getErc721CrossChain(chainId)
 
     try {
       // The OZ 721 contract reverts on this call if the owner is the zero address
-      await erc721Bridge.connect(signer).ownerOf(tokenId)
+      await erc721CrossChain.connect(signer).ownerOf(tokenId)
       return true
     } catch {
       return false
@@ -240,18 +240,18 @@ class Fixture {
     chainIdsToForward: BigNumber[]
   ): Promise<void> {
     for (const chainId of chainIdsToForward) {
-      const messenger = this.getMockMessengers(chainId)
+      const messenger = this.getMockMessenger(chainId)
       await messenger.executePendingMessage()
     }
   }
 
   // Other getters
 
-  getErc721Bridges(chainId: BigNumber) {
-    return this.erc721Bridges[chainId.toString()]
+  getErc721CrossChain(chainId: BigNumber) {
+    return this.erc721CrossChains[chainId.toString()]
   }
 
-  getMockMessengers(chainId: BigNumber) {
+  getMockMessenger(chainId: BigNumber) {
     return this.messengerMocks[chainId.toString()]
   }
 

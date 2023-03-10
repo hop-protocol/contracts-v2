@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
-interface IERC721Bridge is IERC165 {
+interface IERC721CrossChain is IERC165 {
     struct TokenData {
         uint256 serialNumber;
         uint256 toChainId;
@@ -40,7 +40,7 @@ interface IERC721Bridge is IERC165 {
 
     function getChainId() external view returns (uint256);
     function getIsChainIdSupported(uint256 chainId) external view returns (bool);
-    function getTargetAddressByChainId(uint256 chainId) external view returns (address);
+    function getCrossChain721AddressByChainId(uint256 chainId) external view returns (address);
     function getTokenId(uint256 chainId, address minter, uint256 serialNumber, uint256 previousTokenId) external pure returns (uint256);
     function getTokenData(uint256 tokenId) external view returns (TokenData memory);
 }

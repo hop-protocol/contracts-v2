@@ -59,7 +59,7 @@ beforeEach(async function () {
   defaults = deployment.defaults
 })
 
-describe('ERC721Bridge', function () {
+describe('ERC721CrossChain', function () {
   describe('mintWrapper', function () {
     it('Should mint a wrapper at the source', async function () {
       await fixture.mintWrapper()
@@ -396,8 +396,8 @@ describe('ERC721Bridge', function () {
 
     it('Should ensure the parameters are in the expected order', async function () {
       // Compare direct contract call with the fixture and with the utility function
-      const erc721Bridge = fixture.getErc721Bridges(defaults.chainId)
-      const tokenIdContract = await erc721Bridge
+      const erc721CrossChain = fixture.getErc721CrossChain(defaults.chainId)
+      const tokenIdContract = await erc721CrossChain
         .connect(sender)
         .getTokenId(
           defaults.chainId,
@@ -602,16 +602,16 @@ describe('ERC721Bridge', function () {
     })
   })
 
-  describe('getTargetAddressByChainId', function () {
+  describe('getCrossChain721AddressByChainId', function () {
     it('Should return a target address for a supported chain and the zero address for an unsupported one', async function () {
       let chainId = defaults.toChainId
-      let targetAddress = await fixture.getTargetAddressByChainId({
+      let targetAddress = await fixture.getCrossChain721AddressByChainId({
         chainIdForTarget: chainId,
       })
-      const expectedTargetAddress = (fixture.getErc721Bridges(defaults.toChainId)).address
+      const expectedTargetAddress = (fixture.getErc721CrossChain(defaults.toChainId)).address
       expect(targetAddress).to.equal(expectedTargetAddress)
       chainId = BigNumber.from(123)
-      targetAddress = await fixture.getTargetAddressByChainId({
+      targetAddress = await fixture.getCrossChain721AddressByChainId({
         chainIdForTarget: chainId,
       })
       expect(targetAddress).to.equal(AddressZero)
@@ -650,6 +650,3 @@ async function expectOwner(
   expect(owner).to.eq(wrapperOwner)
 }
 
-  expect(isConfirmed).to.eq(confirmed)
-  expect(isSpent).to.eq(spent)
-}

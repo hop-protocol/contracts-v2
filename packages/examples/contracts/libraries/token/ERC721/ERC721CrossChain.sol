@@ -2,20 +2,20 @@
 
 pragma solidity ^0.8.0;
 
-import "../../interfaces/IERC721Bridge.sol";
+import "../../interfaces/IERC721CrossChain.sol";
 import "./libraries/Error.sol";
 import "@hop-protocol/ERC5164/contracts/ISingleMessageDispatcher.sol";
 import "@hop-protocol/ERC5164/contracts/CrossChainEnabled.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
-abstract contract ERC721Bridge is CrossChainEnabled, ERC721, IERC721Bridge {
+abstract contract ERC721CrossChain is CrossChainEnabled, ERC721, IERC721CrossChain {
 
     /* constants */
     address public immutable messengerAddress;
 
     /* config */
     mapping (uint256 => bool) private _supportedChainIds;
-    mapping (uint256 => address) private _targetAddressByChainId;
+    mapping (uint256 => address) private _crossChain721AddressByChainId;
 
     /* state */
     mapping (uint256 => TokenData) private _tokenDatas;
@@ -23,7 +23,7 @@ abstract contract ERC721Bridge is CrossChainEnabled, ERC721, IERC721Bridge {
     modifier onlyCrossChain() {
         (, uint256 fromChainId, address from) = _crossChainContext();
         if (msg.sender != messengerAddress) revert InvalidSender(msg.sender);
-        if (from != _targetAddressByChainId[fromChainId]) revert InvalidCrossChainSender(from);
+        if (from != _crossChain721AddressByChainId[fromChainId]) revert InvalidCrossChainSender(from);
         _;
     }
 
@@ -47,7 +47,7 @@ abstract contract ERC721Bridge is CrossChainEnabled, ERC721, IERC721Bridge {
     }
 
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC721, IERC165) returns (bool) {
-        return interfaceId == type(IERC721Bridge).interfaceId || super.supportsInterface(interfaceId);
+        return interfaceId == type(IERC721CrossChain).interfaceId || super.supportsInterface(interfaceId);
     }
 
     function mintWrapper(
@@ -139,16 +139,16 @@ abstract contract ERC721Bridge is CrossChainEnabled, ERC721, IERC721Bridge {
         return block.chainid;
     }
 
+    function getTokenId(uint256 chainId, address minter, uint256 serialNumber, uint256 previousTokenId) public pure returns (uint256) {
+        return uint256(keccak256(abi.encodePacked(chainId, minter, serialNumber, previousTokenId)));
+    }
+
     function getIsChainIdSupported(uint256 chainId) external view returns (bool) {
         return _supportedChainIds[chainId];
     }
 
-    function getTargetAddressByChainId(uint256 chainId) external view returns (address) {
-        return _targetAddressByChainId[chainId];
-    }
-
-    function getTokenId(uint256 chainId, address minter, uint256 serialNumber, uint256 previousTokenId) public pure returns (uint256) {
-        return uint256(keccak256(abi.encodePacked(chainId, minter, serialNumber, previousTokenId)));
+    function getCrossChain721AddressByChainId(uint256 chainId) external view returns (address) {
+        return _crossChain721AddressByChainId[chainId];
     }
 
     function getTokenData(uint256 tokenId) external view returns (TokenData memory) {
@@ -159,7 +159,7 @@ abstract contract ERC721Bridge is CrossChainEnabled, ERC721, IERC721Bridge {
 
     function _sendConfirmationCrossChain(uint256 tokenId, uint256 toChainId) internal {
         bytes memory data = abi.encodeWithSelector(this.confirm.selector, tokenId);
-        address targetAddress = _targetAddressByChainId[toChainId];
+        address targetAddress = _crossChain721AddressByChainId[toChainId];
         ISingleMessageDispatcher(messengerAddress).dispatchMessage(toChainId, targetAddress, data);
         emit ConfirmationSentCrossChain(tokenId, toChainId);
     }
@@ -168,16 +168,16 @@ abstract contract ERC721Bridge is CrossChainEnabled, ERC721, IERC721Bridge {
      * @dev Sets the target address for a given chain ID. This is used to send confirmations to the destination. This
      * should be called by an extension contract after contracts have been deployed to the target chains.
      */
-    function _setTargetAddressByChainId(
+    function _setCrossChain721AddressByChainId(
         uint256 chainId,
         address targetAddress
     )
         internal
     {
-        if (_targetAddressByChainId[chainId] != address(0)) revert TargetAddressAlreadySet(chainId);
+        if (_crossChain721AddressByChainId[chainId] != address(0)) revert TargetAddressAlreadySet(chainId);
         if (targetAddress == address(0)) revert NoZeroTargetAddress(targetAddress);
 
-        _targetAddressByChainId[chainId] = targetAddress;
+        _crossChain721AddressByChainId[chainId] = targetAddress;
         emit TargetAddressSet(chainId, targetAddress);
     }
 

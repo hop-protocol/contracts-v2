@@ -15,7 +15,7 @@ contract MessengerMock is Ownable {
     }
 
     fallback () external payable {
-        // Cross-chain verification done on the bridge
+        // Cross-chain verification done on the target contracts
         (bool success, bytes memory res) = payable(target).call{value: msg.value}(msg.data);
         if (!success) {
             // Bubble up error message

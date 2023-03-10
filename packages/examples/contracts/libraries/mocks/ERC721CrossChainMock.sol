@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.0;
 
-import "../token/ERC721/ERC721Bridge.sol";
+import "../token/ERC721/ERC721CrossChain.sol";
 
-contract ERC721BridgeMock is ERC721Bridge {
+contract ERC721CrossChainMock is ERC721CrossChain {
 
     uint256 private chainId;
 
@@ -15,7 +15,7 @@ contract ERC721BridgeMock is ERC721Bridge {
         address _messengerAddress,
         uint256 _chainId
     )
-        ERC721Bridge(
+        ERC721CrossChain(
             _name,
             _symbol,
             _supportedChainIds,
@@ -34,9 +34,9 @@ contract ERC721BridgeMock is ERC721Bridge {
     }
 
     function setTargetAddressesByChainId(uint256[] memory chainIds, address[] memory targetAddresses) public {
-        require(chainIds.length == targetAddresses.length, "ERC721BridgeMock: chainIds and targetAddresses must be the same length");
+        require(chainIds.length == targetAddresses.length, "ERC721CrossChainMock: chainIds and targetAddresses must be the same length");
         for (uint256 i = 0; i < chainIds.length; i++) {
-            _setTargetAddressByChainId(chainIds[i], targetAddresses[i]);
+            _setCrossChain721AddressByChainId(chainIds[i], targetAddresses[i]);
         }
     }
 }

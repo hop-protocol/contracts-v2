@@ -1,10 +1,9 @@
 import { BigNumber } from 'ethers'
 import { ethers } from 'hardhat'
 import type {
-  ERC721Bridge as IERC721Bridge,
+  ERC721CrossChain as IERC721CrossChain,
   MessengerMock as IMessengerMock,
-} from '../../typechain'
-import { DEFAULT_CHAIN_ID } from '../constants'
+} from '../../../typechain'
 import { FixtureDefaults } from '../types'
 import Fixture from '.'
 
@@ -15,7 +14,7 @@ async function deployFixture(
   _defaults: FixtureDefaults
 ) {
   const messengerMocks: IMessengerMock[] = []
-  const erc721Bridges: IERC721Bridge[] = []
+  const erc721CrossChains: IERC721CrossChain[] = []
   for (let i = 0; i < _chainIds.length; i++) {
     // Set chainId on the mocks for testing purposes
     const chainId = _chainIds[i]
@@ -24,44 +23,42 @@ async function deployFixture(
       return true
     })
 
-    const isSpokeChain = chainId.eq(DEFAULT_CHAIN_ID) ? false : true
     const messengerMock = await deployMessengerMock(chainId)
-    const erc721Bridge = await deployErc721Bridge(
+    const erc721CrossChain = await deployErc721CrossChain(
       _name,
       _symbol,
       chainIdsToSupport,
       messengerMock.address,
-      chainId,
-      isSpokeChain
+      chainId
     )
 
     messengerMocks.push(messengerMock)
-    erc721Bridges.push(erc721Bridge)
+    erc721CrossChains.push(erc721CrossChain)
 
     // Update state
-    await messengerMock.setTarget(erc721Bridge.address)
+    await messengerMock.setTarget(erc721CrossChain.address)
   }
 
   await messengerMocks[0].setCounterpart(messengerMocks[1].address)
   await messengerMocks[1].setCounterpart(messengerMocks[0].address)
 
-  await erc721Bridges[0].setTargetAddressByChainId(
-    _chainIds[1],
-    erc721Bridges[1].address
+  await erc721CrossChains[0].setTargetAddressesByChainId(
+    [_chainIds[1]],
+    [erc721CrossChains[1].address]
   )
-  await erc721Bridges[1].setTargetAddressByChainId(
-    _chainIds[0],
-    erc721Bridges[0].address
+  await erc721CrossChains[1].setTargetAddressesByChainId(
+    [_chainIds[0]],
+    [erc721CrossChains[0].address]
   )
 
   const fixture = new Fixture(
     _chainIds,
-    erc721Bridges,
+    erc721CrossChains,
     messengerMocks,
     _defaults
   )
 
-  return { fixture, erc721Bridges, messengerMocks, defaults: _defaults }
+  return { fixture, erc721CrossChains, messengerMocks, defaults: _defaults }
 }
 
 async function deployMessengerMock(
@@ -72,24 +69,22 @@ async function deployMessengerMock(
   return MessengerMock.deploy(chainId) as Promise<IMessengerMock>
 }
 
-async function deployErc721Bridge(
+async function deployErc721CrossChain(
   _name: string,
   _symbol: string,
   _chainIds: BigNumber[],
   messengerAddress: string,
-  chainId: BigNumber,
-  isSpokeChain: boolean
-): Promise<IERC721Bridge> {
-  const Erc721Bridge = await ethers.getContractFactory('ERC721BridgeMock')
+  chainId: BigNumber
+): Promise<IERC721CrossChain> {
+  const Erc721CrossChain = await ethers.getContractFactory('ERC721CrossChainMock')
 
-  return Erc721Bridge.deploy(
+  return Erc721CrossChain.deploy(
     _name,
     _symbol,
     _chainIds,
     messengerAddress,
-    chainId,
-    isSpokeChain
-  ) as Promise<IERC721Bridge>
+    chainId
+  ) as Promise<IERC721CrossChain>
 }
 
 export default deployFixture

@@ -1,5 +1,5 @@
-//SPDX-License-Identifier: Unlicense
-pragma solidity ^0.8.2;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -15,7 +15,7 @@ contract MessengerMock is Ownable {
     }
 
     fallback () external payable {
-        // Cross-chain verification done on the bridge
+        // Cross-chain verification done on the target contracts
         (bool success, bytes memory res) = payable(target).call{value: msg.value}(msg.data);
         if (!success) {
             // Bubble up error message

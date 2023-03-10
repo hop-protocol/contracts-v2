@@ -44,7 +44,9 @@ contract ERC5164ConnectorFactory {
         // ToDo: onlyCounterpart or calculate connector address
         uint256 chainId = getChainId();
         bytes32 create2Salt = getSalt(target, chainId, counterpartTarget, counterpartChainId);
-        address connector = Create2.deploy(0, create2Salt, type(ERC5164Connector).creationCode);
+        address payable connector = payable(
+            Create2.deploy(0, create2Salt, type(ERC5164Connector).creationCode)
+        );
 
         ERC5164Connector(connector).initialize(
             target,

@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.0;
 
 import "../../interfaces/IERC721CrossChain.sol";
@@ -65,8 +64,8 @@ abstract contract ERC721CrossChain is CrossChainEnabled, ERC721, IERC721CrossCha
             previousTokenId
         );
 
-        // Each tokenId is unique and can only be minted once. A token will always have a different ID
-        // after being sent cross-chain since the tokenId is based on the previous token's ID
+        // Each tokenId is unique and can only be minted once. A wrapper will always have a different ID
+        // after being sent cross-chain since the tokenId is based on the previous wrapper's ID
         TokenData storage tokenData = _tokenDatas[tokenId];
         bool canBeMinted = !_exists(tokenId) && tokenData.spent == false;
         if (!canBeMinted) revert TokenAlreadyMinted(tokenId);

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../../libraries/token/ERC721/ERC721CrossChain.sol";
+import "../../libraries/token/ERC721CrossChain/ERC721CrossChain.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract ERC721CrossChainWrapperManager is ERC721CrossChain, Ownable, IERC721Receiver {
@@ -52,7 +52,7 @@ contract ERC721CrossChainWrapperManager is ERC721CrossChain, Ownable, IERC721Rec
     }
 
     function getCrossChainSerialNumber(uint256 tokenId, uint256 serialNumber) public view virtual returns (uint256) {
-        return uint256(keccak256(abi.encodePacked(tokenId, serialNumber, _burnNonce[tokenId])));
+        return uint256(keccak256(abi.encodePacked(tokenId, serialNumber, address(underlying()), _burnNonce[tokenId])));
     }
 
     /**

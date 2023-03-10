@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../token/ERC721/ERC721CrossChain.sol";
+import "../token/ERC721CrossChain/ERC721CrossChain.sol";
 
 contract ERC721CrossChainMock is ERC721CrossChain {
 

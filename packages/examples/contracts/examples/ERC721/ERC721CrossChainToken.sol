@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../../libraries/token/ERC721/ERC721CrossChain.sol";
+import "../../libraries/token/ERC721CrossChain/ERC721CrossChain.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract ERC721CrossChainToken is ERC721CrossChain, Ownable {

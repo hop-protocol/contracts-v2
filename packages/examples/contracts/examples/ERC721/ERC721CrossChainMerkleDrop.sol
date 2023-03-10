@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "../libraries/MerkleProof.sol";
-import "../../libraries/token/ERC721/ERC721CrossChain.sol";
+import "../../libraries/token/ERC721CrossChain/ERC721CrossChain.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/structs/BitMaps.sol";
 

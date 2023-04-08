@@ -178,7 +178,15 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
         _setBundle(bundleId, bundleRoot, fromChainId);
     }
 
-    function forwardMessage(bytes32 messageId, address from, address to, bytes calldata data) external onlyHub {
+    function forwardMessage(
+        bytes32 messageId,
+        address from,
+        address to,
+        bytes calldata data
+    )
+        external
+        onlyHub
+    {
         _executeMessage(messageId, hubChainId, from, to, data);
     }
 
@@ -214,6 +222,10 @@ contract SpokeMessageBridge is MessageBridge, ISpokeMessageBridge {
     /* Getters */
     function initialBundleId(uint256 toChainId) public view returns (bytes32) {
         return keccak256(abi.encodePacked(_domainSeparatorV4(), toChainId));
+    }
+
+    function getFee(uint256 toChainId) external view returns (uint256) {
+        return routeData[toChainId].messageFee;
     }
 
     /* Internal */

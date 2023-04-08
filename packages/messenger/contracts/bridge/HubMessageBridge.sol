@@ -31,7 +31,7 @@ contract HubMessageBridge is MessageBridge, IHubMessageBridge {
     mapping(uint256 => uint256) private exitTimeForChainId;
     mapping(uint256 => FeeDistributor) private feeDistributorForChainId;
 
-    /// @dev  Wrapper for sending Hub -> Spoke messages
+    /// @dev Wrapper for sending Hub -> Spoke messages
     function dispatchMessage(
         uint256 toChainId,
         address to,

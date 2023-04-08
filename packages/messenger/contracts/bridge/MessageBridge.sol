@@ -106,7 +106,15 @@ abstract contract MessageBridge is Ownable, EIP712, MessageExecutor, ISingleMess
         }
     }
 
-    function _executeMessage(bytes32 messageId, uint256 fromChainId, address from, address to, bytes memory data) internal {
+    function _executeMessage(
+        bytes32 messageId,
+        uint256 fromChainId,
+        address from,
+        address to,
+        bytes memory data
+    )
+        internal
+    {
         if (noMessageList[to]) revert CannotMessageAddress(to);
         _execute(messageId, fromChainId, from, to, data);
     }

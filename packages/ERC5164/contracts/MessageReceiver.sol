@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.2;
 
-contract CrossChainEnabled {
+contract MessageReceiver {
     function _crossChainContext()
         internal
         pure

@@ -9,4 +9,10 @@ interface IMessageDispatcher {
         address to,
         bytes data
     );
+
+    function dispatchMessage(
+        uint256 toChainId,
+        address to,
+        bytes calldata data
+    ) external payable returns (bytes32);
 }

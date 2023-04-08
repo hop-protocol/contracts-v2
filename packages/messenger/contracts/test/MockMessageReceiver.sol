@@ -1,6 +1,6 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.2;
-import "@hop-protocol/ERC5164/contracts/CrossChainEnabled.sol";
+import "@hop-protocol/ERC5164/contracts/MessageReceiver.sol";
 import "hardhat/console.sol";
 
 interface IHopMessenger {
@@ -8,7 +8,7 @@ interface IHopMessenger {
     function getCrossChainChainId() external returns (uint256);
 }
 
-contract MockMessageReceiver is CrossChainEnabled {
+contract MockMessageReceiver is MessageReceiver {
     IHopMessenger public messenger;
 
     uint256 public result;

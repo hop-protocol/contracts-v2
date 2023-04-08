@@ -32,10 +32,10 @@ ISingleMessageDispatcher(hopMessageBridge).dispatchMessage(toChainId, to, data);
 
 ### Receive a message
 
-When receiving a message, inherit from [`CrossChainEnabled`](https://github.com/hop-protocol/contracts-v2/blob/master/packages/messenger/contracts/erc5164/CrossChainEnabled.sol) to access the `messageId`, `from` address, and `fromChainId`.
+When receiving a message, inherit from [`MessageReceiver`](https://github.com/hop-protocol/contracts-v2/blob/master/packages/messenger/contracts/erc5164/MessageReceiver.sol) to access the `messageId`, `from` address, and `fromChainId`.
 
 ```solidity
-contract MyContract is CrossChainEnabled {
+contract MyContract is MessageReceiver {
     event MyMessageHandleEvent {
         bytes32 indexed messageId /*,
         ... your event params*/

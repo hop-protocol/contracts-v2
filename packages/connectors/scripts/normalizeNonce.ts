@@ -11,7 +11,8 @@ async function main() {
   const hubSigner = signers[hubChainId]
   const spokeSigner = signers[spokeChainId]
 
-  await spokeSigner.sendTransaction({to: spokeSigner.address})
+  // await spokeSigner.sendTransaction({to: spokeSigner.address})
+  await hubSigner.sendTransaction({to: hubSigner.address})
 }
 
 main().catch(error => {

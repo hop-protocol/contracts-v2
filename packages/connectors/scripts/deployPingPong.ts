@@ -62,6 +62,11 @@ async function main() {
     connectorAddrs
   )
   await logContractDeployed('ERC5164Connector', spokeConnector)
+
+  await pingPong1.setCounterpart(connectorAddrs)
+  await pingPong2.setCounterpart(connectorAddrs)
+
+  console.log('PingPong connected')
 }
 
 async function wait(ms: number) {

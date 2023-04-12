@@ -19,8 +19,9 @@
     "prettier": "prettier '**/*.{json,sol,md}' --check",
     "test": "npx hardhat test test/Connector.test.ts",
     "deploy-factories": "npx hardhat run scripts/deployFactories.ts --network goerli",
-    "deploy-ping-pong": "npx hardhat run scripts/deployPingPong.ts --network goerli",
+    "deploy-greeters": "npx hardhat run scripts/deployGreeters.ts --network goerli",
     "normalize-nonce": "npx hardhat run scripts/normalizeNonce.ts --network goerli",
+    "exit-optimism": "npx hardhat run scripts/exitOptimism.ts --network goerli",
     "chain": "npx hardhat node",
     "solhint": "solhint 'contracts/**/*.sol'",
     "coverage": "npx hardhat coverage --solcoverjs .solcover.js"
@@ -28,5 +29,8 @@
   "dependencies": {
     "@hop-protocol/ERC5164": "^0.0.0",
     "@openzeppelin/contracts": "^4.7.3"
+  },
+  "devDependencies": {
+    "@eth-optimism/sdk": "^2.0.1"
   }
 }

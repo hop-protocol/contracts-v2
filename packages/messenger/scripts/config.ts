@@ -9,7 +9,7 @@ export const deployConfig = {
   treasury: '0x1111000000000000000000000000000000001111',
   publicGoods: '0x2222000000000000000000000000000000002222',
   messageFee: '1000000000000',
-  maxBundleMessages: 8,
+  maxBundleMessages: 1,
 
   // Fee distribution
   fullPoolSize: parseUnits('0.1'),

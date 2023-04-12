@@ -22,7 +22,11 @@ contract ERC5164Connector is Connector, MessageReceiver {
     }
 
     function _forwardCrossDomainMessage() internal override {
-        ISingleMessageDispatcher(erc5164Messenger).dispatchMessage(counterpartChainId, counterpart, msg.data);
+        ISingleMessageDispatcher(erc5164Messenger).dispatchMessage{value: msg.value}(
+            counterpartChainId,
+            counterpart,
+            msg.data
+        );
     }
 
     function _verifyCrossDomainSender() internal override view {

@@ -55,7 +55,6 @@ contract ERC5164ConnectorFactory {
             counterpartChainId
         );
 
-        // ToDo: Emit deployed event
         emit ConnectorDeployed(
             connector,
             target,

@@ -20,7 +20,6 @@ abstract contract Connector {
         counterpart = _counterpart;
     }
 
-    // ToDo: Forward value
     fallback () external payable {
         if (msg.sender == target) {
             _forwardCrossDomainMessage();

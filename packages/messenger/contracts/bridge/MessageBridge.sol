@@ -73,14 +73,6 @@ abstract contract MessageBridge is Ownable, EIP712, MessageExecutor, ISingleMess
         emit BundleSet(bundleId, bundleRoot, fromChainId);
     }
 
-    function _setTrue(Bitmap storage bitmap, uint256 chunkIndex, bytes32 bitmapChunk, uint256 bitOffset) private {
-        bitmap._bitmap[chunkIndex] = (bitmapChunk | bytes32(1 << bitOffset));
-    }
-
-    function _isTrue(bytes32 bitmapChunk, uint256 bitOffset) private pure returns (bool) {
-        return ((bitmapChunk >> bitOffset) & bytes32(uint256(1))) != bytes32(0);
-    }
-
     function validateProof(BundleProof memory bundleProof, bytes32 messageId) public view {
         ConfirmedBundle memory bundle = bundles[bundleProof.bundleId];
 

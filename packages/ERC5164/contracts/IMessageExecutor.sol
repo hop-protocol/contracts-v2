@@ -5,7 +5,7 @@ interface IMessageExecutor {
     error CallsAlreadyExecuted(bytes32 messageId);
 
     event MessageExecuted(
-        uint256 fromChainId,
-        bytes32 messageId
+        uint256 indexed fromChainId,
+        bytes32 indexed messageId
     );
 }

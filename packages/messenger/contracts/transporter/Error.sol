@@ -17,7 +17,7 @@ error InvalidProof(
 error IncorrectFee(uint256 requiredFee, uint256 msgValue);
 error InvalidRoute(uint256 toChainId);
 error InvalidBridgeCaller(address msgSender);
-error NotHubBridge(address msgSender);
+error NotHub(address msgSender);
 error InvalidChainId(uint256 chainId);
 error NotEnoughFees(uint256 requiredFees, uint256 actualFees);
 error NotCrossDomainMessage();
@@ -28,3 +28,4 @@ error PendingFeesTooHigh(uint256 pendingAmount, uint256 pendingFeeBatchSize);
 error PendingFeeBatchSizeTooLow(uint256 pendingFeeBatchSize);
 error PoolNotFull(uint256 poolSize, uint256 fullPoolSize);
 error NoZeroRelayWindow();
+error TransferFailed(address to, uint256 amount);

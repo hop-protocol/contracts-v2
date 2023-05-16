@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import "../libraries/Error.sol";
 import "../utils/Lib_MerkleTree.sol";
-import "../transporter/ITransporter.sol";
+import "../transporter/ITransportLayer.sol";
 
 struct Route {
     uint256 chainId;
@@ -145,7 +145,7 @@ contract Dispatcher is Ownable, EIP712 {
 
         uint256 fromChainId = getChainId();
         bytes32 bundleHash = getBundleHash(fromChainId, toChainId, bundleId, bundleRoot);
-        ITransporter(transporter).transportCommitment{value: bundleFees}(toChainId, bundleHash);
+        ITransportLayer(transporter).transportCommitment{value: bundleFees}(toChainId, bundleHash);
     }
 
     function setRoute(Route memory route) public onlyOwner {

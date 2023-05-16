@@ -2,27 +2,28 @@
 pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./NativeTransporter.sol";
+import "./Transporter.sol";
+import "hardhat/console.sol";
 
-interface ISpokeNativeTransporter {
+interface ISpokeTransporter {
     function receiveCommitment(uint256 fromChainId, bytes32 commitment) external payable;
 }
 
-contract HubNativeTransporter is NativeTransporter {
+contract HubTransporter is Transporter {
     /* events */
     event CommitmentRelayed(
         uint256 indexed fromChainId,
         uint256 toChainId,
         bytes32 indexed commitment,
-        uint256 commitmentFees,
+        uint256 transportFee,
         uint256 relayWindowStart,
         address indexed relayer
     );
 
     event CommitmentForwarded(
-        bytes32 indexed commitment,
         uint256 indexed fromChainId,
-        uint256 indexed toChainId
+        uint256 indexed toChainId,
+        bytes32 indexed commitment
     );
     event ConfigUpdated();
     event FeePaid(address indexed to, uint256 amount, uint256 feesCollected);
@@ -32,13 +33,13 @@ contract HubNativeTransporter is NativeTransporter {
     uint256 constant BASIS_POINTS = 10_000;
 
     /* config */
-    mapping(address => uint256) private chainIdForSpoke;
-    mapping(uint256 => address) private spokeForChainId;
+    mapping(address => uint256) private chainIdForSpokeConnector;
+    mapping(uint256 => address) private spokeConnectorForChainId;
     mapping(uint256 => uint256) private exitTimeForChainId;
     address public excessFeesRecipient;
     uint256 public targetBalance;
     uint256 public pendingFeeBatchSize;
-    uint256 public relayWindow = 12 hours;
+    uint256 public relayWindow;
     uint256 public maxBundleFee;
     uint256 public maxBundleFeeBPS;
 
@@ -50,11 +51,15 @@ contract HubNativeTransporter is NativeTransporter {
     constructor(
         address _excessFeesRecipient,
         uint256 _targetBalance,
+        uint256 _pendingFeeBatchSize,
+        uint256 _relayWindow,
         uint256 _maxBundleFee,
         uint256 _maxBundleFeeBPS
     ) {
         excessFeesRecipient = _excessFeesRecipient;
         targetBalance = _targetBalance;
+        pendingFeeBatchSize = _pendingFeeBatchSize;
+        relayWindow = _relayWindow;
         maxBundleFee = _maxBundleFee;
         maxBundleFeeBPS = _maxBundleFeeBPS;
     }
@@ -63,9 +68,9 @@ contract HubNativeTransporter is NativeTransporter {
 
     function transportCommitment(uint256 toChainId, bytes32 commitment) external payable {
         address spokeConnector = getSpokeConnector(toChainId);
-        ISpokeNativeTransporter spokeTransporter = ISpokeNativeTransporter(spokeConnector);
+        ISpokeTransporter spokeTransporter = ISpokeTransporter(spokeConnector);
         
-        emit CommitmentTransported(toChainId, commitment);
+        emit CommitmentTransported(toChainId, commitment, block.timestamp);
 
         uint256 fromChainId = getChainId();
         spokeTransporter.receiveCommitment{value: msg.value}(fromChainId, commitment); // Forward value for message fee
@@ -73,7 +78,7 @@ contract HubNativeTransporter is NativeTransporter {
 
     function receiveOrForwardCommitment(
         bytes32 commitment,
-        uint256 commitmentFees,
+        uint256 transportFee,
         uint256 toChainId,
         uint256 commitTime
     )
@@ -86,9 +91,9 @@ contract HubNativeTransporter is NativeTransporter {
             _setProvenCommitment(fromChainId, commitment);
         } else {
             address spokeConnector = getSpokeConnector(toChainId);
-            ISpokeNativeTransporter spokeTransporter = ISpokeNativeTransporter(spokeConnector);
-            
-            emit CommitmentForwarded(commitment, fromChainId, toChainId);
+            ISpokeTransporter spokeTransporter = ISpokeTransporter(spokeConnector);
+
+            emit CommitmentForwarded(fromChainId, toChainId, commitment);
             // Forward value for cross-chain message fee
             spokeTransporter.receiveCommitment{value: msg.value}(fromChainId, commitment);
         }
@@ -104,13 +109,15 @@ contract HubNativeTransporter is NativeTransporter {
             fromChainId,
             toChainId,
             commitment,
-            commitmentFees,
+            transportFee,
             relayWindowStart,
             tx.origin
         );
-        _payFee(tx.origin, fromChainId, relayWindowStart, commitmentFees);
+        // ToDo: Calculate fee
+        _payFee(tx.origin, fromChainId, relayWindowStart, transportFee);
     }
 
+    // ToDo: Handle ERC20
     function transfer(address to, uint256 amount) internal virtual {
         (bool success, ) = to.call{value: amount}("");
         if (!success) revert TransferFailed(to, amount);
@@ -130,20 +137,20 @@ contract HubNativeTransporter is NativeTransporter {
 
     /* setters */
 
-    function setSpokeTransporter(
+    function setSpokeConnector(
         uint256 chainId,
-        address spoke,
+        address connector,
         uint256 exitTime
     )
         external
         onlyOwner
     {
         if (chainId == 0) revert NoZeroChainId();
-        if (spoke == address(0)) revert NoZeroAddress(); 
+        if (connector == address(0)) revert NoZeroAddress(); 
         if (exitTime == 0) revert NoZeroExitTime();
 
-        chainIdForSpoke[spoke] = chainId;
-        spokeForChainId[chainId] = spoke;
+        chainIdForSpokeConnector[connector] = chainId;
+        spokeConnectorForChainId[chainId] = connector;
         exitTimeForChainId[chainId] = exitTime;
     }
 
@@ -193,17 +200,17 @@ contract HubNativeTransporter is NativeTransporter {
     /* getters */
 
     function getSpokeConnector(uint256 chainId) public view returns (address) {
-        address spoke = spokeForChainId[chainId];
+        address spoke = spokeConnectorForChainId[chainId];
         if (spoke == address(0)) {
             revert InvalidRoute(chainId);
         }
         return spoke;
     }
 
-    function getSpokeChainId(address bridge) public view returns (uint256) {
-        uint256 chainId = chainIdForSpoke[bridge];
+    function getSpokeChainId(address connector) public view returns (uint256) {
+        uint256 chainId = chainIdForSpokeConnector[connector];
         if (chainId == 0) {
-            revert InvalidBridgeCaller(bridge);
+            revert InvalidCaller(connector);
         }
         return chainId;
     }

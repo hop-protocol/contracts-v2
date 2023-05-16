@@ -2,8 +2,8 @@
 pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./NativeTransporter.sol";
-import "./HubNativeTransporter.sol";
+import "./Transporter.sol";
+import "./HubTransporter.sol";
 import "./Error.sol";
 
 interface IHubBundleTransporterer {
@@ -15,7 +15,7 @@ interface IHubBundleTransporterer {
     ) external;
 }
 
-contract SpokeNativeTransporter is Ownable, NativeTransporter {
+contract SpokeTransporter is Ownable, Transporter {
     /* events */
     event FeesSentToHub(uint256 amount);
 
@@ -23,8 +23,8 @@ contract SpokeNativeTransporter is Ownable, NativeTransporter {
     uint256 public immutable hubChainId;
 
     /* config*/
-    address public hubBridgeConnector;
-    address public hubFeeDistributor;
+    address public hubTransporter;
+    address public hubTransporterConnector;
     uint256 public pendingFeeBatchSize;
 
     /* state */
@@ -39,7 +39,7 @@ contract SpokeNativeTransporter is Ownable, NativeTransporter {
     }
 
     modifier onlyHub() {
-        if (msg.sender != hubBridgeConnector) {
+        if (msg.sender != hubTransporterConnector) {
             revert NotHub(msg.sender);
         }
         _;
@@ -55,10 +55,10 @@ contract SpokeNativeTransporter is Ownable, NativeTransporter {
 
     function transportCommitment(uint256 toChainId, bytes32 commitment) external payable onlyDispatcher {
 
-        emit CommitmentTransported(toChainId, commitment);
+        emit CommitmentTransported(toChainId, commitment, block.timestamp);
 
         uint256 fee = msg.value;
-        IHubBundleTransporterer(hubBridgeConnector).receiveOrForwardCommitment(
+        IHubBundleTransporterer(hubTransporterConnector).receiveOrForwardCommitment(
             commitment,
             fee,
             toChainId,
@@ -75,18 +75,18 @@ contract SpokeNativeTransporter is Ownable, NativeTransporter {
         }
     }
 
-    function receiveCommitment(bytes32 commitment, uint256 fromChainId) external /** onlyHub ToDo */ {
+    function receiveCommitment(uint256 fromChainId, bytes32 commitment) external /** onlyHub ToDo */ {
         _setProvenCommitment(fromChainId, commitment);
     }
 
     /* Setters */
 
-    function setHubBridge(address _hubBridgeConnector, address _hubFeeDistributor) public onlyOwner {
-        if (_hubBridgeConnector == address(0)) revert NoZeroAddress();
-        if (_hubFeeDistributor == address(0)) revert NoZeroAddress();
+    function setHubTransporter(address _hubTransporter, address _hubTransporterConnector) public onlyOwner {
+        if (_hubTransporter == address(0)) revert NoZeroAddress();
+        if (_hubTransporterConnector == address(0)) revert NoZeroAddress();
 
-        hubBridgeConnector = _hubBridgeConnector;
-        hubFeeDistributor = _hubFeeDistributor;
+        hubTransporter = _hubTransporter;
+        hubTransporterConnector = _hubTransporterConnector;
     }
 
     /// @notice `pendingFeeBatchSize` of 0 will flush the pending fees for every bundle.
@@ -99,7 +99,7 @@ contract SpokeNativeTransporter is Ownable, NativeTransporter {
         emit FeesSentToHub(amount);
 
         // ToDo: Make cross-chain payment
-        (bool success, ) = hubFeeDistributor.call{value: amount}("");
+        (bool success, ) = hubTransporter.call{value: amount}("");
         if (!success) revert(); // TransferFailed(to, amount);
     }
 }

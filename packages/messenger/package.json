@@ -17,7 +17,7 @@
     "compile": "npx hardhat compile",
     "lint": "eslint .",
     "prettier": "prettier '**/*.{json,sol,md}' --check",
-    "test": "npx hardhat test test/MessageBridge.test.ts",
+    "test": "npx hardhat test test/fixtures/Transporter/Transporter.test.ts",
     "chain": "npx hardhat node",
     "gas-profile": "npx hardhat test test/gas.test.ts",
     "solhint": "solhint 'contracts/**/*.sol'",

@@ -2,10 +2,10 @@
 pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./ITransporter.sol";
+import "./ITransportLayer.sol";
 import "./Error.sol";
 
-abstract contract NativeTransporter is Ownable, ITransporter {
+abstract contract Transporter is Ownable, ITransportLayer {
     mapping(uint256 => mapping(bytes32 => bool)) public provenCommitments;
 
     function isCommitmentProven(uint256 fromChainId, bytes32 commitment) external view returns (bool) {

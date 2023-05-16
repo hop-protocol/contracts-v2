@@ -20,9 +20,12 @@ export const MAX_BUNDLE_FEE_BPS = 3_000_000 // 300%
 // Fee collection
 export const MAX_BUNDLE_MESSAGES = 32
 export const MESSAGE_FEE = parseUnits('0.000007')
+export const TRANSPORT_FEE = parseUnits('0.007')
+export const RELAY_WINDOW = 12 * 3600 // 12 hours
 
 // Message
-export const DEFAULT_RESULT = 12345
+export const DEFAULT_RESULT = 1234
+export const DEFAULT_COMMITMENT = '0x1234500000000000000000000000000000000000000000000000000000012345'
 export const DEFAULT_FROM_CHAIN_ID = SPOKE_CHAIN_ID_0
 export const DEFAULT_TO_CHAIN_ID = HUB_CHAIN_ID
 export const DEFAULT_DATA = getSetResultCalldata(DEFAULT_RESULT)

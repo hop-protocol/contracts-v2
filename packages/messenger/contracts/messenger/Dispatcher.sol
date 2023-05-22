@@ -52,10 +52,12 @@ contract Dispatcher is Ownable, EIP712 {
     mapping(uint256 => uint256) public pendingFeesForChainId;
 
     constructor(
+        address _transporter,
         Route[] memory routes
     )
         EIP712("Dispatcher", "1")
     {
+        transporter = _transporter;
         for (uint256 i = 0; i < routes.length; i++) {
             Route memory route = routes[i];
             setRoute(route);
@@ -173,6 +175,7 @@ contract Dispatcher is Ownable, EIP712 {
         return routeData[toChainId].messageFee;
     }
 
+    // ToDo: Deduplicate
     function getMessageId(
         bytes32 bundleId,
         uint256 treeIndex,

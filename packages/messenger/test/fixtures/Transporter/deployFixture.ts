@@ -3,17 +3,11 @@ import { ethers } from 'hardhat'
 import type {
   SpokeTransporter as ISpokeTransporter,
   HubTransporter as IHubTransporter,
-  MockMessageReceiver as IMessageReceiver,
   MockConnector as IMockConnector,
 } from '../../../typechain'
 
 import {
   ONE_WEEK,
-  HUB_CHAIN_ID,
-  SPOKE_CHAIN_ID_0,
-  SPOKE_CHAIN_ID_1,
-  MESSAGE_FEE,
-  MAX_BUNDLE_MESSAGES,
   TREASURY,
   FULL_POOL_SIZE,
   DEFAULT_FROM_CHAIN_ID,
@@ -32,9 +26,6 @@ async function deployFixture(
 ) {
   const hubChainId = BigNumber.from(_hubChainId)
   const spokeChainIds = _spokeChainIds.map(n => BigNumber.from(n))
-
-  // Factories
-  const MessageReceiver = await ethers.getContractFactory('MockMessageReceiver')
 
   const hubTransporter = await deployHubTransporter(
     TREASURY,

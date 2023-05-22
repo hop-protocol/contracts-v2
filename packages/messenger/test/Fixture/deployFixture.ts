@@ -26,7 +26,7 @@ import {
   MAX_BUNDLE_FEE_BPS
 } from '../constants'
 import { getSetResultCalldata } from '../utils'
-import Fixture, { Defaults } from '../Fixture'
+import Fixture, { Defaults } from '.'
 
 async function deployFixture(
   _hubChainId: BigNumberish,

@@ -114,6 +114,26 @@ library Lib_MerkleTree {
         bytes32[] memory _siblings,
         uint256 _totalLeaves
     ) internal pure returns (bool) {
+        return _root == processProof(_leaf, _index, _siblings, _totalLeaves);
+    }
+
+    /**
+     * Calculates the Merkle root for the given leaf hash and proof.  Assumes the original length
+     * of leaves generated is a known, correct input, and does not return true for indices
+     * extending past that index (even if _siblings would be otherwise valid.)
+     * @param _leaf The leaf hash to verify inclusion of.
+     * @param _index The index in the tree of this leaf.
+     * @param _siblings Array of sibline nodes in the inclusion proof, starting from depth 0
+     * (bottom of the tree).
+     * @param _totalLeaves The total number of leaves originally passed into.
+     * @return Whether or not the merkle branch and leaf passes verification.
+     */
+    function processProof(
+        bytes32 _leaf,
+        uint256 _index,
+        bytes32[] memory _siblings,
+        uint256 _totalLeaves
+    ) internal pure returns (bytes32) {
         require(_totalLeaves > 0, "Lib_MerkleTree: Total leaves must be greater than zero.");
 
         require(_index < _totalLeaves, "Lib_MerkleTree: Index out of bounds.");
@@ -135,7 +155,7 @@ library Lib_MerkleTree {
             _index >>= 1;
         }
 
-        return _root == computedRoot;
+        return computedRoot;
     }
 
     /*********************

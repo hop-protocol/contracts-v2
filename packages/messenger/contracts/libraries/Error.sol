@@ -28,3 +28,7 @@ error PendingFeesTooHigh(uint256 pendingAmount, uint256 pendingFeeBatchSize);
 error PendingFeeBatchSizeTooLow(uint256 pendingFeeBatchSize);
 error PoolNotFull(uint256 poolSize, uint256 fullPoolSize);
 error NoZeroRelayWindow();
+error NotHub(address msgSender);
+error TransferFailed(address to, uint256 amount);
+error ProveBundleFailed(address transportLayer, uint256 fromChainId, bytes32 bundleId);
+error MessageVerificationFailed(address verificationManager, uint256 fromChainId, bytes32 bundleId, bytes32 messageId, address to);

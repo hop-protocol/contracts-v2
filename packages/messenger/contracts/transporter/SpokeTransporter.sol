@@ -4,7 +4,6 @@ pragma solidity ^0.8.2;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Transporter.sol";
 import "./HubTransporter.sol";
-import "./Error.sol";
 
 interface IHubBundleTransporterer {
     function receiveOrForwardCommitment(

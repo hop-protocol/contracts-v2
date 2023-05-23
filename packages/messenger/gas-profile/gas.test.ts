@@ -16,7 +16,7 @@ import {
   MIN_PUBLIC_GOODS_BPS,
   FULL_POOL_SIZE,
   ARBITRARY_EOA,
-} from './constants'
+} from '../test/utils/constants'
 import Bridge, { SpokeBridge, HubBridge } from './Bridge'
 type Provider = providers.Provider
 const { provider } = ethers

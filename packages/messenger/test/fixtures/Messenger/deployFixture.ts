@@ -25,8 +25,8 @@ import {
   DEFAULT_RESULT,
   MAX_BUNDLE_FEE,
   MAX_BUNDLE_FEE_BPS
-} from '../../constants'
-import { getSetResultCalldata } from '../../utils'
+} from '../../utils/constants'
+import { getSetResultCalldata } from '../../utils/utils'
 import Fixture, { Defaults } from '.'
 
 const defaultRoutes = [

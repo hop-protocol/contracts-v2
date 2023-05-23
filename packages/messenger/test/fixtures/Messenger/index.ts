@@ -20,7 +20,7 @@ import {
   } from '../../../typechain'
   type Interface = utils.Interface
   
-  import { SPOKE_CHAIN_ID_0, MESSAGE_FEE } from '../../constants'
+  import { SPOKE_CHAIN_ID_0, MESSAGE_FEE } from '../../utils/constants'
   import Message from './Message'
   import deployFixture from './deployFixture'
   

@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { BigNumber, BigNumberish } from 'ethers'
+import { BigNumber } from 'ethers'
 import { ethers } from 'hardhat'
 import {
   HUB_CHAIN_ID,
@@ -7,11 +7,9 @@ import {
   SPOKE_CHAIN_ID_1,
   DEFAULT_COMMITMENT,
   TRANSPORT_FEE
-} from '../../constants'
+} from './utils/constants'
 const { provider } = ethers
-import Fixture from './index'
-import { getSetResultCalldata } from '../../utils'
-import { HubTransporter, MockMessageReceiver as IMessageReceiver } from '../../../typechain'
+import Fixture from './fixtures/Transporter/index'
 
 describe('Transporter', function () {
   describe('transportCommitment', function () {
@@ -172,21 +170,3 @@ describe('Transporter', function () {
     })
   })
 })
-
-async function expectMessageReceiverState(
-  messageReceiver: IMessageReceiver,
-  result: BigNumberish,
-  msgSender: string,
-  xDomainSender: string,
-  xDomainChainId: BigNumberish
-) {
-  const _result = await messageReceiver.result()
-  const _msgSender = await messageReceiver.msgSender()
-  const _xDomainSender = await messageReceiver.xDomainSender()
-  const _xDomainChainId = await messageReceiver.xDomainChainId()
-
-  expect(result).to.eq(_result)
-  expect(msgSender).to.eq(_msgSender)
-  expect(xDomainSender).to.eq(_xDomainSender)
-  expect(xDomainChainId).to.eq(_xDomainChainId)
-}

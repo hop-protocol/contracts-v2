@@ -5,8 +5,7 @@ import TransporterFixture from '../Transporter'
 
 import type {
   Dispatcher as IDispatcher,
-  Executor as IExecutor,
-  VerificationManager as IVerificationManager,
+  ExecutorManager as IExecutorManager,
   MockMessageReceiver as IMessageReceiver,
 } from '../../../typechain'
 import {
@@ -63,23 +62,18 @@ async function deployFixture(
   const MessageReceiver = await ethers.getContractFactory('MockMessageReceiver')
 
   const dispatchers: IDispatcher[] = []
-  const executors: IExecutor[] = []
-  const verificationManagers: IVerificationManager[] = []
+  const executors: IExecutorManager[] = []
   const messageReceivers: IMessageReceiver[] = []
   for (let i = 0; i < chainIds.length; i++) {
     const chainId = chainIds[i]
     const transporter = transporterFixture.transporters[chainId.toString()]
 
-    const {
-      dispatcher,
-      verificationManager,
-      executor
-    } = await deploy(chainId, transporter.address)
+    const { dispatcher, executor } = await deploy(chainId, transporter.address)
     dispatchers.push(dispatcher)
     executors.push(executor)
-    verificationManagers.push(verificationManager)
 
-    const messageReceiver = await MessageReceiver.deploy(executor.address)
+    const executorHead = await executor.head()
+    const messageReceiver = await MessageReceiver.deploy(executorHead)
     messageReceivers.push(messageReceiver)
   }
 
@@ -95,7 +89,6 @@ async function deployFixture(
     chainIds,
     dispatchers,
     executors,
-    verificationManagers,
     messageReceivers,
     transporterFixture,
     defaults
@@ -106,7 +99,6 @@ async function deployFixture(
     transporterFixture,
     dispatchers,
     executors,
-    verificationManagers,
     messageReceivers
   }
 }
@@ -116,8 +108,7 @@ async function deploy(
   transporter: string
 ) {
   const Dispatcher = await ethers.getContractFactory('MockDispatcher')
-  const Executor = await ethers.getContractFactory('MockExecutor')
-  const VerificationManager = await ethers.getContractFactory('MockVerificationManager')
+  const ExecutorManger = await ethers.getContractFactory('MockExecutorManager')
 
   const dispatcher = await Dispatcher.deploy(
     transporter,
@@ -125,10 +116,9 @@ async function deploy(
     chainId
   ) as IDispatcher
 
-  const verificationManager = await VerificationManager.deploy(transporter, chainId) as IVerificationManager
-  const executor = await Executor.deploy(verificationManager.address, chainId) as IExecutor
+  const executor = await ExecutorManger.deploy(transporter, chainId) as IExecutorManager
 
-  return { dispatcher, verificationManager, executor }
+  return { dispatcher, executor }
 }
 
 export default deployFixture

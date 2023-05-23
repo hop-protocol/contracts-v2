@@ -132,7 +132,7 @@ describe('Executor', function () {
       it('should not allow invalid proof', async function () {
         const messageId = messageSent.messageId
         const wrongMessageId = fixture.bundles[bundleId].messageIds[1]
-        const wrongProof = fixture.getProof(bundleId, wrongMessageId)
+        const wrongProof = fixture.getProof(wrongMessageId)
         await expect(
           fixture.executeMessage(messageId, {
             siblings: wrongProof,
@@ -143,7 +143,7 @@ describe('Executor', function () {
       it('should not allow extra siblings', async function () {
         const messageId = messageSent.messageId
         const totalLeaves = fixture.bundles[bundleId].messageIds.length + 1
-        const proof = fixture.getProof(bundleId, messageId)
+        const proof = fixture.getProof(messageId)
         proof.push(proof[proof.length - 1])
         await expect(
           fixture.executeMessage(messageId, {
@@ -210,7 +210,7 @@ describe('Executor', function () {
       it('should not allow the same message to be relayed twice', async function () {
         const messageId = messageSent.messageId
         const totalLeaves = fixture.bundles[bundleId].messageIds.length + 1
-        const proof = fixture.getProof(bundleId, messageId)
+        const proof = fixture.getProof(messageId)
         proof.push(proof[proof.length - 1])
         await expect(
           fixture.executeMessage(messageId, {

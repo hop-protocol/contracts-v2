@@ -3,6 +3,7 @@ import {
     BigNumberish,
     Signer,
     BytesLike,
+    Contract,
     ContractTransaction,
     utils
   } from 'ethers'
@@ -12,10 +13,10 @@ import {
 
   import TransporterFixture from '../Transporter'
 
-  import type {
+  import {
     Dispatcher as IDispatcher,
-    Executor as IExecutor,
-    VerificationManager as IVerificationManager,
+    ExecutorManager as IExecutorManager,
+    ExecutorHead as IExectorHead,
     MockMessageReceiver as IMessageReceiver
   } from '../../../typechain'
   type Interface = utils.Interface
@@ -42,8 +43,7 @@ import {
     // static state
     chainIds: BigNumber[]
     dispatchers: { [key: string]: IDispatcher }
-    executors: { [key: string]: IExecutor }
-    verificationManagers: { [key: string]: IVerificationManager }
+    executors: { [key: string]: IExecutorManager }
     messageReceivers: { [key: string]: IMessageReceiver }
     transporterFixture: TransporterFixture
     defaults: Defaults
@@ -68,8 +68,7 @@ import {
     constructor(
       _chainIds: BigNumber[],
       _dispatchers: IDispatcher[],
-      _executors: IExecutor[],
-      _verificationManagers: IVerificationManager[],
+      _executors: IExecutorManager[],
       _messageReceivers: IMessageReceiver[],
       _transporterFixture: TransporterFixture,
       _defaults: Defaults
@@ -77,7 +76,6 @@ import {
       if (
         _chainIds.length !== _dispatchers.length &&
         _chainIds.length !== _executors.length &&
-        _chainIds.length !== _verificationManagers.length &&
         _chainIds.length !== _messageReceivers.length
       ) {
         throw new Error('chainIds and contract arrays must be same length')
@@ -88,7 +86,6 @@ import {
       this.defaults = _defaults
       this.dispatchers = {}
       this.executors = {}
-      this.verificationManagers = {}
       this.messageReceivers = {}
   
   
@@ -96,7 +93,6 @@ import {
         const chainId = _chainIds[i].toString()
         this.dispatchers[chainId] = _dispatchers[i]
         this.executors[chainId] = _executors[i]
-        this.verificationManagers[chainId] = _verificationManagers[i]
         this.messageReceivers[chainId] = _messageReceivers[i]
       }
   
@@ -213,9 +209,9 @@ import {
         if (!firstConnectionTx) throw new Error('No commitment relayed')
 
         // prove the bundle at destination
-        const verificationManager = this.verificationManagers[toChainId.toString()]
+        const executor = this.executors[toChainId.toString()]
         const transporter = this.transporterFixture.transporters[toChainId.toString()]
-        const bundleProvenTx = await verificationManager.proveBundle(
+        const bundleProvenTx = await executor.proveBundle(
           transporter.address,
           fromChainId.toString(),
           bundle.bundleId,
@@ -266,7 +262,7 @@ import {
 
       const treeIndex =
         overrides?.treeIndex ?? storedBundle.messageIds.indexOf(messageId)
-      const siblings = overrides?.siblings ?? this.getProof(bundleId, messageId)
+      const siblings = overrides?.siblings ?? this.getProof(messageId)
       const totalLeaves = overrides?.totalLeaves ?? storedBundle.messageIds.length
 
       const executor = this.executors[toChainId.toString()]
@@ -290,7 +286,7 @@ import {
       return { tx, messageExecuted, message }
     }
 
-    getProof(bundleId: string, messageId: string) {
+    getProof(messageId: string) {
       const storedBundleId = this.messageIdsToBundleIds[messageId]
       if (!storedBundleId) throw new Error('Bundle for messageId not found')
       const storedBundle = this.bundles[storedBundleId]
@@ -379,15 +375,19 @@ import {
 
     async getExecuteMessageEvent(tx: ContractTransaction) {
       const receipt = await tx.wait()
-  
-      const messageExecutedEvent = receipt.events?.find(
-        e => e.event === 'MessageExecuted'
+
+      const executorHead = await ethers.getContractFactory('ExecutorHead')
+      const messageExecutedEvent = await this._getRawEvent(
+        tx,
+        executorHead.interface,
+        'MessageExecuted(uint256,bytes32)'
       )
-      if (!messageExecutedEvent?.args) throw new Error('No MessageExecuted event found')
-      const messageExecuted = {
-        fromChainId: messageExecutedEvent.args.fromChainId as BigNumber,
-        messageId: messageExecutedEvent.args.messageId as string
-      }
+      const messageExecuted = messageExecutedEvent
+        ? {
+            fromChainId: messageExecutedEvent.args.fromChainId as BigNumber,
+            messageId: messageExecutedEvent.args.messageId as string,
+          }
+        : undefined
   
       return messageExecuted
     }
@@ -407,6 +407,18 @@ import {
       }
   
       return bundleProven
+    }
+  
+    async _getRawEvent(
+      tx: ContractTransaction,
+      iface: Interface,
+      eventSig: string
+    ) {
+      const receipt = await tx.wait()
+      const topic = ethers.utils.id(eventSig)
+      const rawEvent = receipt.events?.find(e => e.topics[0] === topic)
+      if (!rawEvent) return
+      return iface.parseLog(rawEvent)
     }
   }
 

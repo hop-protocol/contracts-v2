@@ -2,9 +2,11 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./ExecutorHead.sol";
 import "../transporter/ITransportLayer.sol";
 import "../libraries/Error.sol";
 import "../utils/Lib_MerkleTree.sol";
+import "../libraries/Bitmap.sol";
 import "hardhat/console.sol";
 
 interface IHopMessageReceiver {
@@ -13,12 +15,25 @@ interface IHopMessageReceiver {
     function hop_messageVerifier() external view returns (address);
 }
 
-contract VerificationManager is Ownable {
+struct BundleProof {
+    bytes32 bundleId;
+    uint256 treeIndex;
+    bytes32[] siblings;
+    uint256 totalLeaves;
+}
+
+contract ExecutorManager is Ownable {
+    using BitmapLibrary for Bitmap;
+
+    address immutable public head;
+
     address public defaultTransporter;
     // messageReceiver -> transporter
     mapping(address => address) public registedTransporters;
     // transporter -> fromChainId -> bundleHash -> verified status
     mapping(address => mapping(uint256 => mapping(bytes32 => bool))) public verifiedBundleHashes;
+    address public verificationManager;
+    mapping(bytes32 => Bitmap) private spentMessagesForBundleId;
 
     event BundleProven(
         uint256 indexed fromChainId,
@@ -30,6 +45,80 @@ contract VerificationManager is Ownable {
 
     constructor(address _defaultTransporter) {
         defaultTransporter = _defaultTransporter;
+
+        head = address(new ExecutorHead());
+    }
+
+    function executeMessage(
+        uint256 fromChainId,
+        address from,
+        address to,
+        bytes calldata data,
+        BundleProof memory bundleProof
+    ) external {
+        bytes32 messageId = getMessageId(
+            bundleProof.bundleId,
+            bundleProof.treeIndex,
+            fromChainId,
+            from,
+            getChainId(),
+            to,
+            data
+        );
+        bytes32 bundleRoot = Lib_MerkleTree.processProof(
+            messageId,
+            bundleProof.treeIndex,
+            bundleProof.siblings,
+            bundleProof.totalLeaves
+        );
+
+        bool isVerified = isMessageVerified(
+            fromChainId,
+            bundleProof.bundleId,
+            bundleRoot,
+            bundleProof.treeIndex,
+            messageId,
+            to
+        );
+        if (!isVerified) revert MessageVerificationFailed(verificationManager, fromChainId, bundleProof.bundleId, messageId, to);
+
+        Bitmap storage spentMessages = spentMessagesForBundleId[bundleProof.bundleId];
+        spentMessages.switchTrue(bundleProof.treeIndex); // Reverts if already true
+
+        // ToDo: Log BunldeId? treeIndex?
+        ExecutorHead(head).executeMessage(messageId, fromChainId, from, to, data);
+    }
+
+    function isMessageSpent(bytes32 bundleId, uint256 index) public view returns (bool) {
+        Bitmap storage spentMessages = spentMessagesForBundleId[bundleId];
+        return spentMessages.isTrue(index);
+    }
+
+    // ToDo: Deduplicate
+    function getMessageId(
+        bytes32 bundleId,
+        uint256 treeIndex,
+        uint256 fromChainId,
+        address from,
+        uint256 toChainId,
+        address to,
+        bytes calldata data
+    )
+        public
+        pure
+        returns (bytes32)
+    {
+        return keccak256(
+            abi.encode(
+                bundleId,
+                treeIndex,
+                fromChainId,
+                from,
+                toChainId,
+                to,
+                data
+            )
+        );
     }
 
     function proveBundle(address transportLayer, uint256 fromChainId, bytes32 bundleId, bytes32 bundleRoot) external {
@@ -50,7 +139,7 @@ contract VerificationManager is Ownable {
         bytes32 /*messageId*/,
         address messageReceiver
     )
-        external
+        public
         view
         returns (bool)
     {

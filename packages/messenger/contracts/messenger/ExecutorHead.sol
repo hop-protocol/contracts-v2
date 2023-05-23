@@ -13,7 +13,7 @@ contract ExecutorHead is MessageExecutor, Ownable {
         address from,
         address to,
         bytes calldata data
-    ) external {
+    ) external onlyOwner {
         _execute(messageId, fromChainId, from, to, data);
     }
 }

@@ -16,7 +16,7 @@ import type {
 } from '../../../typechain'
 type Interface = utils.Interface
 
-import { SPOKE_CHAIN_ID_0, TRANSPORT_FEE } from '../../constants'
+import { SPOKE_CHAIN_ID_0, TRANSPORT_FEE } from '../../utils/constants'
 import deployFixture from './deployFixture'
 
 export type Defaults = {

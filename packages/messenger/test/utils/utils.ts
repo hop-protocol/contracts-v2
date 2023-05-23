@@ -11,7 +11,6 @@ import {
   MIN_PUBLIC_GOODS_BPS,
   FULL_POOL_SIZE,
 } from './constants'
-import Bridge, { SpokeBridge, HubBridge } from './Bridge'
 type Provider = providers.Provider
 const { provider } = ethers
 const { solidityKeccak256, keccak256, defaultAbiCoder: abi } = ethers.utils

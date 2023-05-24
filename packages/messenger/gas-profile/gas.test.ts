@@ -1,27 +1,13 @@
-import { expect, use } from 'chai'
 import { ContractTransaction, BigNumber, BigNumberish, Signer, providers } from 'ethers'
 import { ethers } from 'hardhat'
 import {
-  ONE_WEEK,
   HUB_CHAIN_ID,
   SPOKE_CHAIN_ID_0,
   SPOKE_CHAIN_ID_1,
-  DEFAULT_RESULT,
-  DEFAULT_FROM_CHAIN_ID,
-  DEFAULT_TO_CHAIN_ID,
-  MESSAGE_FEE,
   MAX_BUNDLE_MESSAGES,
-  TREASURY,
-  PUBLIC_GOODS,
-  MIN_PUBLIC_GOODS_BPS,
-  FULL_POOL_SIZE,
   ARBITRARY_EOA,
 } from '../test/utils/constants'
-import Bridge, { SpokeBridge, HubBridge } from './Bridge'
-type Provider = providers.Provider
-const { provider } = ethers
-const { solidityKeccak256, keccak256, defaultAbiCoder: abi } = ethers.utils
-import Fixture from './Fixture'
+import Fixture from '../test/fixtures/Messenger'
 
 describe('MessageBridge Gas Profile', function () {
   it('should dispatchMessage L1 -> L2', async function () {
@@ -40,10 +26,7 @@ describe('MessageBridge Gas Profile', function () {
     await fixture.dispatchMessage(sender)
     await fixture.dispatchMessage(sender)
 
-    const {
-      tx: sendTx,
-      messageSent: { messageId: messageId0 },
-    } = await fixture.dispatchMessage(sender, { to: ARBITRARY_EOA })
+    const { tx: sendTx } = await fixture.dispatchMessage(sender, { to: ARBITRARY_EOA })
     await logGas('dispatchMessage()', sendTx)
 
     const { tx: sendAndCommitTx } = await fixture.dispatchMessage(sender)

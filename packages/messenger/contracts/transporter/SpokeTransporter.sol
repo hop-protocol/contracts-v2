@@ -69,7 +69,7 @@ contract SpokeTransporter is Ownable, Transporter {
         }
     }
 
-    function receiveCommitment(uint256 fromChainId, bytes32 commitment) external /** onlyHub ToDo */ {
+    function receiveCommitment(uint256 fromChainId, bytes32 commitment) external onlyHub {
         _setProvenCommitment(fromChainId, commitment);
     }
 

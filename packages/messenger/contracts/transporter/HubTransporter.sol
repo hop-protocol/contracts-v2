@@ -76,7 +76,6 @@ contract HubTransporter is Transporter {
         spokeTransporter.receiveCommitment{value: msg.value}(fromChainId, commitment); // Forward value for message fee
     }
 
-    // ToDo: only spoke connector
     function receiveOrForwardCommitment(
         bytes32 commitment,
         uint256 transportFee,
@@ -86,6 +85,7 @@ contract HubTransporter is Transporter {
         external
         payable
     {
+        // getSpokeChainId will revert invalid senders
         uint256 fromChainId = getSpokeChainId(msg.sender);
 
         if (toChainId == getChainId()) {

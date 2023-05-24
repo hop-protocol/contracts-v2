@@ -1,24 +1,34 @@
 # Hop Core Messenger
 
-The Hop Core Messenger is a simple, trustless messaging protocol that can be used to build powerful cross-chain applications.
+The Hop Messenger is a modular, trustless messaging protocol that can be used to build powerful cross-chain applications.
 
-### How it works
-* The Core Messenger uses a hub-and-spoke model
-* Messages are aggregated into bundles
-* The bundle is hashed and sent to the destination
-* Native bridges with Ethereum are used to pass the bundle hash
-* At the destination, messages in the bundle can be unpacked and executed
+## Contracts
 
-Because the native bridges can sometimes be slow, the Hop Core Messenger is best used for messages that require trustlessness and high-security but are not time sensitive (e.g. value settlement, dispute resolution, DAO governance, etc.).
+The Hop Messenger is primarily made up of 3 types of contracts:
+ * `Dispatcher`s - dispatch and bundle messages
+ * `Transporter`s - transport bundles cross-chain
+ * `Executor`s - validate and execute messages
 
-Faster messaging models such as collateralized messaging and optimistic messaging (as seen in Hop V1) can be easily implemented on top of the Core Messenger for application-specific or generalized use cases.
+### Dispatchers
 
-## Deployments
+There is a single `Dispatcher` on each chain. Dispatchers are responsible for aggregating messages into bundles sending the bundle to the destination through the transport layer. A small fee is required for each message that is dispatched which goes toward the cost of transporting the bundle. A `Dispatcher` may use a single `Transporter` as the transport layer or it may use multiple for better security, speed, or trust tradeoffs.
 
-### Testnet
+### Transporters
 
- * Goerli - `HubMessageBridge` - [`0xE3F4c0B210E7008ff5DE92ead0c5F6A5311C4FDC`](https://goerli.etherscan.io/address/0xE3F4c0B210E7008ff5DE92ead0c5F6A5311C4FDC#code)
- * Optimism Goerli - `SpokeMessageBridge` - [`0xeA35E10f763ef2FD5634dF9Ce9ad00434813bddB`](https://goerli-optimism.etherscan.io/address/0xeA35E10f763ef2FD5634dF9Ce9ad00434813bddB#code)
+`Transporter`s are used for tranporting data such as bundles cross-chain. The data being transported is always represented by a single hash called a `commitment`. In this case, the `commitment` is the hash of the bundle data -- the `bundleHash`.
+
+The default `Transporter` uses the native bridges to transport the `bundleHash` using Ethereum as a hub. This is a simple transport method optimized for trustlessness and security but it can be quite slow in some cases such as sending a message from an optimistic rollup.
+
+Applications that require different speed/trust/security tradeoffs can specify a different `Transporter` than the default or combine multiple together (see "Implementing custom validation" below).
+
+### Executors
+
+`Executor`s are responsible for validating and executing messages. Each `Executor` is actually two contracts, the `ExecutorManager` where most of the business logic lives and the `ExecutorHead` which calls the message receivers on behalf of the `ExecutorManager`. There is one `ExecutorManager`/`ExecutorHead` deployed on every supported chain.
+
+_Note: The separation of the business logic contract, the `ExecutorManager`, from the contract capable of arbitrary execution, the `ExecutorHead`, allows us to mitigate the security risks that come with arbitary execution without needing to rely on fallible patterns like contract blacklists._
+
+Before a message can be executed, the `ExecutionManager` must prove the bundle by verifying it with a `Transporter`. If a `MessageReceiver` has not specified a `Transporter`, a message that calls the `MessageReceiver` can be executed after the bundle has been proven with the default `Transporter`. If a `Transporter` is specified by the `MessageReceiver` the bundle must be proven with that `Transporter` before it can be executed (see "Implementing custom validation" below). 
+
 
 ## Getting Started
 
@@ -27,12 +37,12 @@ Faster messaging models such as collateralized messaging and optimistic messagin
 You can send a message by calling the EIP-5164 method, `dispatchMessage`.
 
 ```solidity
-ISingleMessageDispatcher(hopMessageBridge).dispatchMessage(toChainId, to, data);
+IMessageDispatcher(dispatcher).dispatchMessage(toChainId, to, data);
 ```
 
 ### Receive a message
 
-When receiving a message, inherit from [`MessageReceiver`](https://github.com/hop-protocol/contracts-v2/blob/master/packages/messenger/contracts/erc5164/MessageReceiver.sol) to access the `messageId`, `from` address, and `fromChainId`.
+When receiving a message, inherit from [`MessageReceiver`](https://github.com/hop-protocol/contracts-v2/blob/master/packages/messenger/contracts/erc5164/MessageReceiver.sol) to access the `EIP-5164` validation data -- `messageId`, `from` address, and `fromChainId`.
 
 ```solidity
 contract MyContract is MessageReceiver {
@@ -55,6 +65,33 @@ contract MyContract is MessageReceiver {
     }
 }
 ```
+
+### Implementing custom validation
+
+Any contract that receives messages from an Executor can determine it's own message validation logic by registering an alternative `Transporter` that the `ExecutorManager` will validate with. This flexibility enables the Hop Messenger to support any method of message validation including methods based on optimistic mechanisms, zk cross-rollup storage proofs, zk cross-chain light clients, collateral-based mechanisms, or authority-based mechanisms. Cross-chain applications can choose to aggregate multiple validation methods to diversify security or trust-based risks. Bundles are agnostic to the validation method and any given bundle of messages may contain messages that utilize many different validation methods.
+
+To register a non-default validation method, the contract receiving the message must implement one or both of the following methods:
+```
+function hop_transporter() external view returns (address);
+function hop_messageVerifier() external view returns (address);
+```
+Any address may call `registerMessageReceiver(address receiver)` on the `ExecutorManager` contract which will call these functions and register the contracts selected `Transporter` and `MessageVerifier` contracts. The `Transporter` validates entire bundles and is called only once per bundle. The `MessageVerifier` can be used to verify individual messages and is called once every time a message is executed if a `MessageVerifier` is registered.
+
+## Deployments
+
+### Testnet
+
+__Goerli__
+ * `Dispatcher` - [``](https://goerli.etherscan.io/address/#code)
+ * `ExecutorHead` - [``](https://goerli.etherscan.io/address/#code)
+ * `ExecutorManager` - [``](https://goerli.etherscan.io/address/#code)
+ * `HubTransporter` - [``](https://goerli.etherscan.io/address/#code)
+
+__Optimism Goerli__
+ * `Dispatcher` - [``](https://goerli-optimism.etherscan.io/address/#code)
+ * `ExecutorHead` - [``](https://goerli-optimism.etherscan.io/address/#code)
+ * `ExecutorManager` - [``](https://goerli-optimism.etherscan.io/address/#code)
+ * `SpokeTransporter` - [``](https://goerli-optimism.etherscan.io/address/#code)
 
 ## Usage
 
@@ -84,3 +121,15 @@ npm run mainnet
 ```shell
 npm run lint
 ```
+
+
+
+* The Hop Messenger uses a hub-and-spoke model
+* Messages are aggregated into bundles
+* The bundle is hashed and sent to the destination
+* Native bridges with Ethereum are used to pass the bundle hash
+* At the destination, messages in the bundle can be unpacked and executed
+
+Because the native bridges can sometimes be slow, the Hop Core Messenger is best used for messages that require trustlessness and high-security but are not time sensitive (e.g. value settlement, dispute resolution, DAO governance, etc.).
+
+Faster messaging models such as collateralized messaging and optimistic messaging (as seen in Hop V1) can be easily implemented on top of the Core Messenger for application-specific or generalized use cases.

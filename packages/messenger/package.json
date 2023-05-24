@@ -19,7 +19,7 @@
     "prettier": "prettier '**/*.{json,sol,md}' --check",
     "test": "npx hardhat test",
     "chain": "npx hardhat node",
-    "gas-profile": "npx hardhat test test/gas.test.ts",
+    "gas-profile": "npx hardhat test gas-profile/gas.test.ts",
     "solhint": "solhint 'contracts/**/*.sol'",
     "coverage": "npx hardhat coverage --solcoverjs .solcover.js",
     "deploy": "npm run local:deploy",

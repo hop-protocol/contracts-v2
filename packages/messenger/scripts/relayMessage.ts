@@ -6,7 +6,7 @@ const { messengers } = contracts.testnet
 async function main() {
   const {
     message: { fromChainId, toChainId, to, result },
-    proof: { bundleId, treeIndex, siblings, totalLeaves },
+    proof: { bundleNonce, treeIndex, siblings, totalLeaves },
   } = messageConfig
 
   const data = await getSetResultCalldata(result)
@@ -26,7 +26,7 @@ async function main() {
     to,
     data,
     {
-      bundleId,
+      bundleNonce,
       treeIndex,
       siblings,
       totalLeaves,

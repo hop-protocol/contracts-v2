@@ -3,7 +3,7 @@ pragma solidity ^0.8.9;
 
 library MessengerLib {
     function getMessageId(
-        bytes32 bundleId,
+        bytes32 bundleNonce,
         uint256 treeIndex,
         uint256 fromChainId,
         address from,
@@ -17,7 +17,7 @@ library MessengerLib {
     {
         return keccak256(
             abi.encode(
-                bundleId,
+                bundleNonce,
                 treeIndex,
                 fromChainId,
                 from,
@@ -28,17 +28,17 @@ library MessengerLib {
         );
     }
 
-    function getBundleHash(
+    function getBundleId(
         uint256 fromChainId,
         uint256 toChainId,
-        bytes32 bundleId,
+        bytes32 bundleNonce,
         bytes32 bundleRoot
     ) internal pure returns (bytes32) {
         return keccak256(
             abi.encode(
                 fromChainId,
                 toChainId,
-                bundleId,
+                bundleNonce,
                 bundleRoot
             )
         );

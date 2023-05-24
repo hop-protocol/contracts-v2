@@ -49,11 +49,11 @@ class Fixture {
   // dynamic state
   messageIds: string[]
   messages: { [key: string]: Message }
-  messageIdsToBundleIds: { [key: string]: string }
-  bundleIds: string[]
+  messageIdsToBundleNonces: { [key: string]: string }
+  bundleNonces: string[]
   bundles: {
     [key: string]: {
-      bundleId: string
+      bundleNonce: string
       messageIds: string[]
       bundleRoot: string
       fromChainId: BigNumber
@@ -97,8 +97,8 @@ class Fixture {
 
     this.messageIds = []
     this.messages = {}
-    this.messageIdsToBundleIds = {}
-    this.bundleIds = []
+    this.messageIdsToBundleNonces = {}
+    this.bundleNonces = []
     this.bundles = {}
     this.spentMessageIds = {}
   }
@@ -158,14 +158,14 @@ class Fixture {
 
     let messageExecuted
     if (!messageBundled) throw new Error('MessageBundled event not found')
-    const bundleId = messageBundled?.bundleId
+    const bundleNonce = messageBundled?.bundleNonce
     const treeIndex = messageBundled?.treeIndex
-    if (!bundleId || !treeIndex) {
+    if (!bundleNonce || !treeIndex) {
       throw new Error('Missing MessageBundled event data')
     }
 
     const message = new Message(
-      bundleId,
+      bundleNonce,
       treeIndex,
       fromChainId,
       from,
@@ -181,19 +181,19 @@ class Fixture {
     let bundleProven
     let bundlePostedTx
     if (bundleCommitted) {
-      const bundleId = bundleCommitted.bundleId
+      const bundleNonce = bundleCommitted.bundleNonce
 
       // save bundle
-      this.bundleIds.push(bundleId)
+      this.bundleNonces.push(bundleNonce)
       const bundle = {
         fromChainId: BigNumber.from(fromChainId),
         messageIds: this.messageIds,
         ...bundleCommitted,
       }
-      this.bundles[bundleId] = bundle
+      this.bundles[bundleNonce] = bundle
 
       this.messageIds.forEach(messageId => {
-        this.messageIdsToBundleIds[messageId] = bundleId
+        this.messageIdsToBundleNonces[messageId] = bundleNonce
       })
 
       this.messageIds = []
@@ -211,7 +211,7 @@ class Fixture {
       const bundleProvenTx = await executor.proveBundle(
         transporter.address,
         fromChainId.toString(),
-        bundle.bundleId,
+        bundle.bundleNonce,
         bundle.bundleRoot
       )
       bundleProven = await this.getBundleProvenEvent(bundleProvenTx)
@@ -237,7 +237,7 @@ class Fixture {
       toChainId: BigNumberish
       to: string
       data: string
-      bundleId: string
+      bundleNonce: string
       treeIndex: BigNumberish
       siblings: string[]
       totalLeaves: BigNumberish
@@ -245,9 +245,9 @@ class Fixture {
   ) {
     const message = this.messages[messageId]
     if (!message) throw new Error('Message for messageId not found')
-    const storedBundleId = this.messageIdsToBundleIds[messageId]
-    if (!storedBundleId) throw new Error('Bundle for messageId not found')
-    const storedBundle = this.bundles[storedBundleId]
+    const storedBundleNonce = this.messageIdsToBundleNonces[messageId]
+    if (!storedBundleNonce) throw new Error('Bundle for messageId not found')
+    const storedBundle = this.bundles[storedBundleNonce]
     if (!storedBundle) throw new Error('Bundle for messageId not found')
 
     const fromChainId = overrides?.fromChainId ?? message.fromChainId
@@ -255,7 +255,7 @@ class Fixture {
     const toChainId = overrides?.toChainId ?? message.toChainId
     const to = overrides?.to ?? message.to
     const data = overrides?.data ?? message.data
-    const bundleId = overrides?.bundleId ?? storedBundle.bundleId
+    const bundleNonce = overrides?.bundleNonce ?? storedBundle.bundleNonce
 
     const treeIndex =
       overrides?.treeIndex ?? storedBundle.messageIds.indexOf(messageId)
@@ -269,7 +269,7 @@ class Fixture {
       to,
       data,
       {
-        bundleId,
+        bundleNonce,
         treeIndex,
         siblings,
         totalLeaves
@@ -284,9 +284,9 @@ class Fixture {
   }
 
   getProof(messageId: string) {
-    const storedBundleId = this.messageIdsToBundleIds[messageId]
-    if (!storedBundleId) throw new Error('Bundle for messageId not found')
-    const storedBundle = this.bundles[storedBundleId]
+    const storedBundleNonce = this.messageIdsToBundleNonces[messageId]
+    if (!storedBundleNonce) throw new Error('Bundle for messageId not found')
+    const storedBundle = this.bundles[storedBundleNonce]
     if (!storedBundle) throw new Error('Bundle for messageId not found')
 
     const tree = new MerkleTree(storedBundle.messageIds, keccak256)
@@ -297,8 +297,8 @@ class Fixture {
     return proof
   }
 
-  getUnspentMessageIds(bundleId: string) {
-    const bundle = this.bundles[bundleId]
+  getUnspentMessageIds(bundleNonce: string) {
+    const bundle = this.bundles[bundleNonce]
     return bundle.messageIds.filter((messageId: string) => {
       return !this.spentMessageIds[messageId]
     })
@@ -312,9 +312,9 @@ class Fixture {
   getBundle(messageId: string) {
     const message = this.messages[messageId]
     if (!message) throw new Error('Message for messageId not found')
-    const storedBundleId = this.messageIdsToBundleIds[messageId]
-    if (!storedBundleId) throw new Error('Bundle for messageId not found')
-    const storedBundle = this.bundles[storedBundleId]
+    const storedBundleNonce = this.messageIdsToBundleNonces[messageId]
+    if (!storedBundleNonce) throw new Error('Bundle for messageId not found')
+    const storedBundle = this.bundles[storedBundleNonce]
     if (!storedBundle) throw new Error('Bundle for messageId not found')
 
     return storedBundle
@@ -343,7 +343,7 @@ class Fixture {
     let messageBundled
     if (messageBundledEvent?.args) {
       messageBundled = {
-        bundleId: messageBundledEvent.args.bundleId as string,
+        bundleNonce: messageBundledEvent.args.bundleNonce as string,
         treeIndex: messageBundledEvent.args.treeIndex as BigNumber,
         messageId: messageBundledEvent.args.messageId as string,
       }
@@ -355,7 +355,7 @@ class Fixture {
     let bundleCommitted
     if (bundleCommittedEvent?.args) {
       bundleCommitted = {
-        bundleId: bundleCommittedEvent.args.bundleId as string,
+        bundleNonce: bundleCommittedEvent.args.bundleNonce as string,
         bundleRoot: bundleCommittedEvent.args.bundleRoot as string,
         bundleFees: bundleCommittedEvent.args.bundleFees as BigNumber,
         toChainId: bundleCommittedEvent.args.toChainId as BigNumber,
@@ -398,9 +398,9 @@ class Fixture {
     if (!bundleProvenEvent?.args) throw new Error('No BundleProven event found')
     const bundleProven = {
       fromChainId: bundleProvenEvent.args.fromChainId as BigNumber,
-      bundleId: bundleProvenEvent.args.bundleId as string,
+      bundleNonce: bundleProvenEvent.args.bundleNonce as string,
       bundleRoot: bundleProvenEvent.args.bundleRoot as string,
-      bundleHash: bundleProvenEvent.args.bundleHash as string
+      bundleId: bundleProvenEvent.args.bundleId as string
     }
 
     return bundleProven

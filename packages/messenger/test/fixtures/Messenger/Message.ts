@@ -3,7 +3,7 @@ import { ethers } from 'hardhat'
 const { keccak256, defaultAbiCoder: abi } = ethers.utils
 
 class Message {
-  bundleId: string
+  bundleNonce: string
   treeIndex: BigNumber
   fromChainId: BigNumber
   from: string
@@ -12,7 +12,7 @@ class Message {
   data: BytesLike
 
   constructor(
-    _bundleId: string,
+    _bundleNonce: string,
     _treeIndex: BigNumberish,
     _fromChainId: BigNumberish,
     _from: string,
@@ -20,7 +20,7 @@ class Message {
     _to: string,
     _data: BytesLike
   ) {
-    this.bundleId = _bundleId
+    this.bundleNonce = _bundleNonce
     this.treeIndex = BigNumber.from(_treeIndex)
     this.fromChainId = BigNumber.from(_fromChainId)
     this.from = _from
@@ -42,7 +42,7 @@ class Message {
           'bytes',
         ],
         [
-          this.bundleId,
+          this.bundleNonce,
           this.treeIndex,
           this.fromChainId,
           this.from,

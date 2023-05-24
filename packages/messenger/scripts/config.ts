@@ -26,7 +26,7 @@ export const messageConfig = {
     result: 999,
   },
   proof: {
-    bundleId:
+    bundleNonce:
       '0x67828efe977de865e3a6315b092ec6b10f5e0e149b7f3d43fbeaee953fa04f62',
     treeIndex: 0,
     siblings: [

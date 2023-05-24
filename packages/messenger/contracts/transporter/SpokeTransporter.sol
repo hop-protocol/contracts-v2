@@ -27,7 +27,7 @@ contract SpokeTransporter is Ownable, Transporter {
     uint256 public pendingFeeBatchSize;
 
     /* state */
-    mapping(uint256 => bytes32) public pendingBundleIdForChainId;
+    mapping(uint256 => bytes32) public pendingBundleNonceForChainId;
     mapping(uint256 => bytes32[]) public pendingMessageIdsForChainId;
     mapping(uint256 => uint256) public pendingFeesForChainId;
     uint256 public totalFeesForHub;

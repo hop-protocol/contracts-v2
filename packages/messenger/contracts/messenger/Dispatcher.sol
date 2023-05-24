@@ -32,12 +32,12 @@ contract Dispatcher is Ownable, EIP712, OverridableChainId {
         bytes data
     );
     event MessageBundled(
-        bytes32 indexed bundleId,
+        bytes32 indexed bundleNonce,
         uint256 indexed treeIndex,
         bytes32 indexed messageId
     );
     event BundleCommitted(
-        bytes32 indexed bundleId,
+        bytes32 indexed bundleNonce,
         bytes32 bundleRoot,
         uint256 bundleFees,
         uint256 indexed toChainId,
@@ -49,7 +49,7 @@ contract Dispatcher is Ownable, EIP712, OverridableChainId {
     mapping(uint256 => RouteData) public routeData;
 
     /* state */
-    mapping(uint256 => bytes32) public pendingBundleIdForChainId;
+    mapping(uint256 => bytes32) public pendingBundleNonceForChainId;
     mapping(uint256 => bytes32[]) public pendingMessageIdsForChainId;
     mapping(uint256 => uint256) public pendingFeesForChainId;
 
@@ -83,9 +83,9 @@ contract Dispatcher is Ownable, EIP712, OverridableChainId {
         bytes32[] storage pendingMessageIds = pendingMessageIdsForChainId[toChainId];
         uint256 treeIndex = pendingMessageIds.length;
 
-        bytes32 pendingBundleId = pendingBundleIdForChainId[toChainId];
+        bytes32 pendingBundleNonce = pendingBundleNonceForChainId[toChainId];
         bytes32 messageId = MessengerLib.getMessageId(
-            pendingBundleId,
+            pendingBundleNonce,
             treeIndex,
             fromChainId,
             msg.sender,
@@ -98,7 +98,7 @@ contract Dispatcher is Ownable, EIP712, OverridableChainId {
         pendingFeesForChainId[toChainId] += msg.value;
 
         emit MessageSent(messageId, msg.sender, toChainId, to, data);
-        emit MessageBundled(pendingBundleId, treeIndex, messageId);
+        emit MessageBundled(pendingBundleNonce, treeIndex, messageId);
 
         if (pendingMessageIds.length >= _routeData.maxBundleMessages) {
             _commitPendingBundle(toChainId);
@@ -129,12 +129,12 @@ contract Dispatcher is Ownable, EIP712, OverridableChainId {
             return;
         }
 
-        bytes32 bundleId = pendingBundleIdForChainId[toChainId];
+        bytes32 bundleNonce = pendingBundleNonceForChainId[toChainId];
         bytes32 bundleRoot = MerkleTreeLib.getMerkleRoot(pendingMessageIds);
         uint256 bundleFees = pendingFeesForChainId[toChainId];
 
         // New pending bundle
-        pendingBundleIdForChainId[toChainId] = bytes32(uint256(pendingBundleIdForChainId[toChainId]) + 1);
+        pendingBundleNonceForChainId[toChainId] = bytes32(uint256(pendingBundleNonceForChainId[toChainId]) + 1);
 
         // Setting the array length to 0 while leaving storage slots dirty saves gas 15k gas per
         // message. and is safe inthis case because the array length is never set to a non-zero
@@ -145,11 +145,11 @@ contract Dispatcher is Ownable, EIP712, OverridableChainId {
         }
         pendingFeesForChainId[toChainId] = 0;
 
-        emit BundleCommitted(bundleId, bundleRoot, bundleFees, toChainId, block.timestamp);
+        emit BundleCommitted(bundleNonce, bundleRoot, bundleFees, toChainId, block.timestamp);
 
         uint256 fromChainId = getChainId();
-        bytes32 bundleHash = getBundleHash(fromChainId, toChainId, bundleId, bundleRoot);
-        ITransportLayer(transporter).dispatchCommitment{value: bundleFees}(toChainId, bundleHash);
+        bytes32 bundleId = getBundleId(fromChainId, toChainId, bundleNonce, bundleRoot);
+        ITransportLayer(transporter).dispatchCommitment{value: bundleFees}(toChainId, bundleId);
     }
 
     function setRoute(Route memory route) public onlyOwner {
@@ -157,20 +157,20 @@ contract Dispatcher is Ownable, EIP712, OverridableChainId {
         if (route.messageFee == 0) revert NoZeroMessageFee();
         if (route.maxBundleMessages == 0) revert NoZeroMaxBundleMessages();
 
-        if (pendingBundleIdForChainId[route.chainId] == 0) {
-            pendingBundleIdForChainId[route.chainId] = initialBundleId(route.chainId);
+        if (pendingBundleNonceForChainId[route.chainId] == 0) {
+            pendingBundleNonceForChainId[route.chainId] = initialBundleNonce(route.chainId);
         }
         _commitPendingBundle(route.chainId);
         routeData[route.chainId] = RouteData(route.messageFee, route.maxBundleMessages);
     }
 
     /* Getters */
-    function initialBundleId(uint256 toChainId) public view returns (bytes32) {
+    function initialBundleNonce(uint256 toChainId) public view returns (bytes32) {
         return keccak256(abi.encodePacked(_domainSeparatorV4(), toChainId));
     }
 
-    function getBundleHash(uint256 fromChainId, uint256 toChainId, bytes32 bundleId, bytes32 bundleRoot) public pure returns (bytes32) {
-        return keccak256(abi.encode(fromChainId, toChainId, bundleId, bundleRoot));
+    function getBundleId(uint256 fromChainId, uint256 toChainId, bytes32 bundleNonce, bytes32 bundleRoot) public pure returns (bytes32) {
+        return keccak256(abi.encode(fromChainId, toChainId, bundleNonce, bundleRoot));
     }
 
     function getFee(uint256 toChainId) external view returns (uint256) {

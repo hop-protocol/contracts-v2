@@ -82,7 +82,7 @@ describe('Executor', function () {
           fixture.executeMessage(messageSent.messageId, {
             fromChainId: SPOKE_CHAIN_ID_1,
           })
-        ).to.be.revertedWith('MessageVerificationFailed')
+        ).to.be.revertedWith('InvalidBundle')
       })
 
       it('should not allow invalid from', async function () {
@@ -90,7 +90,7 @@ describe('Executor', function () {
           fixture.executeMessage(messageSent.messageId, {
             from: '0x0000000000000000000000000000000000000099',
           })
-        ).to.be.revertedWith('MessageVerificationFailed')
+        ).to.be.revertedWith('InvalidBundle')
       })
 
       it('should not allow invalid to', async function () {
@@ -98,7 +98,7 @@ describe('Executor', function () {
           fixture.executeMessage(messageSent.messageId, {
             to: '0x0000000000000000000000000000000000000098',
           })
-        ).to.be.revertedWith('MessageVerificationFailed')
+        ).to.be.revertedWith('InvalidBundle')
       })
 
       it('should not allow invalid message data', async function () {
@@ -107,7 +107,7 @@ describe('Executor', function () {
           fixture.executeMessage(messageSent.messageId, {
             data: invalidData,
           })
-        ).to.be.revertedWith('MessageVerificationFailed')
+        ).to.be.revertedWith('InvalidBundle')
       })
 
       // BundleProof
@@ -118,7 +118,7 @@ describe('Executor', function () {
           fixture.executeMessage(messageSent.messageId, {
             bundleId: invalidBundleId,
           })
-        ).to.be.revertedWith('MessageVerificationFailed')
+        ).to.be.revertedWith('InvalidBundle')
       })
 
       it('should not allow invalid treeIndex', async function () {
@@ -126,7 +126,7 @@ describe('Executor', function () {
           fixture.executeMessage(messageSent.messageId, {
             treeIndex: 1,
           })
-        ).to.be.revertedWith('MessageVerificationFailed')
+        ).to.be.revertedWith('InvalidBundle')
       })
 
       it('should not allow invalid proof', async function () {
@@ -137,7 +137,7 @@ describe('Executor', function () {
           fixture.executeMessage(messageId, {
             siblings: wrongProof,
           })
-        ).to.be.revertedWith('MessageVerificationFailed')
+        ).to.be.revertedWith('InvalidBundle')
       })
 
       it('should not allow extra siblings', async function () {
@@ -150,7 +150,7 @@ describe('Executor', function () {
             siblings: proof,
             totalLeaves,
           })
-        ).to.be.revertedWith('MessageVerificationFailed')
+        ).to.be.revertedWith('InvalidBundle')
       })
 
       it('should not allow empty proof for non single element tree', async function () {
@@ -160,7 +160,7 @@ describe('Executor', function () {
             siblings: [],
             totalLeaves: 1,
           })
-        ).to.be.revertedWith('MessageVerificationFailed')
+        ).to.be.revertedWith('InvalidBundle')
       })
 
       it('should not allow totalLeaves + 1', async function () {
@@ -171,7 +171,7 @@ describe('Executor', function () {
             totalLeaves,
           })
         ).to.be.revertedWith(
-          'Lib_MerkleTree: Total siblings does not correctly correspond to total leaves.'
+          'MerkleTreeLib: Total siblings does not correctly correspond to total leaves.'
         )
       })
 
@@ -183,7 +183,7 @@ describe('Executor', function () {
             totalLeaves,
           })
         ).to.be.revertedWith(
-          'Lib_MerkleTree: Total siblings does not correctly correspond to total leaves.'
+          'MerkleTreeLib: Total siblings does not correctly correspond to total leaves.'
         )
       })
 
@@ -193,7 +193,7 @@ describe('Executor', function () {
           fixture.executeMessage(messageId, {
             totalLeaves: 0,
           })
-        ).to.be.revertedWith('Lib_MerkleTree: Total leaves must be greater than zero.')
+        ).to.be.revertedWith('MerkleTreeLib: Total leaves must be greater than zero.')
       })
 
       it('should not allow just root as sibling', async function () {
@@ -204,7 +204,7 @@ describe('Executor', function () {
             siblings: [root],
             totalLeaves: 2,
           })
-        ).to.be.revertedWith('MessageVerificationFailed')
+        ).to.be.revertedWith('InvalidBundle')
       })
 
       it('should not allow the same message to be relayed twice', async function () {
@@ -217,7 +217,7 @@ describe('Executor', function () {
             siblings: proof,
             totalLeaves,
           })
-        ).to.be.revertedWith('MessageVerificationFailed')
+        ).to.be.revertedWith('InvalidBundle')
       })
     })
 

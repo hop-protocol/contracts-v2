@@ -211,7 +211,7 @@ contract HubTransporter is Transporter {
     function getSpokeChainId(address connector) public view returns (uint256) {
         uint256 chainId = chainIdForSpokeConnector[connector];
         if (chainId == 0) {
-            revert InvalidCaller(connector);
+            revert InvalidSender(connector);
         }
         return chainId;
     }

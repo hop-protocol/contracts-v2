@@ -66,7 +66,7 @@ contract HubTransporter is Transporter {
 
     receive() external payable {}
 
-    function transportCommitment(uint256 toChainId, bytes32 commitment) external payable {
+    function transportCommitment(uint256 toChainId, bytes32 commitment) external payable onlyDispatcher {
         address spokeConnector = getSpokeConnector(toChainId);
         ISpokeTransporter spokeTransporter = ISpokeTransporter(spokeConnector);
         
@@ -76,6 +76,7 @@ contract HubTransporter is Transporter {
         spokeTransporter.receiveCommitment{value: msg.value}(fromChainId, commitment); // Forward value for message fee
     }
 
+    // ToDo: only spoke connector
     function receiveOrForwardCommitment(
         bytes32 commitment,
         uint256 transportFee,

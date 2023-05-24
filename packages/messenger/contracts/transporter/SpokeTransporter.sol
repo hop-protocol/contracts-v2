@@ -32,11 +32,6 @@ contract SpokeTransporter is Ownable, Transporter {
     mapping(uint256 => uint256) public pendingFeesForChainId;
     uint256 public totalFeesForHub;
 
-    modifier onlyDispatcher() {
-        // ToDo
-        _;
-    }
-
     modifier onlyHub() {
         if (msg.sender != hubTransporterConnector) {
             revert NotHub(msg.sender);

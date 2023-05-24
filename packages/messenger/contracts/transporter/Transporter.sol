@@ -6,7 +6,17 @@ import "./ITransportLayer.sol";
 import "../libraries/Error.sol";
 
 abstract contract Transporter is Ownable, ITransportLayer {
+    address public dispatcher;
     mapping(uint256 => mapping(bytes32 => bool)) public provenCommitments;
+
+    modifier onlyDispatcher() {
+        if (msg.sender != dispatcher) revert InvalidCaller(msg.sender);
+        _;
+    }
+
+    function setDispatcher(address _dispatcher) external {
+        dispatcher = _dispatcher;
+    }
 
     function isCommitmentProven(uint256 fromChainId, bytes32 commitment) external view returns (bool) {
         return provenCommitments[fromChainId][commitment];

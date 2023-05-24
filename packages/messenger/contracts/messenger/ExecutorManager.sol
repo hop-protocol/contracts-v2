@@ -18,7 +18,7 @@ interface IHopMessageReceiver {
 }
 
 struct BundleProof {
-    bytes32 bundleId;
+    bytes32 bundleNonce;
     uint256 treeIndex;
     bytes32[] siblings;
     uint256 totalLeaves;
@@ -32,16 +32,16 @@ contract ExecutorManager is Ownable, OverridableChainId {
     address public defaultTransporter;
     // messageReceiver -> transporter
     mapping(address => address) public registedTransporters;
-    // transporter -> fromChainId -> bundleHash -> verified status
-    mapping(address => mapping(uint256 => mapping(bytes32 => bool))) public verifiedBundleHashes;
+    // transporter -> fromChainId -> bundleId -> verified status
+    mapping(address => mapping(uint256 => mapping(bytes32 => bool))) public verifiedBundleIdes;
     address public verificationManager;
-    mapping(bytes32 => Bitmap) private spentMessagesForBundleId;
+    mapping(bytes32 => Bitmap) private spentMessagesForBundleNonce;
 
     event BundleProven(
         uint256 indexed fromChainId,
-        bytes32 indexed bundleId,
+        bytes32 indexed bundleNonce,
         bytes32 bundleRoot,
-        bytes32 bundleHash
+        bytes32 bundleId
     );
     event VerifierRegistered(address indexed receiver, address indexed transporter);
 
@@ -59,7 +59,7 @@ contract ExecutorManager is Ownable, OverridableChainId {
         BundleProof memory bundleProof
     ) external {
         bytes32 messageId = MessengerLib.getMessageId(
-            bundleProof.bundleId,
+            bundleProof.bundleNonce,
             bundleProof.treeIndex,
             fromChainId,
             from,
@@ -76,39 +76,39 @@ contract ExecutorManager is Ownable, OverridableChainId {
 
         bool _isBundleVerified = isBundleVerified(
             fromChainId,
-            bundleProof.bundleId,
+            bundleProof.bundleNonce,
             bundleRoot,
             to
         );
         if (!_isBundleVerified) {
-            revert InvalidBundle(verificationManager, fromChainId, bundleProof.bundleId, to);
+            revert InvalidBundle(verificationManager, fromChainId, bundleProof.bundleNonce, to);
         }
 
-        Bitmap storage spentMessages = spentMessagesForBundleId[bundleProof.bundleId];
+        Bitmap storage spentMessages = spentMessagesForBundleNonce[bundleProof.bundleNonce];
         spentMessages.switchTrue(bundleProof.treeIndex); // Reverts if already true
 
         // ToDo: Log BunldeId? treeIndex?
         ExecutorHead(head).executeMessage(messageId, fromChainId, from, to, data);
     }
 
-    function isMessageSpent(bytes32 bundleId, uint256 index) public view returns (bool) {
-        Bitmap storage spentMessages = spentMessagesForBundleId[bundleId];
+    function isMessageSpent(bytes32 bundleNonce, uint256 index) public view returns (bool) {
+        Bitmap storage spentMessages = spentMessagesForBundleNonce[bundleNonce];
         return spentMessages.isTrue(index);
     }
 
-    function proveBundle(address transportLayer, uint256 fromChainId, bytes32 bundleId, bytes32 bundleRoot) external {
-        bytes32 bundleHash = MessengerLib.getBundleHash(fromChainId, getChainId(), bundleId, bundleRoot);
-        bool verified = ITransportLayer(transportLayer).isCommitmentProven(fromChainId, bundleHash);
-        if (!verified) revert ProveBundleFailed(transportLayer, fromChainId, bundleId);
+    function proveBundle(address transportLayer, uint256 fromChainId, bytes32 bundleNonce, bytes32 bundleRoot) external {
+        bytes32 bundleId = MessengerLib.getBundleId(fromChainId, getChainId(), bundleNonce, bundleRoot);
+        bool verified = ITransportLayer(transportLayer).isCommitmentProven(fromChainId, bundleId);
+        if (!verified) revert ProveBundleFailed(transportLayer, fromChainId, bundleNonce);
 
-        verifiedBundleHashes[defaultTransporter][fromChainId][bundleHash] = true;
-        emit BundleProven(fromChainId, bundleId, bundleRoot, bundleHash);
+        verifiedBundleIdes[defaultTransporter][fromChainId][bundleId] = true;
+        emit BundleProven(fromChainId, bundleNonce, bundleRoot, bundleId);
     }
 
     // ToDo: Enable message specific verification
     function isBundleVerified(
         uint256 fromChainId,
-        bytes32 bundleId,
+        bytes32 bundleNonce,
         bytes32 bundleRoot,
         address messageReceiver
     )
@@ -122,8 +122,8 @@ contract ExecutorManager is Ownable, OverridableChainId {
             transporter = defaultTransporter;
         }
 
-        bytes32 bundleHash = MessengerLib.getBundleHash(fromChainId, getChainId(), bundleId, bundleRoot);
-        return verifiedBundleHashes[transporter][fromChainId][bundleHash];
+        bytes32 bundleId = MessengerLib.getBundleId(fromChainId, getChainId(), bundleNonce, bundleRoot);
+        return verifiedBundleIdes[transporter][fromChainId][bundleId];
     }
 
     function setDefaultTransporter(address verifier) external onlyOwner {

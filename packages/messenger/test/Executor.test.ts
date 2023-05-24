@@ -34,14 +34,14 @@ describe('Executor', function () {
       await fixture.dispatchMessageRepeat(numFillerMessages, sender)
 
       const { bundleCommitted } = await fixture.dispatchMessage(sender)
-      if (!bundleCommitted || !bundleCommitted?.bundleId) {
+      if (!bundleCommitted || !bundleCommitted?.bundleNonce) {
         throw new Error('No bundleCommitted event')
       }
 
       const executor = fixture.executors[toChainId.toString()]
       if (!messageBundled) throw new Error('No messageBundled event')
       const isSpent = await executor.isMessageSpent(
-        messageBundled.bundleId,
+        messageBundled.bundleNonce,
         messageBundled.treeIndex
       )
       expect(isSpent).to.be.false
@@ -49,7 +49,7 @@ describe('Executor', function () {
 
     describe('with standard setup', function () {
       let fixture: Fixture
-      let bundleId: string
+      let bundleNonce: string
       let messageSent: MessageSentEvent
 
       beforeEach(async function () {
@@ -71,10 +71,10 @@ describe('Executor', function () {
         await fixture.dispatchMessageRepeat(numFillerMessages, sender)
 
         const { bundleCommitted } = await fixture.dispatchMessage(sender)
-        if (!bundleCommitted || !bundleCommitted?.bundleId) {
+        if (!bundleCommitted || !bundleCommitted?.bundleNonce) {
           throw new Error('No bundleCommitted event')
         }
-        bundleId = bundleCommitted.bundleId
+        bundleNonce = bundleCommitted.bundleNonce
       })
 
       it('should not allow invalid fromChainId', async function () {
@@ -111,12 +111,12 @@ describe('Executor', function () {
       })
 
       // BundleProof
-      it('should not allow invalid bundleId', async function () {
-        const invalidBundleId =
+      it('should not allow invalid bundleNonce', async function () {
+        const invalidBundleNonce =
           '0x0123456789012345678901234567890123456789012345678901234567891234'
         await expect(
           fixture.executeMessage(messageSent.messageId, {
-            bundleId: invalidBundleId,
+            bundleNonce: invalidBundleNonce,
           })
         ).to.be.revertedWith('InvalidBundle')
       })
@@ -131,7 +131,7 @@ describe('Executor', function () {
 
       it('should not allow invalid proof', async function () {
         const messageId = messageSent.messageId
-        const wrongMessageId = fixture.bundles[bundleId].messageIds[1]
+        const wrongMessageId = fixture.bundles[bundleNonce].messageIds[1]
         const wrongProof = fixture.getProof(wrongMessageId)
         await expect(
           fixture.executeMessage(messageId, {
@@ -142,7 +142,7 @@ describe('Executor', function () {
 
       it('should not allow extra siblings', async function () {
         const messageId = messageSent.messageId
-        const totalLeaves = fixture.bundles[bundleId].messageIds.length + 1
+        const totalLeaves = fixture.bundles[bundleNonce].messageIds.length + 1
         const proof = fixture.getProof(messageId)
         proof.push(proof[proof.length - 1])
         await expect(
@@ -165,7 +165,7 @@ describe('Executor', function () {
 
       it('should not allow totalLeaves + 1', async function () {
         const messageId = messageSent.messageId
-        const totalLeaves = fixture.bundles[bundleId].messageIds.length + 1
+        const totalLeaves = fixture.bundles[bundleNonce].messageIds.length + 1
         await expect(
           fixture.executeMessage(messageId, {
             totalLeaves,
@@ -177,7 +177,7 @@ describe('Executor', function () {
 
       it('should not allow totalLeaves / 2', async function () {
         const messageId = messageSent.messageId
-        const totalLeaves = fixture.bundles[bundleId].messageIds.length / 2
+        const totalLeaves = fixture.bundles[bundleNonce].messageIds.length / 2
         await expect(
           fixture.executeMessage(messageId, {
             totalLeaves,
@@ -209,7 +209,7 @@ describe('Executor', function () {
 
       it('should not allow the same message to be relayed twice', async function () {
         const messageId = messageSent.messageId
-        const totalLeaves = fixture.bundles[bundleId].messageIds.length + 1
+        const totalLeaves = fixture.bundles[bundleNonce].messageIds.length + 1
         const proof = fixture.getProof(messageId)
         proof.push(proof[proof.length - 1])
         await expect(

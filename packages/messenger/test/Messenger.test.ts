@@ -73,7 +73,7 @@ describe('Messenger', function () {
       if (!bundleProven) throw new Error('Bundle not proven at destination')
 
       // BundleCommitted event
-      const bundleId = bundleCommitted.bundleId
+      const bundleNonce = bundleCommitted.bundleNonce
       const bundleRoot = bundleCommitted.bundleRoot
       const commitTime = bundleCommitted.commitTime
       const expectedFullBundleFee =
@@ -83,16 +83,16 @@ describe('Messenger', function () {
 
       // BundleProven event
       expect(fromChainId).to.eq(bundleProven.fromChainId)
-      expect(bundleId).to.eq(bundleProven.bundleId)
+      expect(bundleNonce).to.eq(bundleProven.bundleNonce)
       expect(bundleRoot).to.eq(bundleProven.bundleRoot)
-      const bundleHash = keccak256(defaultAbiCoder.encode(
+      const bundleId = keccak256(defaultAbiCoder.encode(
         ['uint256', 'uint256', 'bytes32', 'bytes32'],
-        [fromChainId, toChainId, bundleId, bundleRoot]
+        [fromChainId, toChainId, bundleNonce, bundleRoot]
       ))
-      expect(bundleHash).to.eq(bundleProven.bundleHash)
+      expect(bundleId).to.eq(bundleProven.bundleId)
 
       const unspentMessageIds = fixture.getUnspentMessageIds(
-        bundleCommitted.bundleId
+        bundleCommitted.bundleNonce
       )
 
       for (let i = 0; i < unspentMessageIds.length; i++) {
@@ -108,7 +108,7 @@ describe('Messenger', function () {
         if (!messageBundled) throw new Error('No MessageBundled event found')
         const executor = fixture.executors[toChainId.toString()]
         await executor.isMessageSpent(
-          bundleId,
+          bundleNonce,
           messageBundled.treeIndex
         )
 

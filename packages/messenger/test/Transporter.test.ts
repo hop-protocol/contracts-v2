@@ -18,10 +18,15 @@ describe('Transporter', function () {
       const toChainId = HUB_CHAIN_ID
       const [deployer, sender] = await ethers.getSigners()
 
-      const { fixture, hubTransporter } = await Fixture.deploy(HUB_CHAIN_ID, [
-        SPOKE_CHAIN_ID_0,
-        SPOKE_CHAIN_ID_1,
-      ])
+      const { fixture, hubTransporter } = await Fixture.deploy(
+        HUB_CHAIN_ID,
+        [SPOKE_CHAIN_ID_0,SPOKE_CHAIN_ID_1]
+      )
+
+      await fixture.setDispatchers(
+        sender.address,
+        [sender.address, sender.address],
+      )
 
       const {
         commitmentTransported,
@@ -62,6 +67,11 @@ describe('Transporter', function () {
         HUB_CHAIN_ID,
         [SPOKE_CHAIN_ID_0, SPOKE_CHAIN_ID_1],
         { toChainId }
+      )
+        
+      await fixture.setDispatchers(
+        sender.address,
+        [sender.address, sender.address],
       )
 
       const {
@@ -111,6 +121,11 @@ describe('Transporter', function () {
         { fromChainId, toChainId }
       )
 
+      await fixture.setDispatchers(
+        sender.address,
+        [sender.address, sender.address],
+      )
+
       const {
         commitmentTransported,
         commitmentProven
@@ -139,10 +154,15 @@ describe('Transporter', function () {
         const toChainId = 7653
         const [sender] = await ethers.getSigners()
 
-        const { fixture } = await Fixture.deploy(HUB_CHAIN_ID, [
-          SPOKE_CHAIN_ID_0,
-          SPOKE_CHAIN_ID_1,
-        ])
+        const { fixture } = await Fixture.deploy(
+          HUB_CHAIN_ID,
+          [SPOKE_CHAIN_ID_0, SPOKE_CHAIN_ID_1]
+        )
+
+        await fixture.setDispatchers(
+          sender.address,
+          [sender.address, sender.address],
+        )
 
         expect(
           fixture.transportCommitment(sender, {
@@ -158,8 +178,9 @@ describe('Transporter', function () {
     it('should return the chainId', async function () {
       const fromChainId = SPOKE_CHAIN_ID_0
       const toChainId = HUB_CHAIN_ID
+      const [sender] = await ethers.getSigners()
 
-      const { fixture, hubTransporter } = await Fixture.deploy(
+      const { hubTransporter } = await Fixture.deploy(
         HUB_CHAIN_ID,
         [SPOKE_CHAIN_ID_0, SPOKE_CHAIN_ID_1],
         { fromChainId, toChainId }

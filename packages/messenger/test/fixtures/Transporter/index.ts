@@ -79,11 +79,19 @@ class Fixture {
   }
 
   static async deploy(
-    _hubChainId: BigNumberish,
-    _spokeChainIds: BigNumberish[],
-    _defaults: Partial<Defaults> = {}
+    hubChainId: BigNumberish,
+    spokeChainIds: BigNumberish[],
+    defaults: Partial<Defaults> = {}
   ) {
-    return deployFixture(_hubChainId, _spokeChainIds, _defaults)
+    return deployFixture(hubChainId, spokeChainIds, defaults)
+  }
+
+  async setDispatchers(hubDispatcher: string, spokeDisptachers: string[]) {
+    await this.hubTransporter.setDispatcher(hubDispatcher)
+    for (let i = 0; i < this.spokeChainIds.length; i++) {
+      const spokeTransporter = this.spokeTransporters[i]
+      await spokeTransporter.setDispatcher(spokeDisptachers[i])
+    }
   }
 
   async transportCommitment(

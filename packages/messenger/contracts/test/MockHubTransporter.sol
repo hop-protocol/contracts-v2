@@ -14,14 +14,16 @@ contract MockHubTransporter is HubTransporter {
         uint256 _maxBundleFee,
         uint256 _maxBundleFeeBPS,
         uint256 _mockChainId
-    ) HubTransporter (
-         _excessFeesRecipient,
-         _targetBalance,
-         _pendingFeeBatchSize,
-         _relayWindow,
-         _maxBundleFee,
-         _maxBundleFeeBPS
-    ) {
+    )
+        HubTransporter (
+            _excessFeesRecipient,
+            _targetBalance,
+            _pendingFeeBatchSize,
+            _relayWindow,
+            _maxBundleFee,
+            _maxBundleFeeBPS
+        ) 
+    {
         mockChainId = _mockChainId;
     }
 

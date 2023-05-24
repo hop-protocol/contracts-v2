@@ -4,7 +4,9 @@ pragma solidity ^0.8.2;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import "../libraries/Error.sol";
-import "../utils/Lib_MerkleTree.sol";
+import "../libraries/MessengerLib.sol";
+import "../libraries/MerkleTreeLib.sol";
+import "../utils/OverridableChainId.sol";
 import "../transporter/ITransportLayer.sol";
 
 struct Route {
@@ -18,8 +20,8 @@ struct RouteData {
     uint128 maxBundleMessages;
 }
 
-contract Dispatcher is Ownable, EIP712 {
-    using Lib_MerkleTree for bytes32;
+contract Dispatcher is Ownable, EIP712, OverridableChainId {
+    using MerkleTreeLib for bytes32;
 
     /* events */
     event MessageSent(
@@ -78,11 +80,11 @@ contract Dispatcher is Ownable, EIP712 {
         if (_routeData.messageFee != msg.value) revert IncorrectFee(_routeData.messageFee, msg.value);
 
         uint256 fromChainId = getChainId();
-        bytes32 pendingBundleId = pendingBundleIdForChainId[toChainId];
         bytes32[] storage pendingMessageIds = pendingMessageIdsForChainId[toChainId];
-
         uint256 treeIndex = pendingMessageIds.length;
-        bytes32 messageId = getMessageId(
+
+        bytes32 pendingBundleId = pendingBundleIdForChainId[toChainId];
+        bytes32 messageId = MessengerLib.getMessageId(
             pendingBundleId,
             treeIndex,
             fromChainId,
@@ -128,7 +130,7 @@ contract Dispatcher is Ownable, EIP712 {
         }
 
         bytes32 bundleId = pendingBundleIdForChainId[toChainId];
-        bytes32 bundleRoot = Lib_MerkleTree.getMerkleRoot(pendingMessageIds);
+        bytes32 bundleRoot = MerkleTreeLib.getMerkleRoot(pendingMessageIds);
         uint256 bundleFees = pendingFeesForChainId[toChainId];
 
         // New pending bundle
@@ -173,41 +175,5 @@ contract Dispatcher is Ownable, EIP712 {
 
     function getFee(uint256 toChainId) external view returns (uint256) {
         return routeData[toChainId].messageFee;
-    }
-
-    // ToDo: Deduplicate
-    function getMessageId(
-        bytes32 bundleId,
-        uint256 treeIndex,
-        uint256 fromChainId,
-        address from,
-        uint256 toChainId,
-        address to,
-        bytes calldata data
-    )
-        public
-        pure
-        returns (bytes32)
-    {
-        return keccak256(
-            abi.encode(
-                bundleId,
-                treeIndex,
-                fromChainId,
-                from,
-                toChainId,
-                to,
-                data
-            )
-        );
-    }
-
-    /**
-     * @notice getChainId can be overridden by subclasses if needed for compatibility or testing purposes.
-     * @dev Get the current chainId
-     * @return chainId The current chainId
-     */
-    function getChainId() public virtual view returns (uint256 chainId) {
-        return block.chainid;
     }
 }

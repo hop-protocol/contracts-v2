@@ -5,8 +5,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./ExecutorHead.sol";
 import "../transporter/ITransportLayer.sol";
 import "../libraries/Error.sol";
-import "../utils/Lib_MerkleTree.sol";
 import "../libraries/Bitmap.sol";
+import "../libraries/MerkleTreeLib.sol";
+import "../libraries/MessengerLib.sol";
+import "../utils/OverridableChainId.sol";
 import "hardhat/console.sol";
 
 interface IHopMessageReceiver {
@@ -22,7 +24,7 @@ struct BundleProof {
     uint256 totalLeaves;
 }
 
-contract ExecutorManager is Ownable {
+contract ExecutorManager is Ownable, OverridableChainId {
     using BitmapLibrary for Bitmap;
 
     address immutable public head;
@@ -56,7 +58,7 @@ contract ExecutorManager is Ownable {
         bytes calldata data,
         BundleProof memory bundleProof
     ) external {
-        bytes32 messageId = getMessageId(
+        bytes32 messageId = MessengerLib.getMessageId(
             bundleProof.bundleId,
             bundleProof.treeIndex,
             fromChainId,
@@ -65,22 +67,22 @@ contract ExecutorManager is Ownable {
             to,
             data
         );
-        bytes32 bundleRoot = Lib_MerkleTree.processProof(
+        bytes32 bundleRoot = MerkleTreeLib.processProof(
             messageId,
             bundleProof.treeIndex,
             bundleProof.siblings,
             bundleProof.totalLeaves
         );
 
-        bool isVerified = isMessageVerified(
+        bool _isBundleVerified = isBundleVerified(
             fromChainId,
             bundleProof.bundleId,
             bundleRoot,
-            bundleProof.treeIndex,
-            messageId,
             to
         );
-        if (!isVerified) revert MessageVerificationFailed(verificationManager, fromChainId, bundleProof.bundleId, messageId, to);
+        if (!_isBundleVerified) {
+            revert InvalidBundle(verificationManager, fromChainId, bundleProof.bundleId, to);
+        }
 
         Bitmap storage spentMessages = spentMessagesForBundleId[bundleProof.bundleId];
         spentMessages.switchTrue(bundleProof.treeIndex); // Reverts if already true
@@ -94,35 +96,8 @@ contract ExecutorManager is Ownable {
         return spentMessages.isTrue(index);
     }
 
-    // ToDo: Deduplicate
-    function getMessageId(
-        bytes32 bundleId,
-        uint256 treeIndex,
-        uint256 fromChainId,
-        address from,
-        uint256 toChainId,
-        address to,
-        bytes calldata data
-    )
-        public
-        pure
-        returns (bytes32)
-    {
-        return keccak256(
-            abi.encode(
-                bundleId,
-                treeIndex,
-                fromChainId,
-                from,
-                toChainId,
-                to,
-                data
-            )
-        );
-    }
-
     function proveBundle(address transportLayer, uint256 fromChainId, bytes32 bundleId, bytes32 bundleRoot) external {
-        bytes32 bundleHash = getBundleHash(fromChainId, getChainId(), bundleId, bundleRoot);
+        bytes32 bundleHash = MessengerLib.getBundleHash(fromChainId, getChainId(), bundleId, bundleRoot);
         bool verified = ITransportLayer(transportLayer).isCommitmentProven(fromChainId, bundleHash);
         if (!verified) revert ProveBundleFailed(transportLayer, fromChainId, bundleId);
 
@@ -131,12 +106,10 @@ contract ExecutorManager is Ownable {
     }
 
     // ToDo: Enable message specific verification
-    function isMessageVerified(
+    function isBundleVerified(
         uint256 fromChainId,
         bytes32 bundleId,
         bytes32 bundleRoot,
-        uint256 /*treeIndex*/,
-        bytes32 /*messageId*/,
         address messageReceiver
     )
         public
@@ -149,7 +122,7 @@ contract ExecutorManager is Ownable {
             transporter = defaultTransporter;
         }
 
-        bytes32 bundleHash = getBundleHash(fromChainId, getChainId(), bundleId, bundleRoot);
+        bytes32 bundleHash = MessengerLib.getBundleHash(fromChainId, getChainId(), bundleId, bundleRoot);
         return verifiedBundleHashes[transporter][fromChainId][bundleHash];
     }
 
@@ -164,20 +137,5 @@ contract ExecutorManager is Ownable {
         registedTransporters[receiver] = transporter;
 
         emit VerifierRegistered(receiver, transporter);
-    }
-
-    // ToDo: deduplicate
-    function getBundleHash(uint256 fromChainId, uint256 toChainId, bytes32 bundleId, bytes32 bundleRoot) public pure returns (bytes32) {
-        return keccak256(abi.encode(fromChainId, toChainId, bundleId, bundleRoot));
-    }
-
-    // Deduplicate
-    /**
-     * @notice getChainId can be overridden by subclasses if needed for compatibility or testing purposes.
-     * @dev Get the current chainId
-     * @return chainId The current chainId
-     */
-    function getChainId() public virtual view returns (uint256 chainId) {
-        return block.chainid;
     }
 }

@@ -94,7 +94,7 @@ class Fixture {
     }
   }
 
-  async transportCommitment(
+  async dispatchCommitment(
     fromSigner: Signer,
     overrides?: Partial<{
       fromChainId: BigNumberish
@@ -111,10 +111,10 @@ class Fixture {
 
     const tx = await transporter
       .connect(fromSigner)
-      .transportCommitment(toChainId, commitment, {
+      .dispatchCommitment(toChainId, commitment, {
         value: TRANSPORT_FEE,
       })
-    const commitmentTransported = await this.getCommitmentTransportedEvent(tx)
+    const commitmentTransported = await this.getCommitmentDispatchedEvent(tx)
 
     this.commitments.push(commitment)
   
@@ -183,13 +183,13 @@ class Fixture {
 
   // Get events
 
-  async getCommitmentTransportedEvent(tx: ContractTransaction) {
+  async getCommitmentDispatchedEvent(tx: ContractTransaction) {
     const receipt = await tx.wait()
 
     const commitmentTransportedEvent = receipt.events?.find(
-      e => e.event === 'CommitmentTransported'
+      e => e.event === 'CommitmentDispatched'
     )
-    if (!commitmentTransportedEvent?.args) throw new Error('No CommitmentTransported event found')
+    if (!commitmentTransportedEvent?.args) throw new Error('No CommitmentDispatched event found')
     const commitmentTransported = {
       toChainId: commitmentTransportedEvent.args.toChainId as BigNumber,
       commitment: commitmentTransportedEvent.args.commitment as string,

@@ -66,11 +66,11 @@ contract HubTransporter is Transporter {
 
     receive() external payable {}
 
-    function transportCommitment(uint256 toChainId, bytes32 commitment) external payable onlyDispatcher {
+    function dispatchCommitment(uint256 toChainId, bytes32 commitment) external payable onlyDispatcher {
         address spokeConnector = getSpokeConnector(toChainId);
         ISpokeTransporter spokeTransporter = ISpokeTransporter(spokeConnector);
         
-        emit CommitmentTransported(toChainId, commitment, block.timestamp);
+        emit CommitmentDispatched(toChainId, commitment, block.timestamp);
 
         uint256 fromChainId = getChainId();
         spokeTransporter.receiveCommitment{value: msg.value}(fromChainId, commitment); // Forward value for message fee
@@ -85,7 +85,7 @@ contract HubTransporter is Transporter {
         external
         payable
     {
-        // getSpokeChainId will revert invalid senders
+        // getSpokeChainId will revert for invalid msg.senders
         uint256 fromChainId = getSpokeChainId(msg.sender);
 
         if (toChainId == getChainId()) {

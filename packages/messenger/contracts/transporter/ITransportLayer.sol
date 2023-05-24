@@ -3,7 +3,7 @@ pragma solidity ^0.8.2;
 
 interface ITransportLayer {
     /* events */
-    event CommitmentTransported(
+    event CommitmentDispatched(
         uint256 indexed toChainId,
         bytes32 indexed commitment,
         uint256 timestamp
@@ -14,6 +14,6 @@ interface ITransportLayer {
         bytes32 indexed commitment
     );
 
-    function transportCommitment(uint256 toChainId, bytes32 commitment) external payable;
+    function dispatchCommitment(uint256 toChainId, bytes32 commitment) external payable;
     function isCommitmentProven(uint256 fromChainId, bytes32 commitment) external returns (bool);
 }

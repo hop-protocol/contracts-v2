@@ -12,7 +12,7 @@ const { provider } = ethers
 import Fixture from './fixtures/Transporter/index'
 
 describe('Transporter', function () {
-  describe('transportCommitment', function () {
+  describe('dispatchCommitment', function () {
     it('Should complete a Spoke to Hub commitment', async function () {
       const fromChainId = SPOKE_CHAIN_ID_0
       const toChainId = HUB_CHAIN_ID
@@ -32,9 +32,9 @@ describe('Transporter', function () {
         commitmentTransported,
         commitmentRelayed,
         commitmentProven
-      } = await fixture.transportCommitment(sender)
+      } = await fixture.dispatchCommitment(sender)
 
-      // CommitmentTransported event
+      // CommitmentDispatched event
       expect(commitmentTransported.toChainId).to.eq(BigNumber.from(toChainId))
       expect(commitmentTransported.commitment).to.eq(DEFAULT_COMMITMENT)
 
@@ -79,9 +79,9 @@ describe('Transporter', function () {
         commitmentRelayed,
         commitForwarded,
         commitmentProven
-      } = await fixture.transportCommitment(sender)
+      } = await fixture.dispatchCommitment(sender)
 
-      // CommitmentTransported event
+      // CommitmentDispatched event
       expect(commitmentTransported.toChainId).to.eq(toChainId)
       expect(commitmentTransported.commitment).to.eq(DEFAULT_COMMITMENT)
 
@@ -129,9 +129,9 @@ describe('Transporter', function () {
       const {
         commitmentTransported,
         commitmentProven
-      } = await fixture.transportCommitment(sender)
+      } = await fixture.dispatchCommitment(sender)
 
-      // CommitmentTransported event
+      // CommitmentDispatched event
       expect(commitmentTransported.toChainId).to.eq(toChainId)
       expect(commitmentTransported.commitment).to.eq(DEFAULT_COMMITMENT)
 
@@ -165,7 +165,7 @@ describe('Transporter', function () {
         )
 
         expect(
-          fixture.transportCommitment(sender, {
+          fixture.dispatchCommitment(sender, {
             fromChainId,
             toChainId,
           })

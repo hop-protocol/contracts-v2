@@ -149,7 +149,7 @@ contract Dispatcher is Ownable, EIP712, OverridableChainId {
 
         uint256 fromChainId = getChainId();
         bytes32 bundleHash = getBundleHash(fromChainId, toChainId, bundleId, bundleRoot);
-        ITransportLayer(transporter).transportCommitment{value: bundleFees}(toChainId, bundleHash);
+        ITransportLayer(transporter).dispatchCommitment{value: bundleFees}(toChainId, bundleHash);
     }
 
     function setRoute(Route memory route) public onlyOwner {

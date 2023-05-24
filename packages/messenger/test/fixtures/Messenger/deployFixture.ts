@@ -53,7 +53,7 @@ async function deployFixture(
 ) {
   const hubChainId = BigNumber.from(_hubChainId)
   const spokeChainIds = _spokeChainIds.map(n => BigNumber.from(n))
-  const chainIds = spokeChainIds.concat(hubChainId)
+  const chainIds = [hubChainId].concat(spokeChainIds)
 
   const {
     fixture: transporterFixture
@@ -76,6 +76,11 @@ async function deployFixture(
     const messageReceiver = await MessageReceiver.deploy(executorHead)
     messageReceivers.push(messageReceiver)
   }
+
+  await transporterFixture.setDispatchers(
+    dispatchers[0].address,
+    dispatchers.slice(1).map(d => d.address)
+  )
 
   const defaultDefaults: Defaults = {
     fromChainId: DEFAULT_FROM_CHAIN_ID,

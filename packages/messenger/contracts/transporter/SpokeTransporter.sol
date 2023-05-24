@@ -47,9 +47,9 @@ contract SpokeTransporter is Ownable, Transporter {
         pendingFeeBatchSize = _pendingFeeBatchSize;
     }
 
-    function transportCommitment(uint256 toChainId, bytes32 commitment) external payable onlyDispatcher {
+    function dispatchCommitment(uint256 toChainId, bytes32 commitment) external payable onlyDispatcher {
 
-        emit CommitmentTransported(toChainId, commitment, block.timestamp);
+        emit CommitmentDispatched(toChainId, commitment, block.timestamp);
 
         uint256 fee = msg.value;
         IHubBundleTransporterer(hubTransporterConnector).receiveOrForwardCommitment(

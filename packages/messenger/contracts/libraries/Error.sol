@@ -31,4 +31,4 @@ error NoZeroRelayWindow();
 error NotHub(address msgSender);
 error TransferFailed(address to, uint256 amount);
 error ProveBundleFailed(address transportLayer, uint256 fromChainId, bytes32 bundleId);
-error MessageVerificationFailed(address verificationManager, uint256 fromChainId, bytes32 bundleId, bytes32 messageId, address to);
+error InvalidBundle(address verificationManager, uint256 fromChainId, bytes32 bundleId, address to);

@@ -2,7 +2,7 @@ import { BigNumber, BigNumberish, BytesLike } from 'ethers'
 import { ethers } from 'hardhat'
 const { keccak256, defaultAbiCoder: abi } = ethers.utils
 
-class SpokeMessage {
+class Message {
   bundleId: string
   treeIndex: BigNumber
   fromChainId: BigNumber
@@ -55,4 +55,4 @@ class SpokeMessage {
   }
 }
 
-export default SpokeMessage
+export default Message

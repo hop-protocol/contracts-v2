@@ -10,7 +10,7 @@ abstract contract Transporter is Ownable, ITransportLayer {
     mapping(uint256 => mapping(bytes32 => bool)) public provenCommitments;
 
     modifier onlyDispatcher() {
-        if (msg.sender != dispatcher) revert InvalidCaller(msg.sender);
+        if (msg.sender != dispatcher) revert InvalidSender(msg.sender);
         _;
     }
 

@@ -24,7 +24,7 @@ const { solidityKeccak256, keccak256, defaultAbiCoder: abi } = ethers.utils
 import Fixture from './Fixture'
 
 describe('MessageBridge Gas Profile', function () {
-  it('Should dispatchMessage L1 -> L2', async function () {
+  it('should dispatchMessage L1 -> L2', async function () {
     console.log('    Send message L1 -> L2')
     const [sender] = await ethers.getSigners()
 
@@ -50,7 +50,7 @@ describe('MessageBridge Gas Profile', function () {
     // await logGas('dispatchMessage() with commit', sendAndCommitTx)
   })
 
-  it('Should dispatchMessage L2 -> L1', async function () {
+  it('should dispatchMessage L2 -> L1', async function () {
     console.log('    Send message L2 -> L1')
     const [sender] = await ethers.getSigners()
 
@@ -83,7 +83,7 @@ describe('MessageBridge Gas Profile', function () {
     // await logGas('executeMessage()', relayTx1)
   })
 
-  it('Should dispatchMessage L2 -> L2', async function () {
+  it('should dispatchMessage L2 -> L2', async function () {
     console.log('    Send message L2 -> L2')
     const [sender] = await ethers.getSigners()
 

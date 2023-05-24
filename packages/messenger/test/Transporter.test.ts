@@ -13,7 +13,7 @@ import Fixture from './fixtures/Transporter/index'
 
 describe('Transporter', function () {
   describe('dispatchCommitment', function () {
-    it('Should complete a Spoke to Hub commitment', async function () {
+    it('should complete a Spoke to Hub commitment', async function () {
       const fromChainId = SPOKE_CHAIN_ID_0
       const toChainId = HUB_CHAIN_ID
       const [deployer, sender] = await ethers.getSigners()
@@ -58,7 +58,7 @@ describe('Transporter', function () {
       expect(TRANSPORT_FEE).to.eq(hubTransporterBalance)
     })
 
-    it('Should complete a Spoke to Spoke commitment', async function () {
+    it('should complete a Spoke to Spoke commitment', async function () {
       const fromChainId = SPOKE_CHAIN_ID_0
       const toChainId = SPOKE_CHAIN_ID_1
       const [deployer, sender, relayer] = await ethers.getSigners()
@@ -110,7 +110,7 @@ describe('Transporter', function () {
       expect(TRANSPORT_FEE).to.eq(hubTransporterBalance)
     })
 
-    it('Should complete a Hub to Spoke commitment', async function () {
+    it('should complete a Hub to Spoke commitment', async function () {
       const fromChainId = HUB_CHAIN_ID
       const toChainId = SPOKE_CHAIN_ID_0
       const [sender] = await ethers.getSigners()

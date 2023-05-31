@@ -29,6 +29,7 @@ error PendingFeeBatchSizeTooLow(uint256 pendingFeeBatchSize);
 error PoolNotFull(uint256 poolSize, uint256 fullPoolSize);
 error NoZeroRelayWindow();
 error NotHub(address msgSender);
-error TransferFailed(address to, uint256 amount);
 error ProveBundleFailed(address transportLayer, uint256 fromChainId, bytes32 bundleNonce);
 error InvalidBundle(address verificationManager, uint256 fromChainId, bytes32 bundleNonce, address to);
+error FeesExhausted();
+error TransferFailed(address relayer, uint256 relayerFee);

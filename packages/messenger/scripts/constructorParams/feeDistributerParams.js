@@ -6,8 +6,8 @@ const {
   publicGoods,
   minPublicGoodsBps,
   fullPoolSize,
-  maxBundleFee,
-  maxBundleFeeBps,
+  absoluteMaxFee,
+  absoluteMaxFeeBps,
 } = deployConfig
 
 const hubMessageBridgeAddress = messengers['5']
@@ -18,6 +18,6 @@ module.exports = [
   publicGoods,
   minPublicGoodsBps,
   fullPoolSize,
-  maxBundleFee,
-  maxBundleFeeBps,
+  absoluteMaxFee,
+  absoluteMaxFeeBps,
 ]

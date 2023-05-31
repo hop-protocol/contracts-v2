@@ -85,8 +85,8 @@ async function deployHubTransporter(
   targetBalance: BigNumberish,
   pendingFeeBatchSize: BigNumberish,
   relayWindow: BigNumberish,
-  maxBundleFee: BigNumberish,
-  maxBundleFeeBPS: BigNumberish,
+  absoluteMaxFee: BigNumberish,
+  maxFeeBPS: BigNumberish,
   chainId: BigNumberish
 ) {
   const HubTransporter = await ethers.getContractFactory(
@@ -94,12 +94,9 @@ async function deployHubTransporter(
   )
 
   return HubTransporter.deploy(
-    excessFeesRecipient,
-    targetBalance,
-    pendingFeeBatchSize,
     relayWindow,
-    maxBundleFee,
-    maxBundleFeeBPS,
+    absoluteMaxFee,
+    maxFeeBPS,
     chainId
   ) as Promise<IHubTransporter>
 }

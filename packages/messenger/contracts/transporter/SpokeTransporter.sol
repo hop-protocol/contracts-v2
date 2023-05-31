@@ -29,12 +29,14 @@ contract SpokeTransporter is Ownable, Transporter {
     /* state */
     mapping(uint256 => bytes32) public pendingBundleNonceForChainId;
     mapping(uint256 => bytes32[]) public pendingMessageIdsForChainId;
-    mapping(uint256 => uint256) public pendingFeesForChainId;
-    uint256 public totalFeesForHub;
+    mapping(bytes32 => uint256) public feeForCommitment;
+    uint256 public feeReserve;
+    uint256 targetReserveSize;
+    address public feeCollector;
 
     modifier onlyHub() {
         if (msg.sender != hubTransporterConnector) {
-            revert NotHub(msg.sender);
+            revert InvalidSender(msg.sender);
         }
         _;
     }
@@ -48,29 +50,54 @@ contract SpokeTransporter is Ownable, Transporter {
     }
 
     function dispatchCommitment(uint256 toChainId, bytes32 commitment) external payable onlyDispatcher {
+        uint256 fee = msg.value;
+        feeForCommitment[commitment] = fee;
 
         emit CommitmentDispatched(toChainId, commitment, block.timestamp);
 
-        uint256 fee = msg.value;
         IHubBundleTransporterer(hubTransporterConnector).receiveOrForwardCommitment(
             commitment,
             fee,
             toChainId,
             block.timestamp
         );
-
-        // Collect fees
-        totalFeesForHub += fee;
-        uint256 _totalFeesForHub = totalFeesForHub;
-        if (_totalFeesForHub >= pendingFeeBatchSize) {
-            // Send fees to l1
-            totalFeesForHub = 0;
-            _sendFeesToHub(_totalFeesForHub);
-        }
     }
 
     function receiveCommitment(uint256 fromChainId, bytes32 commitment) external onlyHub {
         _setProvenCommitment(fromChainId, commitment);
+    }
+
+    /**
+     * @dev Pay the relayer for relaying the commitment on L1
+     * @notice This function is called by the HubTransporter after the call to
+     * `receiveOrForwardCommitment` has been relayed
+     * @param relayer The address that relayed the bundle on L1
+     * @param relayerFee The amount to pay the relayer
+     * @param commitment The commitment being relayed
+     */
+    function payRelayerFee(address relayer, uint256 relayerFee, bytes32 commitment) external onlyHub {
+        uint256 feeCollected = feeForCommitment[commitment];
+
+        if (feeCollected > relayerFee) {
+            uint256 feeDifference = feeCollected - relayerFee;
+            feeReserve += feeDifference;
+        } else if (relayerFee > feeCollected) {
+            uint256 feeDifference = relayerFee - feeCollected;
+            if (feeDifference > feeReserve) revert FeesExhausted();
+            feeReserve -= feeDifference;
+        }
+
+        (bool success, ) = relayer.call{value: relayerFee}("");
+        if (!success) revert TransferFailed(relayer, relayerFee);
+    }
+
+    /**
+     * @dev Distributes fees in excess of the `targetReserveSize` to the fee collector.
+     */
+    function distributeFees() external onlyOwner {
+        uint256 excessFees = feeReserve - targetReserveSize;
+        (bool success, ) = feeCollector.call{value: excessFees}("");
+        if (!success) revert TransferFailed(feeCollector, excessFees);
     }
 
     /* Setters */
@@ -86,14 +113,5 @@ contract SpokeTransporter is Ownable, Transporter {
     /// @notice `pendingFeeBatchSize` of 0 will flush the pending fees for every bundle.
     function setpendingFeeBatchSize(uint256 _pendingFeeBatchSize) external onlyOwner {
         pendingFeeBatchSize = _pendingFeeBatchSize;
-    }
-
-    /* Internal */
-    function _sendFeesToHub(uint256 amount) internal virtual {
-        emit FeesSentToHub(amount);
-
-        // ToDo: Make cross-chain payment
-        (bool success, ) = hubTransporter.call{value: amount}("");
-        if (!success) revert(); // TransferFailed(to, amount);
     }
 }

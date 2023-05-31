@@ -2,11 +2,13 @@
 pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./Transporter.sol";
 import "hardhat/console.sol";
 
 interface ISpokeTransporter {
     function receiveCommitment(uint256 fromChainId, bytes32 commitment) external payable;
+    function payRelayerFee(address relayer, uint256 relayerFee, bytes32 commitment) external;
 }
 
 contract HubTransporter is Transporter {
@@ -36,12 +38,9 @@ contract HubTransporter is Transporter {
     mapping(address => uint256) private chainIdForSpokeConnector;
     mapping(uint256 => address) private spokeConnectorForChainId;
     mapping(uint256 => uint256) private exitTimeForChainId;
-    address public excessFeesRecipient;
-    uint256 public targetBalance;
-    uint256 public pendingFeeBatchSize;
     uint256 public relayWindow;
-    uint256 public maxBundleFee;
-    uint256 public maxBundleFeeBPS;
+    uint256 public absoluteMaxFee;
+    uint256 public maxFeeBPS;
 
     mapping(uint256 => address) public feeTokens;
 
@@ -49,19 +48,13 @@ contract HubTransporter is Transporter {
     uint256 public virtualBalance;
 
     constructor(
-        address _excessFeesRecipient,
-        uint256 _targetBalance,
-        uint256 _pendingFeeBatchSize,
         uint256 _relayWindow,
-        uint256 _maxBundleFee,
-        uint256 _maxBundleFeeBPS
+        uint256 _absoluteMaxFee,
+        uint256 _maxFeeBPS
     ) {
-        excessFeesRecipient = _excessFeesRecipient;
-        targetBalance = _targetBalance;
-        pendingFeeBatchSize = _pendingFeeBatchSize;
         relayWindow = _relayWindow;
-        maxBundleFee = _maxBundleFee;
-        maxBundleFeeBPS = _maxBundleFeeBPS;
+        absoluteMaxFee = _absoluteMaxFee;
+        maxFeeBPS = _maxFeeBPS;
     }
 
     receive() external payable {}
@@ -91,12 +84,12 @@ contract HubTransporter is Transporter {
         if (toChainId == getChainId()) {
             _setProvenCommitment(fromChainId, commitment);
         } else {
-            address spokeConnector = getSpokeConnector(toChainId);
-            ISpokeTransporter spokeTransporter = ISpokeTransporter(spokeConnector);
+            address toSpokeConnector = getSpokeConnector(toChainId);
+            ISpokeTransporter toSpokeTransporter = ISpokeTransporter(toSpokeConnector);
 
             emit CommitmentForwarded(fromChainId, toChainId, commitment);
             // Forward value for cross-chain message fee
-            spokeTransporter.receiveCommitment{value: msg.value}(fromChainId, commitment);
+            toSpokeTransporter.receiveCommitment{value: msg.value}(fromChainId, commitment);
         }
 
         // Pay relayer
@@ -114,26 +107,11 @@ contract HubTransporter is Transporter {
             relayWindowStart,
             tx.origin
         );
-        // ToDo: Calculate fee
-        _payFee(tx.origin, fromChainId, relayWindowStart, transportFee);
-    }
 
-    // ToDo: Handle ERC20
-    function transfer(address to, uint256 amount) internal virtual {
-        (bool success, ) = to.call{value: amount}("");
-        if (!success) revert TransferFailed(to, amount);
-    }
-
-    function skimExcessFees() external onlyOwner {
-        uint256 balance = getBalance();
-        if (targetBalance > balance) revert PoolNotFull(balance, targetBalance);
-        uint256 excessBalance = balance - targetBalance;
-
-        virtualBalance -= excessBalance;
-
-        emit ExcessFeesSkimmed(excessBalance);
-
-        transfer(excessFeesRecipient, excessBalance);
+        uint256 relayReward = getRelayReward(relayWindowStart, transportFee);
+        address fromSpokeConnector = getSpokeConnector(fromChainId);
+        ISpokeTransporter fromSpokeTransporter = ISpokeTransporter(fromSpokeConnector);
+        fromSpokeTransporter.payRelayerFee(tx.origin, relayReward, commitment);
     }
 
     /* setters */
@@ -155,46 +133,19 @@ contract HubTransporter is Transporter {
         exitTimeForChainId[chainId] = exitTime;
     }
 
-    function setExcessFeeRecipient(address _excessFeesRecipient) external onlyOwner {
-        if (_excessFeesRecipient == address(0)) revert NoZeroAddress();
-
-        excessFeesRecipient = _excessFeesRecipient;
-        emit ConfigUpdated();
-    }
-
-    function setTargetBalanceSize(uint256 _targetBalance) external onlyOwner {
-        targetBalance = _targetBalance;
-
-        emit ConfigUpdated();
-    }
-
-    // @notice When lowering pendingFeeBatchSize, the Spoke pendingFeeBatchSize should be lowered first and
-    // all fees should be exited before lowering pendingFeeBatchSize on the Hub.
-    // @notice When raising pendingFeeBatchSize, both the Hub and Spoke pendingFeeBatchSize can be set at the
-    // same time.
-    function setPendingFeeBatchSize(uint256 _pendingFeeBatchSize) external onlyOwner {
-        uint256 balance = getBalance();
-        uint256 pendingAmount = virtualBalance - balance; // ToDo: Handle balance greater than fee pool
-        if (_pendingFeeBatchSize < pendingAmount) revert PendingFeeBatchSizeTooLow(_pendingFeeBatchSize);
-
-        pendingFeeBatchSize = _pendingFeeBatchSize;
-
-        emit ConfigUpdated();
-    }
-
     function setRelayWindow(uint256 _relayWindow) external onlyOwner {
         if (_relayWindow == 0) revert NoZeroRelayWindow();
         relayWindow = _relayWindow;
         emit ConfigUpdated();
     }
 
-    function setMaxBundleFee(uint256 _maxBundleFee) external onlyOwner {
-        maxBundleFee = _maxBundleFee;
+    function setAbsoluteMaxFee(uint256 _absoluteMaxFee) external onlyOwner {
+        absoluteMaxFee = _absoluteMaxFee;
         emit ConfigUpdated();
     }
 
-    function setMaxBundleFeeBPS(uint256 _maxBundleFeeBPS) external onlyOwner {
-        maxBundleFeeBPS = _maxBundleFeeBPS;
+    function setMaxFeeBPS(uint256 _maxFeeBPS) external onlyOwner {
+        maxFeeBPS = _maxFeeBPS;
         emit ConfigUpdated();
     }
 
@@ -230,40 +181,10 @@ contract HubTransporter is Transporter {
     }
 
     function getRelayReward(uint256 relayWindowStart, uint256 feesCollected) public view returns (uint256) {
-        return (block.timestamp - relayWindowStart) * feesCollected / relayWindow;
-    }
-
-    /*
-     * Internal functions
-     */
-    function _payFee(address to, uint256 fromChainId, uint256 relayWindowStart, uint256 feesCollected) internal {
-        address feeToken = feeTokens[fromChainId];
-        if (feeToken != address(0)) {
-            // ToDo: Use explicit address for ETH
-            revert(); // ToDO: Handle ERC20 fees
-        }
-
-        uint256 relayReward = 0;
-        if (block.timestamp >= relayWindowStart) {
-            relayReward = getRelayReward(relayWindowStart, feesCollected);
-        } else {
-            return;
-        }
-
-        uint256 maxFee = feesCollected * maxBundleFeeBPS / BASIS_POINTS;
-        if (maxFee > maxBundleFee) maxFee = maxBundleFee;
-        if (relayReward > maxFee) relayReward = maxFee;
-
-        uint256 balance = getBalance();
-        uint256 pendingAmount = virtualBalance + feesCollected - balance;
-        if (pendingAmount > pendingFeeBatchSize) {
-            revert PendingFeesTooHigh(pendingAmount, pendingFeeBatchSize);
-        }
-
-        virtualBalance = virtualBalance + feesCollected - relayReward;
-
-        emit FeePaid(to, relayReward, feesCollected);
-
-        transfer(to, relayReward);
+        if (relayWindowStart >= block.timestamp) return 0;
+        uint256 relayReward = (block.timestamp - relayWindowStart) * feesCollected / relayWindow;
+        uint256 relativeMaxFee = feesCollected * maxFeeBPS / BASIS_POINTS;
+        uint256 maxFee = Math.min(relativeMaxFee, absoluteMaxFee);
+        return Math.min(relayReward, maxFee);
     }
 }

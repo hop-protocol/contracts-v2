@@ -50,8 +50,8 @@ async function main() {
       deployConfig.publicGoods,
       deployConfig.minPublicGoodsBps,
       deployConfig.fullPoolSize,
-      deployConfig.maxBundleFee,
-      deployConfig.maxBundleFeeBps
+      deployConfig.absoluteMaxFee,
+      deployConfig.absoluteMaxFeeBps
     )
 
     await logContractDeployed('FeeDistributor', feeDistributor)

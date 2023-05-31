@@ -52,10 +52,11 @@ describe('Transporter', function () {
       expect(commitmentProven.fromChainId).to.eq(fromChainId)
       expect(commitmentProven.commitment).to.eq(DEFAULT_COMMITMENT)
 
-      const hubTransporterBalance = await provider.getBalance(
-        hubTransporter.address
+      const spokeTransporter = await fixture.transporters[fromChainId.toString()]
+      const spokeTransporterBalance = await provider.getBalance(
+        spokeTransporter.address
       )
-      expect(TRANSPORT_FEE).to.eq(hubTransporterBalance)
+      expect(TRANSPORT_FEE).to.eq(spokeTransporterBalance)
     })
 
     it('should complete a Spoke to Spoke commitment', async function () {
@@ -104,10 +105,11 @@ describe('Transporter', function () {
       expect(commitmentProven.fromChainId).to.eq(fromChainId)
       expect(commitmentProven.commitment).to.eq(DEFAULT_COMMITMENT)
 
-      const hubTransporterBalance = await provider.getBalance(
-        hubTransporter.address
+      const spokeTransporter = await fixture.transporters[fromChainId.toString()]
+      const spokeTransporterBalance = await provider.getBalance(
+        spokeTransporter.address
       )
-      expect(TRANSPORT_FEE).to.eq(hubTransporterBalance)
+      expect(TRANSPORT_FEE).to.eq(spokeTransporterBalance)
     })
 
     it('should complete a Hub to Spoke commitment', async function () {

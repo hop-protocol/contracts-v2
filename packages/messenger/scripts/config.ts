@@ -13,8 +13,8 @@ export const deployConfig = {
 
   // Fee distribution
   fullPoolSize: parseUnits('0.1'),
-  maxBundleFee: parseUnits('0.05'),
-  maxBundleFeeBps: 3_000_000, // 300%
+  absoluteMaxFee: parseUnits('0.05'),
+  absoluteMaxFeeBps: 3_000_000, // 300%
   minPublicGoodsBps: 100_000,
 }
 

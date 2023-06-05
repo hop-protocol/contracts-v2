@@ -28,8 +28,6 @@ contract HubTransporter is Transporter {
         bytes32 indexed commitment
     );
     event ConfigUpdated();
-    event FeePaid(address indexed to, uint256 amount, uint256 feesCollected);
-    event ExcessFeesSkimmed(uint256 excessFees);
 
     /* constants */
     uint256 constant BASIS_POINTS = 10_000;
@@ -41,11 +39,6 @@ contract HubTransporter is Transporter {
     uint256 public relayWindow;
     uint256 public absoluteMaxFee;
     uint256 public maxFeeBPS;
-
-    mapping(uint256 => address) public feeTokens;
-
-    /* state */
-    uint256 public virtualBalance;
 
     constructor(
         uint256 _relayWindow,

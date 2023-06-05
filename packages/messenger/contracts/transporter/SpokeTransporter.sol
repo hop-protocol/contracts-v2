@@ -16,13 +16,13 @@ interface IHubBundleTransporterer {
 
 contract SpokeTransporter is Ownable, Transporter {
     /* events */
-    event FeesSentToHub(uint256 amount);
+    event FeePaid(address indexed to, uint256 amount, uint256 feesCollected);
+    event ExcessFeesDistributed(address indexed to, uint256 amount);
 
     /* constants */
     uint256 public immutable hubChainId;
 
     /* config*/
-    address public hubTransporter;
     address public hubTransporterConnector;
     uint256 public pendingFeeBatchSize;
 
@@ -87,6 +87,8 @@ contract SpokeTransporter is Ownable, Transporter {
             feeReserve -= feeDifference;
         }
 
+        emit FeePaid(relayer, relayerFee, feeCollected);
+
         (bool success, ) = relayer.call{value: relayerFee}("");
         if (!success) revert TransferFailed(relayer, relayerFee);
     }
@@ -96,17 +98,16 @@ contract SpokeTransporter is Ownable, Transporter {
      */
     function distributeFees() external onlyOwner {
         uint256 excessFees = feeReserve - targetReserveSize;
+        emit ExcessFeesDistributed(feeCollector, excessFees);
         (bool success, ) = feeCollector.call{value: excessFees}("");
         if (!success) revert TransferFailed(feeCollector, excessFees);
     }
 
     /* Setters */
 
-    function setHubTransporter(address _hubTransporter, address _hubTransporterConnector) public onlyOwner {
-        if (_hubTransporter == address(0)) revert NoZeroAddress();
+    function setHubConnector(address _hubTransporterConnector) public onlyOwner {
         if (_hubTransporterConnector == address(0)) revert NoZeroAddress();
 
-        hubTransporter = _hubTransporter;
         hubTransporterConnector = _hubTransporterConnector;
     }
 

@@ -56,7 +56,7 @@ async function deployFixture(
       hubSideConnector.address,
       ONE_WEEK
     )
-    spokeTransporter.setHubTransporter(hubTransporter.address, spokeSideConnector.address)
+    spokeTransporter.setHubConnector(spokeSideConnector.address)
   }
 
   const defaultDefaults: Defaults = {
@@ -133,7 +133,7 @@ async function connectHubAndSpoke(
     hubSideConnector.address,
     ONE_WEEK
   )
-  await spokeTransporter.setHubTransporter(hubTransporter.address, spokeSideConnector.address)
+  await spokeTransporter.setHubConnector(spokeSideConnector.address)
 
   return { hubSideConnector, spokeSideConnector }
 }

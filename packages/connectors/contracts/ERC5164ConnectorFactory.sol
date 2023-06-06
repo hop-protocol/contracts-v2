@@ -6,7 +6,8 @@ import "@openzeppelin/contracts/utils/Create2.sol";
 import "./ERC5164Connector.sol";
 
 contract ERC5164ConnectorFactory {
-    address public erc5164Messenger;
+    address public messageDispatcher;
+    address public messageExecutor;
 
     event ConnectorDeployed(
         address indexed connector,
@@ -16,8 +17,9 @@ contract ERC5164ConnectorFactory {
         address counterpartTarget
     );
 
-    constructor(address _erc5164Messenger) {
-        erc5164Messenger = _erc5164Messenger;
+    constructor(address _messageDispatcher, address _messageExecutor) {
+        messageDispatcher = _messageDispatcher;
+        messageExecutor = _messageExecutor;
     }
 
     function deployConnector(
@@ -29,7 +31,7 @@ contract ERC5164ConnectorFactory {
         external
         returns (address)
     {
-        _deployConnector(target, counterpartChainId, counterpartConnector, counterpartTarget);
+        return _deployConnector(target, counterpartChainId, counterpartConnector, counterpartTarget);
     }
 
     function _deployConnector(
@@ -51,7 +53,8 @@ contract ERC5164ConnectorFactory {
         ERC5164Connector(connector).initialize(
             target,
             counterpartConnector,
-            erc5164Messenger,
+            messageDispatcher,
+            messageExecutor,
             counterpartChainId
         );
 

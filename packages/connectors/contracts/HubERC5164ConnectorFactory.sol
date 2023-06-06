@@ -3,7 +3,7 @@
 pragma solidity ^0.8.2;
 
 import "./ERC5164ConnectorFactory.sol";
-import "@hop-protocol/ERC5164/contracts/ISingleMessageDispatcher.sol";
+import "@hop-protocol/ERC5164/contracts/IMessageDispatcher.sol";
 
 contract HubERC5164ConnectorFactory is ERC5164ConnectorFactory {
     constructor(address _erc5164Messenger) ERC5164ConnectorFactory(_erc5164Messenger) {}
@@ -43,7 +43,7 @@ contract HubERC5164ConnectorFactory is ERC5164ConnectorFactory {
             );
             assert(calculatedAddress == connector);
         } else {
-            ISingleMessageDispatcher(erc5164Messenger).dispatchMessage(
+            IMessageDispatcher(erc5164Messenger).dispatchMessage(
                 chainId,
                 address(this),
                 abi.encodeWithSignature(

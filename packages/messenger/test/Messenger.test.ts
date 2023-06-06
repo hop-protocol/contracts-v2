@@ -101,7 +101,7 @@ describe('Messenger', function () {
           messageId
         )
 
-        if (!messageExecuted) throw new Error('No MessageExecuted event found')
+        if (!messageExecuted) throw new Error('No MessageIdExecuted event found')
         expect(message.fromChainId).to.eq(messageExecuted.fromChainId)
         expect(messageId).to.eq(messageExecuted.messageId)
 

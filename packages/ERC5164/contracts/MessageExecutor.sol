@@ -20,15 +20,9 @@ contract MessageExecutor is IMessageExecutor {
         );
 
         if (success) {
-            emit MessageExecuted(fromChainId, messageId);
-        } else if (returnData.length > 0) {
-            // Bubble up the revert reason
-            assembly {
-                let returnDataSize := mload(returnData)
-                revert(add(32, returnData), returnDataSize)
-            }
+            emit MessageIdExecuted(fromChainId, messageId);
         } else {
-            revert CallFailedForUnknownReason();
+            revert MessageFailure(messageId, returnData);
         }
     }
 }

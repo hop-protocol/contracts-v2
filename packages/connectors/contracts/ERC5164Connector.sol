@@ -4,7 +4,7 @@ pragma solidity ^0.8.2;
 
 import "./Connector.sol";
 import "@hop-protocol/ERC5164/contracts/MessageReceiver.sol";
-import "@hop-protocol/ERC5164/contracts/ISingleMessageDispatcher.sol";
+import "@hop-protocol/ERC5164/contracts/IMessageDispatcher.sol";
 
 contract ERC5164Connector is Connector, MessageReceiver {
     uint256 public counterpartChainId;
@@ -22,7 +22,7 @@ contract ERC5164Connector is Connector, MessageReceiver {
     }
 
     function _forwardCrossDomainMessage() internal override {
-        ISingleMessageDispatcher(erc5164Messenger).dispatchMessage{value: msg.value}(
+        IMessageDispatcher(erc5164Messenger).dispatchMessage{value: msg.value}(
             counterpartChainId,
             counterpart,
             msg.data

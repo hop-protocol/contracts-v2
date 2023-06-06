@@ -377,7 +377,7 @@ class Fixture {
     const messageExecutedEvent = await this._getRawEvent(
       tx,
       executorHead.interface,
-      'MessageExecuted(uint256,bytes32)'
+      'MessageIdExecuted(uint256,bytes32)'
     )
     const messageExecuted = messageExecutedEvent
       ? {

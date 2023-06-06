@@ -2,9 +2,13 @@
 pragma solidity ^0.8.2;
 
 interface IMessageExecutor {
-    error CallsAlreadyExecuted(bytes32 messageId);
+    error MessageIdAlreadyExecuted(bytes32 messageId);
+    error MessageFailure(
+        bytes32 messageId,
+        bytes errorData
+    );
 
-    event MessageExecuted(
+    event MessageIdExecuted(
         uint256 indexed fromChainId,
         bytes32 indexed messageId
     );

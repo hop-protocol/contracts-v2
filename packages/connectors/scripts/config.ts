@@ -1,7 +1,12 @@
 export const hubChainId = '5'
 export const spokeChainId = '420'
 
-export const hopMessengers = {
+export const dispatchers = {
+  '5': '0x23E7046ac7e34DCFaCa85adD8ac72B59e3812E34',
+  '420': '0x323019faC2d13d439aE94765B901466BFA8eEAc1',
+} as { [keyof: string]: string }
+
+export const executors = {
   '5': '0x23E7046ac7e34DCFaCa85adD8ac72B59e3812E34',
   '420': '0x323019faC2d13d439aE94765B901466BFA8eEAc1',
 } as { [keyof: string]: string }

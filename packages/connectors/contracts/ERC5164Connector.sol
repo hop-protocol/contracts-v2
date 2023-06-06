@@ -8,21 +8,24 @@ import "@hop-protocol/ERC5164/contracts/IMessageDispatcher.sol";
 
 contract ERC5164Connector is Connector, MessageReceiver {
     uint256 public counterpartChainId;
-    address public erc5164Messenger;
+    address public messageDispatcher;
+    address public messageExecutor;
 
     function initialize(
         address target,
         address counterpart,
-        address _erc5164Messenger,
+        address _messageDispatcher,
+        address _messageExecutor,
         uint256 _counterpartChainId
     ) external {
         initialize(target, counterpart);
-        erc5164Messenger = _erc5164Messenger;
+        messageDispatcher = _messageDispatcher;
+        messageExecutor = _messageExecutor;
         counterpartChainId = _counterpartChainId;
     }
 
     function _forwardCrossDomainMessage() internal override {
-        IMessageDispatcher(erc5164Messenger).dispatchMessage{value: msg.value}(
+        IMessageDispatcher(messageDispatcher).dispatchMessage{value: msg.value}(
             counterpartChainId,
             counterpart,
             msg.data
@@ -33,7 +36,7 @@ contract ERC5164Connector is Connector, MessageReceiver {
         (, uint256 fromChainId, address from) = _crossChainContext();
 
         if (from != counterpart) revert InvalidCounterpart(from);
-        if (msg.sender != erc5164Messenger) revert InvalidBridge(msg.sender);
+        if (msg.sender != messageExecutor) revert InvalidBridge(msg.sender);
         if (fromChainId != counterpartChainId) revert InvalidFromChainId(fromChainId);
     }
 }

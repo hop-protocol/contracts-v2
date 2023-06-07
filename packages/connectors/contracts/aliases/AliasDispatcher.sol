@@ -32,8 +32,8 @@ contract AliasDispatcher is IMessageDispatcher {
         returns (bytes32)
     {
         bytes4 selector = Alias(payable(address(0))).forwardMessage.selector;
-        bytes memory data = abi.encodeWithSelector(selector, to, value, data);
+        bytes memory encodedData = abi.encodeWithSelector(selector, to, value, data);
 
-        return IMessageDispatcher(baseDispatcher).dispatchMessage(toChainId, to, data);
+        return IMessageDispatcher(baseDispatcher).dispatchMessage(toChainId, to, encodedData);
     }
 }

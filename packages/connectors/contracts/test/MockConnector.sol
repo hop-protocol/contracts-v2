@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
-import "../Connector.sol";
+import "../connectors/Connector.sol";
 
 error MockRelayFailed();
 error NoPendingMessage();

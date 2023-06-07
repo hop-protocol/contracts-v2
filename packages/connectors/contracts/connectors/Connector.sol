@@ -2,11 +2,15 @@
 
 pragma solidity ^0.8.2;
 
+import "../utils/ExecutorLib.sol";
+
 error InvalidCounterpart(address counterpart);
 error InvalidBridge(address msgSender);
 error InvalidFromChainId(uint256 fromChainId);
 
 abstract contract Connector {
+
+
     address public target;
     address public counterpart;
 
@@ -36,15 +40,6 @@ abstract contract Connector {
 
     receive () external payable {
         revert("Do not send ETH to this contract");
-    }
-
-    /**
-     * @dev Sets the counterpart
-     * @param _counterpart The new bridge connector address
-     */
-    function setCounterpart(address _counterpart) public {
-        require(counterpart == address(0), "CNR: Connector address has already been set");
-        counterpart = _counterpart;
     }
 
     /* ========== Virtual functions ========== */

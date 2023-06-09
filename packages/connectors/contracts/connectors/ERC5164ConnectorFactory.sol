@@ -3,9 +3,10 @@
 pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/utils/Create2.sol";
+import "../utils/OverridableChainId.sol";
 import "./ERC5164Connector.sol";
 
-contract ERC5164ConnectorFactory {
+contract ERC5164ConnectorFactory is OverridableChainId {
     address public messageDispatcher;
     address public messageExecutor;
 
@@ -97,14 +98,5 @@ contract ERC5164ConnectorFactory {
         } else {
             return keccak256(abi.encodePacked(target2, chainId2, target1, chainId1));
         }
-    }
-
-    /**
-     * @notice getChainId can be overridden by subclasses if needed for compatibility or testing purposes.
-     * @dev Get the current chainId
-     * @return chainId The current chainId
-     */
-    function getChainId() public virtual view returns (uint256 chainId) {
-        return block.chainid;
     }
 }

@@ -3,20 +3,20 @@
 pragma solidity ^0.8.2;
 
 import "../utils/ExecutorLib.sol";
+import "../utils/Initializable.sol";
 
 error InvalidCounterpart(address counterpart);
 error InvalidBridge(address msgSender);
 error InvalidFromChainId(uint256 fromChainId);
 
-abstract contract Connector {
-
+abstract contract Connector is Initializable {
+    using ExecutorLib for address;
 
     address public target;
     address public counterpart;
 
-    function initialize(address _target, address _counterpart) public {
-        require(target == address(0), "CNR: Target address has already been set");
-        require(counterpart == address(0), "CNR: Counterpart has already been set");
+    /// @dev initialize to keep creation code consistent for create2 deployments
+    function initialize(address _target, address _counterpart) public initializer {
         require(_target != address(0), "CNR: Target cannot be zero address");
         require(_counterpart != address(0), "CNR: Counterpart cannot be zero address");
 
@@ -29,12 +29,7 @@ abstract contract Connector {
             _forwardCrossDomainMessage();
         } else {
             _verifyCrossDomainSender();
-
-            (bool success, bytes memory res) = payable(target).call{value: msg.value}(msg.data);
-            if (!success) {
-                // Bubble up error message
-                assembly { revert(add(res,0x20), res) }
-            }
+            target.execute(msg.data, msg.value);
         }
     }
 

@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/crosschain/arbitrum/LibArbitrumL1.sol";
 import "../interfaces/arbitrum/messengers/IInbox.sol";
 import "../interfaces/arbitrum/messengers/IBridge.sol";
 import "../interfaces/arbitrum/messengers/IOutbox.sol";
-import "./Connector.sol";
+import "../connectors/Connector.sol";
 
 contract L1ArbitrumConnector is Connector {
     address public immutable inbox;

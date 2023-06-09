@@ -2,7 +2,7 @@
 pragma solidity ^0.8.2;
 
 import "../polygon/tunnel/FxBaseRootTunnel.sol";
-import "./Connector.sol";
+import "../connectors/Connector.sol";
 
 contract L1PolygonConnector is Connector, FxBaseRootTunnel {
     constructor(

@@ -3,7 +3,7 @@ pragma solidity ^0.8.2;
 
 import "../polygon/ReentrancyGuard.sol";
 import "../polygon/tunnel/FxBaseChildTunnel.sol";
-import "./Connector.sol";
+import "../connectors/Connector.sol";
 
 contract L2PolygonConnector is Connector, FxBaseChildTunnel, ReentrancyGuard {
     constructor(address fxChild) FxBaseChildTunnel(fxChild) {}

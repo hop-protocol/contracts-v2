@@ -3,7 +3,7 @@ pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/crosschain/amb/LibAMB.sol";
 import "../interfaces/xDai/messengers/IArbitraryMessageBridge.sol";
-import "./Connector.sol";
+import "../connectors/Connector.sol";
 
 contract AMBConnector is Connector {
     address public immutable arbitraryMessageBridge;

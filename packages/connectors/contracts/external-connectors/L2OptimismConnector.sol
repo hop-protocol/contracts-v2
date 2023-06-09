@@ -2,7 +2,7 @@
 pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/crosschain/optimism/LibOptimism.sol";
-import "./Connector.sol";
+import "../connectors/Connector.sol";
 import "../interfaces/optimism/messengers/iOVM_L2CrossDomainMessenger.sol";
 
 contract L2OptimismConnector is Connector {

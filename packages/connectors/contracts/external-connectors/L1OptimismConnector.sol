@@ -3,7 +3,7 @@ pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/crosschain/optimism/LibOptimism.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./Connector.sol";
+import "../connectors/Connector.sol";
 import "../interfaces/optimism/messengers/iOVM_L1CrossDomainMessenger.sol";
 
 contract L1OptimismConnector is Connector, Ownable {

@@ -7,14 +7,15 @@ import "./Alias.sol";
 contract AliasDispatcher is IMessageDispatcher {
     address public sourceAddress;
     address public baseDispatcher;
-    mapping(uint256 => address) public crossChainAlias;
+    mapping(uint256 => address) public aliasForChainId;
 
-    constructor(address _baseDispatcher) {
+    constructor(address _sourceAddress, address _baseDispatcher) {
+        sourceAddress = _sourceAddress;
         baseDispatcher = _baseDispatcher;
     }
 
-    function addAlias(uint256 chainId, address _crossChainAlias) external {
-        crossChainAlias[chainId] = _crossChainAlias;
+    function addAlias(uint256 chainId, address _aliasForChainId) external {
+        aliasForChainId[chainId] = _aliasForChainId;
     }
 
     function dispatchMessage(uint256 toChainId,address to,bytes calldata data) external payable returns (bytes32) {

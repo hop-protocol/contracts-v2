@@ -1,0 +1,5 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": ["./scripts", "./test", "./typechain", "./utils", "gas-profile/gas.test.ts"],
+  "files": ["./hardhat.config.ts"]
+}

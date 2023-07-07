@@ -36,7 +36,7 @@ async function main() {
   const greeter2 = await Greeter.connect(spokeSigner).deploy()
   await logContractDeployed('Greeter', greeter2)
 
-  const tx = await hubConnectorFactory.connectTargets(
+  const tx = await hubConnectorFactory.deployConnectors(
     hubChainId,
     greeter1.address,
     spokeChainId,

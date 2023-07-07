@@ -36,7 +36,7 @@ async function main() {
   const pingPong2 = await PingPong.connect(spokeSigner).deploy()
   await logContractDeployed('PingPong', pingPong2)
 
-  const tx = await hubConnectorFactory.connectTargets(
+  const tx = await hubConnectorFactory.deployConnectors(
     hubChainId,
     pingPong1.address,
     spokeChainId,

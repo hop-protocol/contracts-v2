@@ -1,7 +1,7 @@
 import { Contract, Signer, ContractTransaction } from 'ethers'
 import { ethers } from 'hardhat'
 import { getSigners, logContractDeployed } from '../utils'
-import { hopMessengers } from './config'
+import { dispatchers, executors } from './config'
 
 async function main() {
   const hubChainId = '5'
@@ -11,8 +11,10 @@ async function main() {
   const hubSigner = signers[hubChainId]
   const spokeSigner = signers[spokeChainId]
 
-  const hubMessengerAddress = hopMessengers[hubChainId]
-  const spokeMessengerAddress = hopMessengers[spokeChainId]
+  const hubDispatcherAddress = dispatchers[hubChainId]
+  const spokeDispatcherAddress = dispatchers[spokeChainId]
+  const hubExecutorAddress = executors[hubChainId]
+  const spokeExecutorAddress = executors[spokeChainId]
 
   // Deploy factories
   const HubERC5164ConnectorFactory = await ethers.getContractFactory(
@@ -20,7 +22,7 @@ async function main() {
   )
   const hubConnectorFactory = await HubERC5164ConnectorFactory.connect(
     hubSigner
-  ).deploy(hubMessengerAddress)
+  ).deploy(hubDispatcherAddress, hubExecutorAddress)
 
   await logContractDeployed('HubERC5164ConnectorFactory', hubConnectorFactory)
 
@@ -29,7 +31,7 @@ async function main() {
   )
   const spokeConnectorFactory = await ERC5164ConnectorFactory.connect(
     spokeSigner
-  ).deploy(spokeMessengerAddress)
+  ).deploy(spokeDispatcherAddress, spokeExecutorAddress)
   await logContractDeployed('ERC5164ConnectorFactory', spokeConnectorFactory)
 }
 

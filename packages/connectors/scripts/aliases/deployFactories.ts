@@ -1,4 +1,4 @@
-import { Contract, Signer, ContractTransaction } from 'ethers'
+import { Contract, Signer, ContractTransaction, BigNumber } from 'ethers'
 import { ethers } from 'hardhat'
 import { getSigners, logContractDeployed } from '../../utils'
 import { dispatchers, executors, connectorFactories } from '../config'
@@ -11,10 +11,10 @@ async function main() {
   const hubSigner = signers[hubChainId]
   const spokeSigner = signers[spokeChainId]
 
-  const hubExecutorAddress = dispatchers[hubChainId]
-  const hubDispatcherAddress = executors[hubChainId]
-  const spokeExecutorAddress = dispatchers[spokeChainId]
-  const spokeDispatcherAddress = executors[spokeChainId]
+  const hubExecutorAddress = executors[hubChainId]
+  const hubDispatcherAddress = dispatchers[hubChainId]
+  const spokeExecutorAddress = executors[spokeChainId]
+  const spokeDispatcherAddress = dispatchers[spokeChainId]
   const hubConnectorFactoryAddress = connectorFactories[hubChainId]
 
   // Deploy factories
@@ -42,10 +42,17 @@ async function main() {
 
   // Deploy deployer on hub chain
   const hubAliasDeployer = await AliasDeployer.connect(hubSigner).deploy()
-  await logContractDeployed('ERC5164ConnectorFactory', hubAliasDeployer)
+  await logContractDeployed('AliasDeployer', hubAliasDeployer)
+
+  await wait(5000)
 
   // Connect factories to deployer
   await hubAliasDeployer.setAliasFactoryForChainId(hubChainId, hubAliasFactory.address)
+
+  const connectorAddress = await hubConnectorFactory.calculateAddress(hubChainId, hubAliasDeployer.address, spokeChainId, spokeAliasFactory.address)
+  console.log(hubChainId, hubAliasDeployer.address, spokeChainId, spokeAliasFactory.address)
+  await hubConnectorFactory.deployConnectors(hubChainId, hubAliasDeployer.address, spokeChainId, spokeAliasFactory.address, { value: '1000000000000' })
+  await hubAliasDeployer.connect(hubSigner).setAliasFactoryForChainId(spokeChainId, connectorAddress)
 }
 
 async function wait(ms: number) {

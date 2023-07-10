@@ -6,6 +6,8 @@ import "./ERC5164ConnectorFactory.sol";
 import "@hop-protocol/ERC5164/contracts/IMessageDispatcher.sol";
 
 contract HubERC5164ConnectorFactory is ERC5164ConnectorFactory {
+    // ToDo: Events
+
     constructor(
         address _messageDispatcher, 
         address _messageExecutor
@@ -21,6 +23,7 @@ contract HubERC5164ConnectorFactory is ERC5164ConnectorFactory {
         address target2
     )
         external
+        payable
         returns (address)
     {
         address calculatedAddress = calculateAddress(chainId1, target1, chainId2, target2);
@@ -49,7 +52,7 @@ contract HubERC5164ConnectorFactory is ERC5164ConnectorFactory {
             );
             assert(calculatedAddress == connector);
         } else {
-            IMessageDispatcher(messageDispatcher).dispatchMessage(
+            IMessageDispatcher(messageDispatcher).dispatchMessage{value: msg.value}(
                 chainId,
                 address(this),
                 abi.encodeWithSignature(

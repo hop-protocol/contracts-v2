@@ -4,8 +4,9 @@ pragma solidity ^0.8.2;
 
 import "./ERC5164ConnectorFactory.sol";
 import "@hop-protocol/ERC5164/contracts/IMessageDispatcher.sol";
+import "@hop-protocol/messenger/contracts/interfaces/ICrossChainFees.sol";
 
-contract HubERC5164ConnectorFactory is ERC5164ConnectorFactory {
+contract HubERC5164ConnectorFactory is ERC5164ConnectorFactory, ICrossChainFees {
     // ToDo: Events
 
     constructor(
@@ -64,5 +65,10 @@ contract HubERC5164ConnectorFactory is ERC5164ConnectorFactory {
                 )
             );
         }
+    }
+
+    function getFee(uint256[] calldata chainIds) external override view returns (uint256) {
+        require(chainIds.length == 2, "HubERC5164ConnectorFactory: Invalid chainIds length");
+        return ICrossChainFees(messageDispatcher).getFee(chainIds);
     }
 }

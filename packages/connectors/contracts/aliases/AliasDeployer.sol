@@ -2,6 +2,7 @@
 pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@hop-protocol/messenger/contracts/interfaces/ICrossChainFees.sol";
 import "./AliasFactory.sol";
 import "../utils/OverridableChainId.sol";
 
@@ -11,7 +12,7 @@ interface IAliasFactory {
 }
 
 /// @dev AliasDeployer calls the AliasFactory's to deploy aliases on multiple chains.
-contract AliasDeployer is OverridableChainId, Ownable {
+contract AliasDeployer is OverridableChainId, Ownable, ICrossChainFees {
     uint256 public constant crossChainMessageFee = 0;
     // address for factory or factory connector
     mapping(uint256 => address) public aliasFactoryForChainId;
@@ -46,5 +47,19 @@ contract AliasDeployer is OverridableChainId, Ownable {
 
     function setAliasFactoryForChainId(uint256 chainId, address factory) external onlyOwner {
         aliasFactoryForChainId[chainId] = factory;
+    }
+
+    function getFee(uint256[] calldata chainIds) external override view returns (uint256) {
+        uint256 thisChainId = getChainId();
+        uint256 fee;
+        for(uint256 i = 0; i < chainIds.length; i++) {
+            uint256 chainId = chainIds[i];
+            if (chainId != thisChainId) {
+                // We know it's a connector if the chain id is not this chain id.
+                address connector = aliasFactoryForChainId[chainId];
+                fee += ICrossChainFees(connector).getFee(chainIds);
+            }
+        }
+        return fee;
     }
 }

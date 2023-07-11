@@ -4,8 +4,9 @@ pragma solidity ^0.8.2;
 import "./Connector.sol";
 import "@hop-protocol/ERC5164/contracts/MessageReceiver.sol";
 import "@hop-protocol/ERC5164/contracts/IMessageDispatcher.sol";
+import "@hop-protocol/messenger/contracts/interfaces/ICrossChainFees.sol";
 
-contract ERC5164Connector is Connector, MessageReceiver {
+contract ERC5164Connector is Connector, MessageReceiver, ICrossChainFees {
     uint256 public counterpartChainId;
     address public messageDispatcher;
     address public messageExecutor;
@@ -37,5 +38,10 @@ contract ERC5164Connector is Connector, MessageReceiver {
         if (from != counterpart) revert InvalidCounterpart(from);
         if (msg.sender != messageExecutor) revert InvalidBridge(msg.sender);
         if (fromChainId != counterpartChainId) revert InvalidFromChainId(fromChainId);
+    }
+
+    function getFee(uint256[] calldata chainIds) external override view returns (uint256) {
+        require(chainIds.length == 1, "ERC5164Connector: Invalid chainIds length");
+        return ICrossChainFees(messageDispatcher).getFee(chainIds);
     }
 }

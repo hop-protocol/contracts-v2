@@ -8,6 +8,7 @@ import "../libraries/MessengerLib.sol";
 import "../libraries/MerkleTreeLib.sol";
 import "../utils/OverridableChainId.sol";
 import "../transporter/ITransportLayer.sol";
+import "../interfaces/ICrossChainFees.sol";
 
 struct Route {
     uint256 chainId;
@@ -20,7 +21,7 @@ struct RouteData {
     uint128 maxBundleMessages;
 }
 
-contract Dispatcher is Ownable, EIP712, OverridableChainId {
+contract Dispatcher is Ownable, EIP712, OverridableChainId, ICrossChainFees {
     using MerkleTreeLib for bytes32;
 
     /* events */
@@ -173,7 +174,15 @@ contract Dispatcher is Ownable, EIP712, OverridableChainId {
         return keccak256(abi.encode(fromChainId, toChainId, bundleNonce, bundleRoot));
     }
 
-    function getFee(uint256 toChainId) external view returns (uint256) {
-        return routeData[toChainId].messageFee;
+    function getFee(uint256[] calldata chainIds) external override view returns (uint256) {
+        uint256 thisChainId = getChainId();
+        uint256 fee = 0;
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            uint256 chainId = chainIds[i];
+            if (chainId != thisChainId) {
+                fee += routeData[chainId].messageFee;
+            }
+        }
+        return fee;
     }
 }

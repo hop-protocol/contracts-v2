@@ -2,9 +2,14 @@ import { ethers } from 'hardhat'
 import { getSigners, logContractDeployed } from '../utils'
 import { contracts, deployConfig } from './config'
 import deployTransporters from './deployTransporters'
+import writeJson from '../utils/writeJSON'
 
 async function main() {
+  let contracts: any = {}
+
   const { hubTransporter, spokeTransporters } = await deployTransporters()
+  contracts.hubTransporter = hubTransporter.address
+  contracts.spokeTransporters = spokeTransporters.map(t => t.address)
 
   const Dispatcher = await ethers.getContractFactory('Dispatcher')
   const ExecutorManger = await ethers.getContractFactory('ExecutorManager')
@@ -22,13 +27,15 @@ async function main() {
     messageFee: deployConfig.messageFee,
     maxBundleMessages: deployConfig.maxBundleMessages
   }]
-  
+
   const hubDispatcher = await Dispatcher.connect(hubSigner).deploy(
     hubTransporter.address,
     spokeRoutes
   )
+  contracts.hubDispatcher = hubDispatcher.address
   await logContractDeployed('Dispatcher', hubDispatcher)
   const hubExecutor = await ExecutorManger.connect(hubSigner).deploy(hubTransporter.address)
+  contracts.hubExecutor = hubExecutor.address
   await logContractDeployed('ExecutorManager', hubExecutor)
 
   const spokeDispatchers = []
@@ -41,13 +48,20 @@ async function main() {
       spokeTransporter.address,
       [hubRoute]
     )
+    contracts.spokeDispatcher = spokeDispatcher.address
     await logContractDeployed('Dispatcher', spokeDispatcher)
-    const spokeExecutor = await ExecutorManger.connect(spokeSigner).deploy(spokeTransporter.address)
-    await logContractDeployed('ExecutorManager', spokeExecutor)
-
     spokeDispatchers.push(spokeDispatcher)
+
+    const spokeExecutor = await ExecutorManger.connect(spokeSigner).deploy(spokeTransporter.address)
+    contracts.spokeExecutor = spokeExecutor.address
+    await logContractDeployed('ExecutorManager', spokeExecutor)
     spokeExecutors.push(spokeExecutor)
+
+    let unixTimestamp = Math.floor(Date.now() / 1000);
+    writeJson(contracts, `deployment-artifacts/${unixTimestamp}.json`)
   }
+
+
 }
 
 main().catch(error => {

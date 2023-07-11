@@ -1,0 +1,10 @@
+{
+  "hubTransporter": "0x4BF1f24D0241371aa59e05662Dfaa2C9cF841797",
+  "spokeTransporters": [
+    "0xD7D4501B8c07a188ACc945711D23ba1Bbd80947F"
+  ],
+  "hubDispatcher": "0x8c5Ca356e8A7fD83aE6980db1c9003f6Fb07172b",
+  "hubExecutor": "0x37A5e8B935Ca0A82b8fdD56fB632922Cc761C2aE",
+  "spokeDispatcher": "0xc67E59138294DC6E9FfBb2DC3bC1a338c248960b",
+  "spokeExecutor": "0x16AAfc620Cdf9EE842F2FC0e8E64fF7d5423C68e"
+}

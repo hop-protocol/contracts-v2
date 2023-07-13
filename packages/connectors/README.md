@@ -14,8 +14,8 @@ Each Connector has a single counterpart, another connector on another chain. Eac
 
 ```
 YourTarget <> Connector <-|-> Connector <> YourTarget
-                            |
-            Optimism        |        Arbitrum
+                          |
+          Optimism        |        Arbitrum
 ```
 
 ## Usage

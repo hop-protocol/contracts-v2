@@ -1,6 +1,6 @@
 {
   "name": "@hop-protocol/messenger",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "license": "MIT",
   "description": "Hop Messenger",
   "main": "index.js",
@@ -41,6 +41,7 @@
   "dependencies": {
     "@hop-protocol/connectors": "^0.0.0",
     "@hop-protocol/ERC5164": "^0.0.0",
+    "@hop-protocol/utils": "^0.0.0",
     "@openzeppelin/contracts": "^4.7.3"
   }
 }

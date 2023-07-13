@@ -3,8 +3,8 @@ pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@hop-protocol/messenger/contracts/interfaces/ICrossChainFees.sol";
+import "@hop-protocol/utils/contracts/OverridableChainId.sol";
 import "./AliasFactory.sol";
-import "./utils/OverridableChainId.sol";
 
 interface IAliasFactory {
     function deployAlias(uint256 sourceChainId, address sourceAddress, address aliasDispatcher) external payable returns (address);

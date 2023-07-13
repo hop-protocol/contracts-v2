@@ -6,18 +6,18 @@
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hop-protocol/contracts-v2.git"
+    "url": "git+https://github.com/hop-protocol/contracts-v2/connectors.git"
   },
   "author": "Hop Team (@HopProtocol)",
   "bugs": {
     "url": "https://github.com/hop-protocol/contracts-v2/issues"
   },
-  "homepage": "https://github.com/hop-protocol/contracts-v2#readme",
+  "homepage": "https://github.com/hop-protocol/contracts-v2/connectors#readme",
   "scripts": {
     "compile": "npx hardhat compile",
     "lint": "eslint .",
     "prettier": "prettier '**/*.{json,sol,md}' --check",
-    "test": "npx hardhat test test/Connector.test.ts",
+    "test": "npx hardhat test test/**/*.test.ts",
     "deploy-alias-factories": "npx hardhat run scripts/aliases/deployFactories.ts --network goerli",
     "deploy-factories": "npm run normalize-nonce && npx hardhat run scripts/deployFactories.ts --network goerli",
     "deploy-greeters": "npx hardhat run scripts/deployGreeters.ts --network goerli",
@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "@hop-protocol/ERC5164": "^0.0.0",
+    "@hop-protocol/messenger": "^0.0.0",
     "@openzeppelin/contracts": "^4.7.3"
   },
   "devDependencies": {

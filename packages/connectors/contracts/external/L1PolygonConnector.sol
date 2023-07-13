@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
-import "../polygon/tunnel/FxBaseRootTunnel.sol";
 import "../Connector.sol";
+import "./polygon/tunnel/FxBaseRootTunnel.sol";
 
 contract L1PolygonConnector is Connector, FxBaseRootTunnel {
     constructor(

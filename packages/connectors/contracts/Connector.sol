@@ -2,8 +2,8 @@
 
 pragma solidity ^0.8.2;
 
-import "../utils/ExecutorLib.sol";
-import "../utils/Initializable.sol";
+import "./utils/ExecutorLib.sol";
+import "./utils/Initializable.sol";
 
 error InvalidCounterpart(address counterpart);
 error InvalidBridge(address msgSender);

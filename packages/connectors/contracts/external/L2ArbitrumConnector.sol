@@ -4,7 +4,7 @@ pragma solidity ^0.8.2;
 import "@openzeppelin/contracts/crosschain/arbitrum/LibArbitrumL2.sol";
 import "../interfaces/arbitrum/messengers/IArbSys.sol";
 import "../interfaces/arbitrum/messengers/IBridge.sol";
-import "../connectors/Connector.sol";
+import "../Connector.sol";
 
 contract L2ArbitrumConnector is Connector {
     function _forwardCrossDomainMessage() internal override {

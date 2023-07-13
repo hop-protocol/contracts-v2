@@ -36,17 +36,6 @@ async function deployTransporters() {
 
     await logContractDeployed('SpokeTransporter', spokeTransporter)
 
-
-    // const feeDistributor = await FeeDistributor.connect(hubSigner).deploy(
-    //   hubTransporter.address,
-    //   deployConfig.treasury,
-    //   deployConfig.publicGoods,
-    //   deployConfig.minPublicGoodsBps,
-    //   deployConfig.fullPoolSize,
-    //   deployConfig.absoluteMaxFee,
-    //   deployConfig.absoluteMaxFeeBps
-    // )
-
     spokeTransporters.push(spokeTransporter)
 
     const { l1Connector, l2Connector } = await deployConnectors(
@@ -86,7 +75,7 @@ async function deployConnectors(
 
   const l1Connector = await L1OptimismConnector.connect(l1Signer).deploy(
     externalContracts.optimism.l1CrossDomainMessenger,
-    5_000_000,
+    500_000,
     { gasLimit: 5_000_000 }
   )
 

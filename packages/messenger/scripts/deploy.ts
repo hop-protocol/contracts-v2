@@ -2,14 +2,21 @@ import { ethers } from 'hardhat'
 import { getSigners, logContractDeployed } from '../utils'
 import { contracts, deployConfig } from './config'
 import deployTransporters from './deployTransporters'
-import writeJson from '../utils/writeJSON'
+import logDeployment from '../utils/logDeployment'
 
 async function main() {
-  let contracts: any = {}
+  const spokeChain = '420'
+  const hubChainId = '5'
+
+  let contracts: any = {
+    transporters: {},
+    executors: {},
+    dispatchers: {}
+  }
 
   const { hubTransporter, spokeTransporters } = await deployTransporters()
-  contracts.hubTransporter = hubTransporter.address
-  contracts.spokeTransporters = spokeTransporters.map(t => t.address)
+  contracts.transporters[hubChainId] = hubTransporter.address
+  contracts.transporters[spokeChain] = spokeTransporters[0].address
 
   const Dispatcher = await ethers.getContractFactory('Dispatcher')
   const ExecutorManger = await ethers.getContractFactory('ExecutorManager')
@@ -32,10 +39,14 @@ async function main() {
     hubTransporter.address,
     spokeRoutes
   )
-  contracts.hubDispatcher = hubDispatcher.address
+  contracts.dispatchers[hubChainId] = hubDispatcher.address
   await logContractDeployed('Dispatcher', hubDispatcher)
+
+  await hubTransporter.setDispatcher(hubDispatcher.address)
+  console.log('HubTransporter dispatcher set')
+
   const hubExecutor = await ExecutorManger.connect(hubSigner).deploy(hubTransporter.address)
-  contracts.hubExecutor = hubExecutor.address
+  contracts.executors[hubChainId] = hubExecutor.address
   await logContractDeployed('ExecutorManager', hubExecutor)
 
   const spokeDispatchers = []
@@ -48,17 +59,19 @@ async function main() {
       spokeTransporter.address,
       [hubRoute]
     )
-    contracts.spokeDispatcher = spokeDispatcher.address
+    contracts.dispatchers[spokeChain] = spokeDispatcher.address
     await logContractDeployed('Dispatcher', spokeDispatcher)
     spokeDispatchers.push(spokeDispatcher)
 
+    await spokeTransporter.setDispatcher(spokeDispatcher.address)
+    console.log('SpokeTransporter dispatcher set')
+
     const spokeExecutor = await ExecutorManger.connect(spokeSigner).deploy(spokeTransporter.address)
-    contracts.spokeExecutor = spokeExecutor.address
+    contracts.executors[spokeChain] = spokeExecutor.address
     await logContractDeployed('ExecutorManager', spokeExecutor)
     spokeExecutors.push(spokeExecutor)
 
-    let unixTimestamp = Math.floor(Date.now() / 1000);
-    writeJson(contracts, `deployment-artifacts/${unixTimestamp}.json`)
+    logDeployment(contracts)
   }
 
 

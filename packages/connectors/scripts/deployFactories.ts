@@ -1,15 +1,24 @@
 import { Contract, Signer, ContractTransaction } from 'ethers'
 import { ethers } from 'hardhat'
 import { getSigners, logContractDeployed } from '../utils'
-import { dispatchers, executors } from './config'
+import getMessengerDeployment from '@hop-protocol/messenger/utils/getDeployment'
+import logDeployment from '../utils/logDeployment'
+
+const MESSENGER_CONFIG_DIR = '@hop-protocol/messenger/deployments'
 
 async function main() {
   const hubChainId = '5'
   const spokeChainId = '420'
 
+  const contracts: any = {
+    connectorFactories: {}
+  }
+
   const signers = getSigners()
   const hubSigner = signers[hubChainId]
   const spokeSigner = signers[spokeChainId]
+
+  const { dispatchers, executors } = getMessengerDeployment()
 
   const hubDispatcherAddress = dispatchers[hubChainId]
   const spokeDispatcherAddress = dispatchers[spokeChainId]
@@ -23,7 +32,7 @@ async function main() {
   const hubConnectorFactory = await HubERC5164ConnectorFactory.connect(
     hubSigner
   ).deploy(hubDispatcherAddress, hubExecutorAddress)
-
+  contracts.connectorFactories[hubChainId] = hubConnectorFactory.address
   await logContractDeployed('HubERC5164ConnectorFactory', hubConnectorFactory)
 
   const ERC5164ConnectorFactory = await ethers.getContractFactory(
@@ -32,7 +41,10 @@ async function main() {
   const spokeConnectorFactory = await ERC5164ConnectorFactory.connect(
     spokeSigner
   ).deploy(spokeDispatcherAddress, spokeExecutorAddress)
+  contracts.connectorFactories[spokeChainId] = spokeConnectorFactory.address
   await logContractDeployed('ERC5164ConnectorFactory', spokeConnectorFactory)
+
+  logDeployment(contracts)
 }
 
 async function wait(ms: number) {

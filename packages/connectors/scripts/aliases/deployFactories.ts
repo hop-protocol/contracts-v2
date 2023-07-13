@@ -1,7 +1,10 @@
 import { Contract, Signer, ContractTransaction, BigNumber } from 'ethers'
 import { ethers } from 'hardhat'
 import { getSigners, logContractDeployed } from '../../utils'
-import { dispatchers, executors, connectorFactories } from '../config'
+// import { dispatchers, executors, connectorFactories } from '../config'
+import getMessengerDeployment from '@hop-protocol/messenger/utils/getDeployment'
+import getConnectorDeployment from '../../utils/getDeployment'
+import logDeployment from '../../utils/logDeployment'
 
 async function main() {
   const hubChainId = '5'
@@ -10,6 +13,9 @@ async function main() {
   const signers = getSigners()
   const hubSigner = signers[hubChainId]
   const spokeSigner = signers[spokeChainId]
+
+  const { dispatchers, executors } = getMessengerDeployment()
+  const { connectorFactories } = getConnectorDeployment()
 
   const hubExecutorAddress = executors[hubChainId]
   const hubDispatcherAddress = dispatchers[hubChainId]
@@ -51,7 +57,10 @@ async function main() {
 
   const connectorAddress = await hubConnectorFactory.calculateAddress(hubChainId, hubAliasDeployer.address, spokeChainId, spokeAliasFactory.address)
   console.log(hubChainId, hubAliasDeployer.address, spokeChainId, spokeAliasFactory.address)
-  await hubConnectorFactory.deployConnectors(hubChainId, hubAliasDeployer.address, spokeChainId, spokeAliasFactory.address, { value: '1000000000000' })
+  const messageFee = await hubConnectorFactory.getFee([hubChainId, spokeChainId])
+  console.log('messageFee', messageFee.toString())
+  await hubConnectorFactory.deployConnectors(hubChainId, hubAliasDeployer.address, spokeChainId, spokeAliasFactory.address, { value: messageFee, gasLimit: 3000000 })
+  console.log(`Connectors deployed: `, connectorAddress)
   await hubAliasDeployer.connect(hubSigner).setAliasFactoryForChainId(spokeChainId, connectorAddress)
 }
 

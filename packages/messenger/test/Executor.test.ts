@@ -1,14 +1,14 @@
 import { expect } from 'chai'
 import { BigNumberish } from 'ethers'
 import { ethers } from 'hardhat'
+import getSetResultCalldata from '@hop-protocol/scripts/utils/getSetResultCalldata'
 import {
   HUB_CHAIN_ID,
   SPOKE_CHAIN_ID_0,
   SPOKE_CHAIN_ID_1,
   MAX_BUNDLE_MESSAGES,
-} from './utils/constants'
+} from './constants'
 import Fixture, { MessageSentEvent } from './fixtures/Messenger'
-import { getSetResultCalldata } from '../utils'
 import type { MockMessageReceiver as IMessageReceiver } from '../typechain'
 
 describe('Executor', function () {

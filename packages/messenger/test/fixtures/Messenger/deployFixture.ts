@@ -1,8 +1,7 @@
 import { BigNumber, BigNumberish } from 'ethers'
 import { ethers } from 'hardhat'
-
 import TransporterFixture from '../Transporter'
-
+import getSetResultCalldata from '@hop-protocol/scripts/utils/getSetResultCalldata'
 import type {
   Dispatcher as IDispatcher,
   ExecutorManager as IExecutorManager,
@@ -24,8 +23,7 @@ import {
   DEFAULT_RESULT,
   MAX_BUNDLE_FEE,
   MAX_BUNDLE_FEE_BPS
-} from '../../utils/constants'
-import { getSetResultCalldata } from '../../utils/utils'
+} from '../../constants'
 import Fixture, { Defaults } from '.'
 
 const defaultRoutes = [

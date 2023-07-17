@@ -1,8 +1,9 @@
 import { ethers } from 'hardhat'
-import { getSigners, logContractDeployed } from '../utils'
-import { contracts, deployConfig } from './config'
+import getSigners from '@hop-protocol/scripts/utils/getSigners'
+import logContractDeployed from '@hop-protocol/scripts/utils/logContractDeployed'
+import logDeployment from '@hop-protocol/scripts/utils/logDeployment'
+import { deployConfig } from './config'
 import deployTransporters from './deployTransporters'
-import logDeployment from '../utils/logDeployment'
 
 async function main() {
   const spokeChain = '420'
@@ -63,7 +64,8 @@ async function main() {
     await logContractDeployed('Dispatcher', spokeDispatcher)
     spokeDispatchers.push(spokeDispatcher)
 
-    await spokeTransporter.setDispatcher(spokeDispatcher.address)
+    const tx = await spokeTransporter.setDispatcher(spokeDispatcher.address)
+    await tx.wait()
     console.log('SpokeTransporter dispatcher set')
 
     const spokeExecutor = await ExecutorManger.connect(spokeSigner).deploy(spokeTransporter.address)

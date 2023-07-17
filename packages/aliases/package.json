@@ -6,18 +6,18 @@
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hop-protocol/contracts-v2/aliases.git"
+    "url": "git+https://github.com/hop-protocol/contracts-v2.git"
   },
   "author": "Hop Team (@HopProtocol)",
   "bugs": {
     "url": "https://github.com/hop-protocol/contracts-v2/issues"
   },
-  "homepage": "https://github.com/hop-protocol/contracts-v2/aliases#readme",
+  "homepage": "https://github.com/hop-protocol/contracts-v2/tree/master/packages/aliases#readme",
   "scripts": {
     "compile": "npx hardhat compile",
     "lint": "eslint .",
     "prettier": "prettier '**/*.{json,sol,md}' --check",
-    "test": "npx hardhat test test/**/*.test.ts",
+    "test": "npx hardhat test",
     "deploy": "npx hardhat run scripts/deploy.ts --network goerli",
     "chain": "npx hardhat node",
     "solhint": "solhint 'contracts/**/*.sol'",

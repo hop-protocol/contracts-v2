@@ -1,6 +1,6 @@
 import { CrossChainMessenger, MessageStatus } from '@eth-optimism/sdk'
 import { ethers } from 'hardhat'
-import { getSigners } from '../utils'
+import getSigners from '@hop-protocol/scripts/utils/getSigners'
 
 const txHash = '0x553b826ccb4de23b3f19a8badffa5914500bf3a09c3c2856d842e8b7eb647faa'
 
@@ -8,7 +8,7 @@ async function main() {
   const hubChainId = '5'
   const spokeChainId = '420'
 
-  const signers = getSigners()
+  const { signers } = getSigners()
   const hubSigner = signers[hubChainId]
   const spokeSigner = signers[spokeChainId]
 

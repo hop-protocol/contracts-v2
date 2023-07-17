@@ -1,5 +1,5 @@
 import { BigNumber, utils } from 'ethers'
-import { getSetResultCalldata } from './utils'
+import getSetResultCalldata from '@hop-protocol/scripts/utils/getSetResultCalldata'
 const { parseUnits } = utils
 
 export const ONE_WEEK = 604800

@@ -12,7 +12,7 @@
   "bugs": {
     "url": "https://github.com/hop-protocol/contracts-v2/issues"
   },
-  "homepage": "https://github.com/hop-protocol/contracts-v2#readme",
+  "homepage": "https://github.com/hop-protocol/contracts-v2/tree/master/packages/ERC5164#readme",
   "scripts": {
     "compile": "npx hardhat compile",
     "lint": "eslint .",

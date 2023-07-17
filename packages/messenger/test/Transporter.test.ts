@@ -7,7 +7,7 @@ import {
   SPOKE_CHAIN_ID_1,
   DEFAULT_COMMITMENT,
   TRANSPORT_FEE
-} from './utils/constants'
+} from './constants'
 const { provider } = ethers
 import Fixture from './fixtures/Transporter/index'
 

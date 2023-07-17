@@ -6,7 +6,7 @@ import {
   SPOKE_CHAIN_ID_1,
   MAX_BUNDLE_MESSAGES,
   ARBITRARY_EOA,
-} from '../test/utils/constants'
+} from '../test/constants'
 import Fixture from '../test/fixtures/Messenger'
 
 describe('MessageBridge Gas Profile', function () {

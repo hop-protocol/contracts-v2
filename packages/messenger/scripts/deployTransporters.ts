@@ -1,8 +1,8 @@
-import { Contract, Signer} from 'ethers'
+import { Signer} from 'ethers'
 import { ethers } from 'hardhat'
-import { getSigners, logContractDeployed } from '../utils'
-const { parseUnits } = ethers.utils
-import { contracts, deployConfig } from './config'
+import getSigners from '@hop-protocol/scripts/utils/getSigners'
+import logContractDeployed from '@hop-protocol/scripts/utils/logContractDeployed'
+import { contracts } from './config'
 import {
   EXIT_TIME,
   RELAY_WINDOW,
@@ -16,13 +16,13 @@ async function deployTransporters() {
   const SpokeTransporter = await ethers.getContractFactory('SpokeTransporter')
 
   const { hubSigner, spokeSigners } = getSigners()
-  
+
   const hubTransporter = await HubTransporter.connect(hubSigner).deploy(
     RELAY_WINDOW,
     ABSOLUTE_MAX_FEE,
     MAX_FEE_BPS
   )
-  
+
   await logContractDeployed('HubTransporter', hubTransporter)
 
   const spokeTransporters = []

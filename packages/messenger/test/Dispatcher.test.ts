@@ -5,7 +5,7 @@ import {
   HUB_CHAIN_ID,
   SPOKE_CHAIN_ID_0,
   SPOKE_CHAIN_ID_1,
-} from './utils/constants'
+} from './constants'
 import Fixture from './fixtures/Messenger'
 
 describe('Dispatcher', function () {

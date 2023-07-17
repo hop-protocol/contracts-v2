@@ -1,9 +1,9 @@
 import { Wallet } from 'ethers'
-import { getSigners } from '../utils'
+import getSigners from '@hop-protocol/scripts/utils/getSigners'
 
 async function main() {
   console.log('Normalizing nonces')
-  const signerObject = getSigners()
+  const { signers: signerObject } = getSigners()
 
   const chains: string[] = []
   const signers: Wallet[] = []

@@ -1,8 +1,9 @@
 import { Contract, Signer, ContractTransaction } from 'ethers'
 import { ethers } from 'hardhat'
-import { getSigners, logContractDeployed } from '../utils'
+import getSigners from '@hop-protocol/scripts/utils/getSigners'
+import logContractDeployed from '@hop-protocol/scripts/utils/logContractDeployed'
+import logDeployment from '@hop-protocol/scripts/utils/logDeployment'
 import getMessengerDeployment from '@hop-protocol/messenger/utils/getDeployment'
-import logDeployment from '../utils/logDeployment'
 
 const MESSENGER_CONFIG_DIR = '@hop-protocol/messenger/deployments'
 
@@ -14,7 +15,7 @@ async function main() {
     connectorFactories: {}
   }
 
-  const signers = getSigners()
+  const { signers } = getSigners()
   const hubSigner = signers[hubChainId]
   const spokeSigner = signers[spokeChainId]
 

@@ -19,7 +19,7 @@ import {
 } from '../../../typechain'
 type Interface = utils.Interface
 
-import { MESSAGE_FEE } from '../../utils/constants'
+import { MESSAGE_FEE } from '../../constants'
 import Message from './Message'
 import deployFixture from './deployFixture'
 

@@ -121,15 +121,3 @@ npm run mainnet
 ```shell
 npm run lint
 ```
-
-
-
-* The Hop Messenger uses a hub-and-spoke model
-* Messages are aggregated into bundles
-* The bundle is hashed and sent to the destination
-* Native bridges with Ethereum are used to pass the bundle hash
-* At the destination, messages in the bundle can be unpacked and executed
-
-Because the native bridges can sometimes be slow, the Hop Core Messenger is best used for messages that require trustlessness and high-security but are not time sensitive (e.g. value settlement, dispute resolution, DAO governance, etc.).
-
-Faster messaging models such as collateralized messaging and optimistic messaging (as seen in Hop V1) can be easily implemented on top of the Core Messenger for application-specific or generalized use cases.

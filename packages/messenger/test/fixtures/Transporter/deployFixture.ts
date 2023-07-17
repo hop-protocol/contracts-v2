@@ -16,7 +16,7 @@ import {
   MAX_BUNDLE_FEE,
   MAX_BUNDLE_FEE_BPS,
   RELAY_WINDOW
-} from '../../utils/constants'
+} from '../../constants'
 import Fixture, { Defaults } from './index'
 
 async function deployFixture(

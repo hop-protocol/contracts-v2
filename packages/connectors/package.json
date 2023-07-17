@@ -6,20 +6,19 @@
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hop-protocol/contracts-v2/connectors.git"
+    "url": "git+https://github.com/hop-protocol/contracts-v2.git"
   },
   "author": "Hop Team (@HopProtocol)",
   "bugs": {
     "url": "https://github.com/hop-protocol/contracts-v2/issues"
   },
-  "homepage": "https://github.com/hop-protocol/contracts-v2/connectors#readme",
+  "homepage": "https://github.com/hop-protocol/contracts-v2tree/master/packages/connectors#readme",
   "scripts": {
     "compile": "npx hardhat compile",
     "lint": "eslint .",
     "prettier": "prettier '**/*.{json,sol,md}' --check",
-    "test": "npx hardhat test test/**/*.test.ts",
-    "deploy-alias-factories": "npx hardhat run scripts/aliases/deployFactories.ts --network goerli",
-    "deploy-factories": "npm run normalize-nonce && npx hardhat run scripts/deployFactories.ts --network goerli",
+    "test": "npx hardhat test test/Connector.test.ts",
+    "deploy": "npm run normalize-nonce && npx hardhat run scripts/deploy.ts --network goerli",
     "deploy-greeters": "npx hardhat run scripts/deployGreeters.ts --network goerli",
     "normalize-nonce": "npx hardhat run scripts/normalizeNonce.ts --network goerli",
     "exit-optimism": "npx hardhat run scripts/exitOptimism.ts --network goerli",

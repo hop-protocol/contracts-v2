@@ -1,13 +1,14 @@
 import { Contract, Signer, ContractTransaction } from 'ethers'
 import { ethers } from 'hardhat'
-import { getSigners, logContractDeployed } from '../utils'
+import getSigners from '@hop-protocol/scripts/utils/getSigners'
+import logContractDeployed from '@hop-protocol/scripts/utils/logContractDeployed'
 import { connectorFactories } from './config'
 
 async function main() {
   const hubChainId = '5'
   const spokeChainId = '420'
 
-  const signers = getSigners()
+  const { signers } = getSigners()
   const hubSigner = signers[hubChainId]
   const spokeSigner = signers[spokeChainId]
 

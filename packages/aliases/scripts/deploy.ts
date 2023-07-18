@@ -69,6 +69,8 @@ async function main() {
   console.log(`Connectors deployed: `, connectorAddress)
   await aliasDeployer.connect(hubSigner).setAliasFactoryForChainId(spokeChainId, connectorAddress)
   console.log('aliasDeployer spoke AliasFactory set')
+
+  logDeployment(contracts)
 }
 
 async function wait(ms: number) {

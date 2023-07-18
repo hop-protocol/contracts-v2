@@ -1,5 +1,5 @@
 import { Wallet } from 'ethers'
-import getSigners from '@hop-protocol/scripts/utils/getSigners'
+import getSigners from '@hop-protocol/shared/utils/getSigners'
 
 async function main() {
   console.log('Normalizing nonces')

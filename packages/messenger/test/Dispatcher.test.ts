@@ -6,7 +6,7 @@ import {
   SPOKE_CHAIN_ID_0,
   SPOKE_CHAIN_ID_1,
 } from './constants'
-import Fixture from './fixtures/Messenger'
+import Fixture from './fixture'
 
 describe('Dispatcher', function () {
   describe('dispatchMessage', function () {

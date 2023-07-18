@@ -1,26 +1,25 @@
 import { ethers } from 'hardhat'
-import getSigners from '@hop-protocol/scripts/utils/getSigners'
-import logContractDeployed from '@hop-protocol/scripts/utils/logContractDeployed'
-import logDeployment from '@hop-protocol/scripts/utils/logDeployment'
+import getSigners from '../../shared/utils/getSigners'
+import logContractDeployed from '../../shared/utils/logContractDeployed'
+import logDeployment from '../../shared/utils/logDeployment'
 import { deployConfig } from './config'
-import deployTransporters from './deployTransporters'
+import getTransporterDeployment from '@hop-protocol/transporter/utils/getDeployment'
 
 async function main() {
   const spokeChain = '420'
   const hubChainId = '5'
 
   let contracts: any = {
-    transporters: {},
     executors: {},
     dispatchers: {}
   }
 
-  const { hubTransporter, spokeTransporters } = await deployTransporters()
-  contracts.transporters[hubChainId] = hubTransporter.address
-  contracts.transporters[spokeChain] = spokeTransporters[0].address
+  const { transporters } = await getTransporterDeployment()
+  const hubTransporterAddress = transporters[hubChainId]
+  const spokeTransporterAddress = transporters[spokeChain]
 
   const Dispatcher = await ethers.getContractFactory('Dispatcher')
-  const ExecutorManger = await ethers.getContractFactory('ExecutorManager')
+  const ExecutorManager = await ethers.getContractFactory('ExecutorManager')
 
   const { hubSigner, spokeSigners } = getSigners()
 
@@ -37,16 +36,18 @@ async function main() {
   }]
 
   const hubDispatcher = await Dispatcher.connect(hubSigner).deploy(
-    hubTransporter.address,
+    hubTransporterAddress,
     spokeRoutes
   )
   contracts.dispatchers[hubChainId] = hubDispatcher.address
   await logContractDeployed('Dispatcher', hubDispatcher)
 
+  const HubTransporter = await ethers.getContractFactory('HubTransporter')
+  const hubTransporter = await HubTransporter.connect(hubSigner).attach(hubTransporterAddress)
   await hubTransporter.setDispatcher(hubDispatcher.address)
   console.log('HubTransporter dispatcher set')
 
-  const hubExecutor = await ExecutorManger.connect(hubSigner).deploy(hubTransporter.address)
+  const hubExecutor = await ExecutorManager.connect(hubSigner).deploy(hubTransporterAddress)
   contracts.executors[hubChainId] = hubExecutor.address
   await logContractDeployed('ExecutorManager', hubExecutor)
 
@@ -55,28 +56,27 @@ async function main() {
   for (let i = 0; i < spokeSigners.length; i++) {
     const spokeSigner = spokeSigners[i]
 
-    const spokeTransporter = spokeTransporters[i]
     const spokeDispatcher = await Dispatcher.connect(spokeSigner).deploy(
-      spokeTransporter.address,
+      spokeTransporterAddress,
       [hubRoute]
     )
     contracts.dispatchers[spokeChain] = spokeDispatcher.address
     await logContractDeployed('Dispatcher', spokeDispatcher)
     spokeDispatchers.push(spokeDispatcher)
 
+    const SpokeTransporter = await ethers.getContractFactory('SpokeTransporter')
+    const spokeTransporter = await SpokeTransporter.connect(spokeSigner).attach(spokeTransporterAddress)
     const tx = await spokeTransporter.setDispatcher(spokeDispatcher.address)
     await tx.wait()
     console.log('SpokeTransporter dispatcher set')
 
-    const spokeExecutor = await ExecutorManger.connect(spokeSigner).deploy(spokeTransporter.address)
+    const spokeExecutor = await ExecutorManager.connect(spokeSigner).deploy(spokeTransporterAddress)
     contracts.executors[spokeChain] = spokeExecutor.address
     await logContractDeployed('ExecutorManager', spokeExecutor)
     spokeExecutors.push(spokeExecutor)
 
     logDeployment(contracts)
   }
-
-
 }
 
 main().catch(error => {

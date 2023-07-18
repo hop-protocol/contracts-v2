@@ -6,20 +6,12 @@ The Hop Messenger is a modular, trustless messaging protocol that can be used to
 
 The Hop Messenger is primarily made up of 3 types of contracts:
  * `Dispatcher`s - dispatch and bundle messages
- * `Transporter`s - transport bundles cross-chain
  * `Executor`s - validate and execute messages
+ * `Transporter`s - connect cross-chain Dispatchers and Executors
 
 ### Dispatchers
 
 There is a single `Dispatcher` on each chain. Dispatchers are responsible for aggregating messages into bundles sending the bundle to the destination through the transport layer. A small fee is required for each message that is dispatched which goes toward the cost of transporting the bundle. A `Dispatcher` may use a single `Transporter` as the transport layer or it may use multiple for better security, speed, or trust tradeoffs.
-
-### Transporters
-
-`Transporter`s are used for tranporting data such as bundles cross-chain. The data being transported is always represented by a single hash called a `commitment`. In this case, the `commitment` is the hash of the bundle data -- the `bundleHash`.
-
-The default `Transporter` uses the native bridges to transport the `bundleHash` using Ethereum as a hub. This is a simple transport method optimized for trustlessness and security but it can be quite slow in some cases such as sending a message from an optimistic rollup.
-
-Applications that require different speed/trust/security tradeoffs can specify a different `Transporter` than the default or combine multiple together (see "Implementing custom validation" below).
 
 ### Executors
 
@@ -28,6 +20,16 @@ Applications that require different speed/trust/security tradeoffs can specify a
 _Note: The separation of the business logic contract, the `ExecutorManager`, from the contract capable of arbitrary execution, the `ExecutorHead`, allows us to mitigate the security risks that come with arbitary execution without needing to rely on fallible patterns like contract blacklists._
 
 Before a message can be executed, the `ExecutionManager` must prove the bundle by verifying it with a `Transporter`. If a `MessageReceiver` has not specified a `Transporter`, a message that calls the `MessageReceiver` can be executed after the bundle has been proven with the default `Transporter`. If a `Transporter` is specified by the `MessageReceiver` the bundle must be proven with that `Transporter` before it can be executed (see "Implementing custom validation" below). 
+
+### Transporters
+
+See [Transporter package](https://github.com/hop-protocol/contracts-v2/packages/transporter).
+
+`Transporter`s are used by the messenger for tranporting data such as bundles cross-chain. The data being transported is always represented by a single hash called a `commitment`. In this case, the `commitment` is the hash of the bundle data -- the `bundleHash`.
+
+The default `Transporter` uses the native bridges to transport the `bundleHash` using Ethereum as a hub. This is a simple transport method optimized for trustlessness and security but it can be quite slow in some cases such as sending a message from an optimistic rollup.
+
+Applications that require different speed/trust/security tradeoffs can specify a different `Transporter` than the default or combine multiple together (see "Implementing custom validation" below).
 
 
 ## Getting Started

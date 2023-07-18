@@ -1,12 +1,12 @@
 import { BigNumber, BigNumberish } from 'ethers'
 import { ethers } from 'hardhat'
 import TransporterFixture from '../Transporter'
-import getSetResultCalldata from '@hop-protocol/scripts/utils/getSetResultCalldata'
+import getSetResultCalldata from '../../../shared/utils/getSetResultCalldata'
 import type {
   Dispatcher as IDispatcher,
   ExecutorManager as IExecutorManager,
   MockMessageReceiver as IMessageReceiver,
-} from '../../../typechain'
+} from '../../typechain'
 import {
   ONE_WEEK,
   HUB_CHAIN_ID,
@@ -23,7 +23,7 @@ import {
   DEFAULT_RESULT,
   MAX_BUNDLE_FEE,
   MAX_BUNDLE_FEE_BPS
-} from '../../constants'
+} from '../constants'
 import Fixture, { Defaults } from '.'
 
 const defaultRoutes = [

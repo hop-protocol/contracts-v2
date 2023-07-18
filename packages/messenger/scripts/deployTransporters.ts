@@ -1,7 +1,7 @@
 import { Signer} from 'ethers'
 import { ethers } from 'hardhat'
-import getSigners from '@hop-protocol/scripts/utils/getSigners'
-import logContractDeployed from '@hop-protocol/scripts/utils/logContractDeployed'
+import getSigners from '../../shared/utils/getSigners'
+import logContractDeployed from '../../shared/utils/logContractDeployed'
 import { contracts } from './config'
 import {
   EXIT_TIME,

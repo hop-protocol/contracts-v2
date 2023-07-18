@@ -22,7 +22,7 @@
     "gas-profile": "npx hardhat test gas-profile/gas.test.ts",
     "solhint": "solhint 'contracts/**/*.sol'",
     "coverage": "npx hardhat coverage --solcoverjs .solcover.js",
-    "deploy": "npm run local:deploy",
+    "deploy": "npx hardhat run scripts/deploy.ts",
     "local:deploy": "npx hardhat run scripts/deploy.ts --network localhost",
     "testnet:deploy": "npx hardhat run scripts/deploy.ts --network goerli",
     "testnet:deploy-message-receiver": "npx hardhat run scripts/deployMessageReceiver.ts",
@@ -39,6 +39,7 @@
     "merkletreejs": "^0.2.32"
   },
   "dependencies": {
+    "@hop-protocol/transporter": "^0.0.0",
     "@hop-protocol/connectors": "^0.0.0",
     "@hop-protocol/ERC5164": "^0.0.0",
     "@hop-protocol/utils": "^0.0.0",

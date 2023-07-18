@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { BigNumber, BigNumberish } from 'ethers'
 import { ethers } from 'hardhat'
-import getSetResultCalldata from '@hop-protocol/scripts/utils/getSetResultCalldata'
+import getSetResultCalldata from '../../shared/utils/getSetResultCalldata'
 import {
   HUB_CHAIN_ID,
   SPOKE_CHAIN_ID_0,
@@ -10,7 +10,7 @@ import {
   MESSAGE_FEE,
   MAX_BUNDLE_MESSAGES,
 } from './constants'
-import Fixture from './fixtures/Messenger'
+import Fixture from './fixture'
 import type { MockMessageReceiver as IMessageReceiver } from '../typechain'
 import { keccak256, defaultAbiCoder } from 'ethers/lib/utils'
 

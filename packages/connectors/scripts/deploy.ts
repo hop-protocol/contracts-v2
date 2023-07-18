@@ -1,8 +1,8 @@
 import { Contract, Signer, ContractTransaction } from 'ethers'
 import { ethers } from 'hardhat'
-import getSigners from '@hop-protocol/scripts/utils/getSigners'
-import logContractDeployed from '@hop-protocol/scripts/utils/logContractDeployed'
-import logDeployment from '@hop-protocol/scripts/utils/logDeployment'
+import getSigners from '@hop-protocol/shared/utils/getSigners'
+import logContractDeployed from '@hop-protocol/shared/utils/logContractDeployed'
+import logDeployment from '@hop-protocol/shared/utils/logDeployment'
 import getMessengerDeployment from '@hop-protocol/messenger/utils/getDeployment'
 
 const MESSENGER_CONFIG_DIR = '@hop-protocol/messenger/deployments'

@@ -1,6 +1,6 @@
 import { task } from 'hardhat/config'
 import * as sdk from '@eth-optimism/sdk'
-import getSigners from '@hop-protocol/scripts/utils/getSigners'
+import getSigners from '../../shared/utils/getSigners'
 
 task('exitBundle', 'Exit a bundle from L2 to L1')
   .addParam('hash', 'The hash of the message to exit')

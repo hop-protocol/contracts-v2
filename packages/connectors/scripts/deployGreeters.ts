@@ -1,7 +1,7 @@
 import { Contract, Signer, ContractTransaction } from 'ethers'
 import { ethers } from 'hardhat'
-import getSigners from '@hop-protocol/scripts/utils/getSigners'
-import logContractDeployed from '@hop-protocol/scripts/utils/logContractDeployed'
+import getSigners from '@hop-protocol/shared/utils/getSigners'
+import logContractDeployed from '@hop-protocol/shared/utils/logContractDeployed'
 import { connectorFactories } from './config'
 
 async function main() {

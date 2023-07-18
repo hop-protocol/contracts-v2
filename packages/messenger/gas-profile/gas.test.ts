@@ -7,7 +7,7 @@ import {
   MAX_BUNDLE_MESSAGES,
   ARBITRARY_EOA,
 } from '../test/constants'
-import Fixture from '../test/fixtures/Messenger'
+import Fixture from '../test/fixture/Messenger'
 
 describe('MessageBridge Gas Profile', function () {
   it('should dispatchMessage L1 -> L2', async function () {

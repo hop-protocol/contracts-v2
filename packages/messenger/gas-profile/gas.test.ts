@@ -6,8 +6,8 @@ import {
   SPOKE_CHAIN_ID_1,
   MAX_BUNDLE_MESSAGES,
   ARBITRARY_EOA,
-} from '../test/constants'
-import Fixture from '../test/fixture/Messenger'
+} from '@hop-protocol/shared/constants'
+import Fixture from '../test/fixture'
 
 describe('MessageBridge Gas Profile', function () {
   it('should dispatchMessage L1 -> L2', async function () {

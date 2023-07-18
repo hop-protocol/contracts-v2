@@ -7,7 +7,7 @@ import {
   SPOKE_CHAIN_ID_0,
   SPOKE_CHAIN_ID_1,
   MAX_BUNDLE_MESSAGES,
-} from './constants'
+} from '@hop-protocol/shared/constants'
 import Fixture, { MessageSentEvent } from './fixture'
 import type { MockMessageReceiver as IMessageReceiver } from '../typechain'
 

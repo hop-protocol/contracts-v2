@@ -7,6 +7,7 @@ export const ONE_WEEK = 604800
 export const HUB_CHAIN_ID = BigNumber.from(1000)
 export const SPOKE_CHAIN_ID_0 = BigNumber.from(2000)
 export const SPOKE_CHAIN_ID_1 = BigNumber.from(2001)
+
 export const TREASURY = '0x1111000000000000000000000000000000001111'
 export const PUBLIC_GOODS = '0x2222000000000000000000000000000000002222'
 export const ARBITRARY_EOA = '0x3333000000000000000000000000000000003333'
@@ -14,8 +15,9 @@ export const MIN_PUBLIC_GOODS_BPS = 100_000
 
 // Fee distribution
 export const FULL_POOL_SIZE = parseUnits('0.1')
-export const MAX_BUNDLE_FEE = parseUnits('0.05')
-export const MAX_BUNDLE_FEE_BPS = 3_000_000 // 300%
+export const MAX_TRANSPORT_FEE_ABSOLUTE = parseUnits('0.05')
+export const MAX_TRANSPORT_FEE_BPS = 30_000 // 300%
+export const EXIT_TIME = 60 // 1 min for testnet
 
 // Fee collection
 export const MAX_BUNDLE_MESSAGES = 32

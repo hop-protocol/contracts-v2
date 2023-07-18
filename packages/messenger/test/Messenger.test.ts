@@ -9,7 +9,7 @@ import {
   DEFAULT_RESULT,
   MESSAGE_FEE,
   MAX_BUNDLE_MESSAGES,
-} from './constants'
+} from '@hop-protocol/shared/constants'
 import Fixture from './fixture'
 import type { MockMessageReceiver as IMessageReceiver } from '../typechain'
 import { keccak256, defaultAbiCoder } from 'ethers/lib/utils'

@@ -13,10 +13,10 @@ import {
   DEFAULT_FROM_CHAIN_ID,
   DEFAULT_TO_CHAIN_ID,
   DEFAULT_COMMITMENT,
-  MAX_BUNDLE_FEE,
-  MAX_BUNDLE_FEE_BPS,
+  MAX_TRANSPORT_FEE_ABSOLUTE,
+  MAX_TRANSPORT_FEE_BPS,
   RELAY_WINDOW
-} from '../constants'
+} from '@hop-protocol/shared/constants'
 import Fixture, { Defaults } from './index'
 
 async function deployFixture(
@@ -32,8 +32,8 @@ async function deployFixture(
     FULL_POOL_SIZE,
     0,
     RELAY_WINDOW,
-    MAX_BUNDLE_FEE,
-    MAX_BUNDLE_FEE_BPS,
+    MAX_TRANSPORT_FEE_ABSOLUTE,
+    MAX_TRANSPORT_FEE_BPS,
     _hubChainId
   )
 

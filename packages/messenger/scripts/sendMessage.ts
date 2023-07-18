@@ -1,12 +1,12 @@
 import { ethers } from 'hardhat'
-import { getSigners, getSetResultCalldata } from '../utils'
+import getSigners from '@hop-protocol/shared/utils/getSigners'
+import getSetResultCalldata from '@hop-protocol/shared/utils/getSetResultCalldata'
 import {
-  contracts,
   deployConfig,
   messageConfig,
   txConfig,
 } from './config'
-const { messengers } = contracts.testnet
+import getDeployment from '@hop-protocol/messenger/utils/getDeployment'
 
 async function main() {
   const { maxBundleMessages } = deployConfig
@@ -16,6 +16,7 @@ async function main() {
 }
 
 async function dispatchMessage() {
+  const { messengers } = getDeployment()
   const { message } = messageConfig
   const { fromChainId, toChainId, to, result } = message
   const { messageFee } = deployConfig

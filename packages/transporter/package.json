@@ -38,6 +38,7 @@
     "@hop-protocol/connectors": "^0.0.0",
     "@hop-protocol/ERC5164": "^0.0.0",
     "@hop-protocol/utils": "^0.0.0",
+    "@hop-protocol/shared": "^0.0.0",
     "@openzeppelin/contracts": "^4.7.3"
   }
 }

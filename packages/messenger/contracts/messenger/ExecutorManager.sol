@@ -4,7 +4,7 @@ pragma solidity ^0.8.9;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@hop-protocol/utils/contracts/OverridableChainId.sol";
 import "./ExecutorHead.sol";
-import "../transporter/ITransportLayer.sol";
+import "../interfaces/ITransportLayer.sol";
 import "../libraries/Error.sol";
 import "../libraries/Bitmap.sol";
 import "../libraries/MerkleTreeLib.sol";

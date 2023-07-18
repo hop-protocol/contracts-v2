@@ -8,3 +8,5 @@ import "@hop-protocol/connectors/contracts/external/L1OptimismConnector.sol";
 import "@hop-protocol/connectors/contracts/external/L2OptimismConnector.sol";
 import "@hop-protocol/connectors/contracts/external/L1PolygonConnector.sol";
 import "@hop-protocol/connectors/contracts/external/L2PolygonConnector.sol";
+import "@hop-protocol/transporter/contracts/test/MockHubTransporter.sol";
+import "@hop-protocol/transporter/contracts/test/MockSpokeTransporter.sol";

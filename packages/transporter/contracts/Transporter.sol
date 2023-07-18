@@ -3,7 +3,7 @@ pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./ITransportLayer.sol";
-import "../libraries/Error.sol";
+import "./libraries/Error.sol";
 
 abstract contract Transporter is Ownable, ITransportLayer {
     address public dispatcher;

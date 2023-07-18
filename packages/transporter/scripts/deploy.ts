@@ -3,14 +3,13 @@ import { ethers } from 'hardhat'
 import getSigners from '../../shared/utils/getSigners'
 import logDeployment from '../../shared/utils/logDeployment'
 import logContractDeployed from '../../shared/utils/logContractDeployed'
-import { contracts } from './config'
+import { externalContracts } from './config'
 import {
   EXIT_TIME,
   RELAY_WINDOW,
-  ABSOLUTE_MAX_FEE,
-  MAX_FEE_BPS
-} from './constants'
-const { externalContracts } = contracts.testnet
+  MAX_TRANSPORT_FEE_ABSOLUTE,
+  MAX_TRANSPORT_FEE_BPS
+} from '@hop-protocol/shared/constants'
 
 async function main() {
   const spokeChain = '420'
@@ -27,8 +26,8 @@ async function main() {
 
   const hubTransporter = await HubTransporter.connect(hubSigner).deploy(
     RELAY_WINDOW,
-    ABSOLUTE_MAX_FEE,
-    MAX_FEE_BPS
+    MAX_TRANSPORT_FEE_ABSOLUTE,
+    MAX_TRANSPORT_FEE_BPS
   )
 
   contracts.transporters[hubChainId] = hubTransporter.address

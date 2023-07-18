@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.2;
 
-import "../transporter/SpokeTransporter.sol";
+import "../SpokeTransporter.sol";
 
 contract MockSpokeTransporter is SpokeTransporter {
     uint256 public mockChainId;

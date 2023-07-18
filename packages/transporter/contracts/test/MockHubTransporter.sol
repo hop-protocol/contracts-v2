@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.2;
 
-import "../transporter/HubTransporter.sol";
+import "../HubTransporter.sol";
 
 contract MockHubTransporter is HubTransporter {
     uint256 public mockChainId;

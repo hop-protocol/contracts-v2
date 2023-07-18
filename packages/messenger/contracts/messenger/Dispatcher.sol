@@ -7,7 +7,7 @@ import "@hop-protocol/utils/contracts/OverridableChainId.sol";
 import "../libraries/Error.sol";
 import "../libraries/MessengerLib.sol";
 import "../libraries/MerkleTreeLib.sol";
-import "../transporter/ITransportLayer.sol";
+import "../interfaces/ITransportLayer.sol";
 import "../interfaces/ICrossChainFees.sol";
 
 struct Route {

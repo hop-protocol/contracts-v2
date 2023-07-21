@@ -6,7 +6,7 @@ import {
   SPOKE_CHAIN_ID_1,
   MAX_BUNDLE_MESSAGES,
   ARBITRARY_EOA,
-} from '@hop-protocol/shared/constants'
+} from '@hop-protocol/shared-utils/constants'
 import Fixture from '../test/fixture'
 
 describe('MessageBridge Gas Profile', function () {

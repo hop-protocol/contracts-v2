@@ -16,7 +16,7 @@ import type {
 } from '../../typechain'
 type Interface = utils.Interface
 
-import { TRANSPORT_FEE } from '@hop-protocol/shared/constants'
+import { TRANSPORT_FEE } from '@hop-protocol/shared-utils/constants'
 import deployFixture from './deployFixture'
 
 export type Defaults = {

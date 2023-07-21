@@ -16,7 +16,7 @@ import {
   DEFAULT_FROM_CHAIN_ID,
   DEFAULT_TO_CHAIN_ID,
   DEFAULT_RESULT
-} from '@hop-protocol/shared/constants'
+} from '@hop-protocol/shared-utils/constants'
 import Fixture, { Defaults } from '.'
 
 const defaultRoutes = [

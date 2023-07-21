@@ -3,7 +3,7 @@ pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
-import "@hop-protocol/utils/contracts/OverridableChainId.sol";
+import "@hop-protocol/shared-solidity/contracts/OverridableChainId.sol";
 import "../libraries/Error.sol";
 import "../libraries/MessengerLib.sol";
 import "../libraries/MerkleTreeLib.sol";

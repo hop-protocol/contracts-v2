@@ -7,7 +7,7 @@ import {
   SPOKE_CHAIN_ID_1,
   DEFAULT_COMMITMENT,
   TRANSPORT_FEE
-} from '@hop-protocol/shared/constants'
+} from '@hop-protocol/shared-utils/constants'
 const { provider } = ethers
 import Fixture from './fixture'
 

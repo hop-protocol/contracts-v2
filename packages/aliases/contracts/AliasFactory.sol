@@ -2,7 +2,7 @@
 pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/utils/Create2.sol";
-import "@hop-protocol/utils/contracts/OverridableChainId.sol";
+import "@hop-protocol/shared-solidity/contracts/OverridableChainId.sol";
 import "./Alias.sol";
 import "./AliasDispatcher.sol";
 

@@ -1,5 +1,5 @@
 {
-  "name": "@hop-protocol/utils",
+  "name": "@hop-protocol/shared-solidity",
   "version": "0.0.0",
   "license": "MIT",
   "description": "Hop Protocol utility contracts",

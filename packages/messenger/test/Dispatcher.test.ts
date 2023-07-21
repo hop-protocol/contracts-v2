@@ -5,7 +5,7 @@ import {
   HUB_CHAIN_ID,
   SPOKE_CHAIN_ID_0,
   SPOKE_CHAIN_ID_1,
-} from '@hop-protocol/shared/constants'
+} from '@hop-protocol/shared-utils/constants'
 import Fixture from './fixture'
 
 describe('Dispatcher', function () {

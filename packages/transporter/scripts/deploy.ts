@@ -9,7 +9,7 @@ import {
   RELAY_WINDOW,
   MAX_TRANSPORT_FEE_ABSOLUTE,
   MAX_TRANSPORT_FEE_BPS
-} from '@hop-protocol/shared/constants'
+} from '@hop-protocol/shared-utils/constants'
 
 async function main() {
   const spokeChain = '420'

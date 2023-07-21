@@ -16,7 +16,7 @@ import {
   MAX_TRANSPORT_FEE_ABSOLUTE,
   MAX_TRANSPORT_FEE_BPS,
   RELAY_WINDOW
-} from '@hop-protocol/shared/constants'
+} from '@hop-protocol/shared-utils/constants'
 import Fixture, { Defaults } from './index'
 
 async function deployFixture(

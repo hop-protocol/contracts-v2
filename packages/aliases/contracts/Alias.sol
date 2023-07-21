@@ -3,8 +3,8 @@ pragma solidity ^0.8.2;
 
 import "@hop-protocol/ERC5164/contracts/IMessageExecutor.sol";
 import "@hop-protocol/ERC5164/contracts/MessageReceiver.sol";
-import "@hop-protocol/utils/contracts/ExecutorLib.sol";
-import "@hop-protocol/utils/contracts/Initializable.sol";
+import "@hop-protocol/shared-solidity/contracts/ExecutorLib.sol";
+import "@hop-protocol/shared-solidity/contracts/Initializable.sol";
 
 error InvalidCounterpart(address counterpart);
 error InvalidBridge(address msgSender);

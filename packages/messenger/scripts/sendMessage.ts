@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat'
-import getSigners from '@hop-protocol/shared/utils/getSigners'
-import getSetResultCalldata from '@hop-protocol/shared/utils/getSetResultCalldata'
+import getSigners from '@hop-protocol/shared-utils/utils/getSigners'
+import getSetResultCalldata from '@hop-protocol/shared-utils/utils/getSetResultCalldata'
 import {
   deployConfig,
   messageConfig,

@@ -3,7 +3,7 @@ pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@hop-protocol/messenger/contracts/interfaces/ICrossChainFees.sol";
-import "@hop-protocol/utils/contracts/OverridableChainId.sol";
+import "@hop-protocol/shared-solidity/contracts/OverridableChainId.sol";
 import "./AliasFactory.sol";
 
 interface IAliasFactory {

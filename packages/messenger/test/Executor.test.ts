@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { BigNumberish } from 'ethers'
 import { ethers } from 'hardhat'
-import getSetResultCalldata from '../../shared/utils/getSetResultCalldata'
+import getSetResultCalldata from '@hop-protocol/shared-utils/utils/getSetResultCalldata'
 import {
   HUB_CHAIN_ID,
   SPOKE_CHAIN_ID_0,

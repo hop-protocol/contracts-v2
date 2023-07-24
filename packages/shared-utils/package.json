@@ -1,5 +1,5 @@
 {
-  "name": "@hop-protocol/scripts",
+  "name": "@hop-protocol/shared-utils",
   "version": "0.0.0",
   "private": true,
   "license": "MIT",

@@ -1,7 +1,7 @@
 import { ethers } from 'hardhat'
-import getSigners from '../../shared/utils/getSigners'
-import logDeployment from '../../shared/utils/logDeployment'
-import logContractDeployed from '../../shared/utils/logContractDeployed'
+import getSigners from '@hop-protocol/shared-utils/utils/getSigners'
+import logDeployment from '@hop-protocol/shared-utils/utils/logDeployment'
+import logContractDeployed from '@hop-protocol/shared-utils/utils/logContractDeployed'
 import getMessengerDeployment from '@hop-protocol/messenger/utils/getDeployment'
 import getConnectorDeployment from '@hop-protocol/connectors/utils/getDeployment'
 

@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat'
-import getSigners from '../../shared/utils/getSigners'
-import logContractDeployed from '../../shared/utils/logContractDeployed'
+import getSigners from '@hop-protocol/shared-utils/utils/getSigners'
+import logContractDeployed from '@hop-protocol/shared-utils/utils/logContractDeployed'
 import { contracts } from './config'
 const { messengers } = contracts.testnet
 

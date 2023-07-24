@@ -1,0 +1,30 @@
+{
+  "name": "@hop-protocol/messenger-example",
+  "version": "0.0.0",
+  "license": "MIT",
+  "description": "Example using the Hop messenger",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hop-protocol/contracts-v2.git"
+  },
+  "author": "Hop Team (@HopProtocol)",
+  "bugs": {
+    "url": "https://github.com/hop-protocol/contracts-v2/issues"
+  },
+  "homepage": "https://github.com/hop-protocol/contracts-v2tree/master/packages/examples#readme",
+  "scripts": {
+    "compile": "npx hardhat compile",
+    "lint": "eslint .",
+    "prettier": "prettier '**/*.{json,sol,md}' --check",
+    "test": "npx hardhat test test/Greeter.test.ts",
+    "deploy": "npx hardhat run scripts/deploy.ts",
+    "chain": "npx hardhat node",
+    "solhint": "solhint 'contracts/**/*.sol'",
+    "coverage": "npx hardhat coverage --solcoverjs .solcover.js"
+  },
+  "dependencies": {
+    "@hop-protocol/shared-utils": "0.0.0",
+    "@hop-protocol/messenger": "0.0.0"
+  }
+}

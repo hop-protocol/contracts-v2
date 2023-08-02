@@ -7,8 +7,8 @@ import "@hop-protocol/shared-solidity/contracts/OverridableChainId.sol";
 import "./AliasFactory.sol";
 
 interface IAliasFactory {
-    function deployAlias(uint256 sourceChainId, address sourceAddress, address aliasDispatcher) external payable returns (address);
-    function deployAliasDispatcher(address sourceAddress) external payable returns (address);
+    function deployAlias(uint256 sourceChainId, address sourceAddress, address aliasDispatcher) external payable;
+    function deployAliasDispatcher(address sourceAddress) external payable;
 }
 
 /// @dev AliasDeployer calls the AliasFactory's to deploy aliases on multiple chains.
@@ -29,7 +29,8 @@ contract AliasDeployer is OverridableChainId, Ownable, ICrossChainFees {
 
         IAliasFactory aliasFactory = IAliasFactory(aliasFactoryForChainId[sourceChainId]);
         uint256 messageFee = thisChainId == sourceChainId ? 0 : crossChainMessageFee;
-        address aliasDispatcher = aliasFactory.deployAliasDispatcher{value: messageFee}(sourceAddress);
+        aliasFactory.deployAliasDispatcher{value: messageFee}(sourceAddress);
+        address aliasDispatcher = calculateAliasDispatcherAddress(sourceAddress);
 
         for(uint256 i = 0; i < aliasChainIds.length; i++) {
             uint256 chainId = aliasChainIds[i];
@@ -40,8 +41,14 @@ contract AliasDeployer is OverridableChainId, Ownable, ICrossChainFees {
     }
 
     function deployAlias(uint256 chainId, uint256 sourceChainId, address sourceAddress, address aliasDispatcher) public payable {
-        IAliasFactory factoryOrConnector = IAliasFactory(aliasFactoryForChainId[chainId]);
-        uint256 messageFee = getChainId() == chainId ? 0 : crossChainMessageFee;
+        address factoryOrConnectorAddress = aliasFactoryForChainId[chainId];
+        IAliasFactory factoryOrConnector = IAliasFactory(factoryOrConnectorAddress);
+        uint256 messageFee = 0;
+        if (chainId != getChainId()) {
+            uint256[] memory chainIds = new uint256[](1);
+            chainIds[0] = chainId;
+            messageFee = ICrossChainFees(factoryOrConnectorAddress).getFee(chainIds);
+        }
         factoryOrConnector.deployAlias{value: messageFee}(sourceChainId, sourceAddress, aliasDispatcher);
     }
 
@@ -57,9 +64,37 @@ contract AliasDeployer is OverridableChainId, Ownable, ICrossChainFees {
             if (chainId != thisChainId) {
                 // We know it's a connector if the chain id is not this chain id.
                 address connector = aliasFactoryForChainId[chainId];
+                uint256[] memory chainIds = new uint256[](1);
+                chainIds[0] = chainId;
                 fee += ICrossChainFees(connector).getFee(chainIds);
             }
         }
         return fee;
+    }
+
+    function aliasFactory() public view returns (address) {
+        return aliasFactoryForChainId[getChainId()];
+    }
+
+    function calculateAliasAddress(
+        uint256 sourceChainId,
+        address sourceAddress,
+        address aliasDispatcher
+    )
+        external
+        view
+        returns (address)
+    {
+        return AliasFactory(aliasFactory()).calculateAliasAddress(sourceChainId, sourceAddress, aliasDispatcher);
+    }
+
+    function calculateAliasDispatcherAddress(
+        address sourceAddress
+    )
+        public
+        view
+        returns (address)
+    {
+        return AliasFactory(aliasFactory()).calculateAliasDispatcherAddress(sourceAddress);
     }
 }

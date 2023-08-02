@@ -36,7 +36,7 @@ contract AliasFactory is OverridableChainId {
         external
         returns (address)
     {
-        bytes32 create2Salt = getSalt(
+        bytes32 create2Salt = getAliasSalt(
             sourceChainId,
             sourceAddress,
             aliasDispatcher
@@ -44,6 +44,7 @@ contract AliasFactory is OverridableChainId {
         address payable aliasAddress = payable(
             Create2.deploy(0, create2Salt, type(Alias).creationCode)
         );
+        assert(aliasAddress == calculateAliasAddress(sourceChainId, sourceAddress, aliasDispatcher));
 
         Alias(aliasAddress).initialize(
             baseExecutor,
@@ -61,11 +62,15 @@ contract AliasFactory is OverridableChainId {
         return aliasAddress;
     }
 
-    function deployAliasDispatcher(address sourceAddress)
-        external
-        returns (address)
-    {
-        address aliasDispatcher = address(new AliasDispatcher(sourceAddress, baseDispatcher));
+    function deployAliasDispatcher(address sourceAddress) external returns (address) {
+        bytes32 create2Salt = getAliasDispatcherSalt(sourceAddress);
+        address payable aliasDispatcher = payable(
+            Create2.deploy(0, create2Salt, type(AliasDispatcher).creationCode)
+        );
+        assert(aliasDispatcher == calculateAliasDispatcherAddress(sourceAddress));
+
+        AliasDispatcher(aliasDispatcher).initialize(sourceAddress, baseDispatcher);
+
         emit AliasDispatcherDeployed(
             aliasDispatcher,
             sourceAddress,
@@ -74,7 +79,7 @@ contract AliasFactory is OverridableChainId {
         return aliasDispatcher;
     }
 
-    function calculateAddress(
+    function calculateAliasAddress(
         uint256 sourceChainId,
         address sourceAddress,
         address aliasDispatcher
@@ -83,18 +88,30 @@ contract AliasFactory is OverridableChainId {
         view
         returns (address)
     {
-        bytes32 create2Salt = getSalt(sourceChainId, sourceAddress, aliasDispatcher);
+        bytes32 create2Salt = getAliasSalt(sourceChainId, sourceAddress, aliasDispatcher);
         bytes memory bytecode = type(Alias).creationCode;
         bytes32 bytecodeHash = keccak256(bytecode);
 
         return Create2.computeAddress(create2Salt, bytecodeHash);
     }
 
-    function getSalt(
+    function calculateAliasDispatcherAddress(address sourceAddress) public view returns (address) {
+        bytes32 create2Salt = getAliasDispatcherSalt(sourceAddress);
+        bytes memory bytecode = type(AliasDispatcher).creationCode;
+        bytes32 bytecodeHash = keccak256(bytecode);
+
+        return Create2.computeAddress(create2Salt, bytecodeHash);
+    }
+
+    function getAliasSalt(
         uint256 sourceChainId,
         address sourceAddress,
         address aliasDispatcher
     ) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(sourceChainId, sourceAddress, aliasDispatcher));
+    }
+
+    function getAliasDispatcherSalt(address sourceAddress) public pure returns (bytes32) {
+        return keccak256(abi.encodePacked(sourceAddress));
     }
 }

@@ -9,7 +9,7 @@ contract AliasDispatcher is IMessageDispatcher {
     address public baseDispatcher;
     mapping(uint256 => address) public aliasForChainId;
 
-    constructor(address _sourceAddress, address _baseDispatcher) {
+    function initialize(address _sourceAddress, address _baseDispatcher) external {
         sourceAddress = _sourceAddress;
         baseDispatcher = _baseDispatcher;
     }

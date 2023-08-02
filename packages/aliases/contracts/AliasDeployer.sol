@@ -88,13 +88,7 @@ contract AliasDeployer is OverridableChainId, Ownable, ICrossChainFees {
         return AliasFactory(aliasFactory()).calculateAliasAddress(sourceChainId, sourceAddress, aliasDispatcher);
     }
 
-    function calculateAliasDispatcherAddress(
-        address sourceAddress
-    )
-        public
-        view
-        returns (address)
-    {
+    function calculateAliasDispatcherAddress(address sourceAddress) public view returns (address) {
         return AliasFactory(aliasFactory()).calculateAliasDispatcherAddress(sourceAddress);
     }
 }

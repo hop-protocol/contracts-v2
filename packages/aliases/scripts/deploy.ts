@@ -65,9 +65,11 @@ async function main() {
 
   const connectorAddress = await hubConnectorFactory.calculateAddress(hubChainId, aliasDeployer.address, spokeChainId, spokeAliasFactory.address)
   const messageFee = await hubConnectorFactory.getFee([hubChainId, spokeChainId])
-  await hubConnectorFactory.deployConnectors(hubChainId, aliasDeployer.address, spokeChainId, spokeAliasFactory.address, { value: messageFee, gasLimit: 1000000 })
+  tx = await hubConnectorFactory.deployConnectors(hubChainId, aliasDeployer.address, spokeChainId, spokeAliasFactory.address, { value: messageFee, gasLimit: 2000000 })
+  await tx.wait()
   console.log(`Connectors deployed: `, connectorAddress)
-  await aliasDeployer.connect(hubSigner).setAliasFactoryForChainId(spokeChainId, connectorAddress)
+  tx = await aliasDeployer.setAliasFactoryForChainId(spokeChainId, connectorAddress)
+  await tx.wait()
   console.log('aliasDeployer spoke AliasFactory set')
 
   logDeployment(contracts)

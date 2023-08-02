@@ -84,7 +84,7 @@ async function deployConnectors(
 
   const l1Connector = await L1OptimismConnector.connect(l1Signer).deploy(
     externalContracts.optimism.l1CrossDomainMessenger,
-    500_000,
+    200_000,
     { gasLimit: 5_000_000 }
   )
 
@@ -92,7 +92,7 @@ async function deployConnectors(
 
   const l2Connector = await L2OptimismConnector.connect(l2Signer).deploy(
     externalContracts.optimism.l2CrossDomainMessenger,
-    500_000,
+    200_000,
     { gasLimit: 5_000_000 }
   )
 

@@ -1,5 +1,5 @@
 import { BigNumber, utils } from 'ethers'
-import getSetResultCalldata from './src/getSetResultCalldata'
+import getSetResultCalldata from './utils/getSetResultCalldata'
 const { parseUnits } = utils
 
 export const ONE_WEEK = 604800

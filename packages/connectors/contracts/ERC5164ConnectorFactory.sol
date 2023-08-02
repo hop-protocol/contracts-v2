@@ -50,6 +50,7 @@ contract ERC5164ConnectorFactory is OverridableChainId {
         address payable connector = payable(
             Create2.deploy(0, create2Salt, type(ERC5164Connector).creationCode)
         );
+        assert(connector == calculateAddress(chainId, target, counterpartChainId, counterpartTarget));
 
         ERC5164Connector(connector).initialize(
             target,

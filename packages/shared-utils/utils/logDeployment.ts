@@ -1,22 +1,29 @@
 import * as fs from 'fs'
 import path from 'path'
+import { promisify } from 'util'
 
-function logDeployment(object: any) {
+const writeFileAsync = promisify(fs.writeFile)
+const mkdirAsync = promisify(fs.mkdir)
+const existsAsync = promisify(fs.exists)
+
+async function logDeployment(baseDir: string, object: any, fileName?: string) {
+  console.log('logDeployment')
   let data = JSON.stringify(object, null, 2)
 
   const unixTimestamp = Math.floor(Date.now() / 1000)
-  const dir = 'deployment-artifacts'
-  const filePath = path.join(dir, `${unixTimestamp}.json`)
+  const artifactsDir = 'deployment-artifacts'
+  const _fileName = fileName ?? `${unixTimestamp}.json`
+  const filePath = path.join(baseDir, artifactsDir, _fileName)
 
-  // Check if the directory exists, create it if it doesn't
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir)
+  console.log('filePath', filePath)
+
+  const artifactsDirExists = await existsAsync(artifactsDir)
+  if (!artifactsDirExists) {
+    await mkdirAsync(artifactsDir)
   }
 
-  fs.writeFile(filePath, data, (err) => {
-    if (err) throw err
-    console.log('Deployment logged to', filePath)
-  })
+  await writeFileAsync(filePath, data)
+  console.log('Deployment logged to', filePath)
 }
 
 export default logDeployment

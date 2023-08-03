@@ -5,7 +5,12 @@ import logContractDeployed from '@hop-protocol/shared-utils/utils/logContractDep
 import getMessengerDeployment from '@hop-protocol/messenger/utils/getDeployment'
 import getConnectorDeployment from '@hop-protocol/connectors/utils/getDeployment'
 
-async function main() {
+async function deploy(fileName?: string) {
+  console.log(`
+  ######################################################
+  ############### Deploy Alias Contracts ###############
+  ######################################################
+    `)
   const contracts: any = {
     aliasFactories: {}
   }
@@ -16,8 +21,8 @@ async function main() {
   const hubSigner = signers[hubChainId]
   const spokeSigner = signers[spokeChainId]
 
-  const { dispatchers, executors } = getMessengerDeployment()
-  const { connectorFactories } = getConnectorDeployment()
+  const { dispatchers, executors } = getMessengerDeployment(fileName)
+  const { connectorFactories } = getConnectorDeployment(fileName)
 
   const hubExecutorAddress = executors[hubChainId]
   const hubDispatcherAddress = dispatchers[hubChainId]
@@ -65,21 +70,18 @@ async function main() {
 
   const connectorAddress = await hubConnectorFactory.calculateAddress(hubChainId, aliasDeployer.address, spokeChainId, spokeAliasFactory.address)
   const messageFee = await hubConnectorFactory.getFee([hubChainId, spokeChainId])
-  tx = await hubConnectorFactory.deployConnectors(hubChainId, aliasDeployer.address, spokeChainId, spokeAliasFactory.address, { value: messageFee, gasLimit: 2000000 })
+  tx = await hubConnectorFactory.deployConnectors(hubChainId, aliasDeployer.address, spokeChainId, spokeAliasFactory.address, { value: messageFee, gasLimit: 5000000 })
   await tx.wait()
   console.log(`Connectors deployed: `, connectorAddress)
   tx = await aliasDeployer.setAliasFactoryForChainId(spokeChainId, connectorAddress)
   await tx.wait()
   console.log('aliasDeployer spoke AliasFactory set')
 
-  logDeployment(contracts)
+  await logDeployment(`${__dirname}/..`, contracts, fileName)
 }
 
 async function wait(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-main().catch(error => {
-  console.error(error)
-  process.exitCode = 1
-})
+export default deploy

@@ -22,7 +22,7 @@
     "gas-profile": "npx hardhat test gas-profile/gas.test.ts",
     "solhint": "solhint 'contracts/**/*.sol'",
     "coverage": "npx hardhat coverage --solcoverjs .solcover.js",
-    "deploy": "npx hardhat run scripts/deploy.ts",
+    "deploy": "npx hardhat run scripts/runDeploy.ts",
     "local:deploy": "npx hardhat run scripts/deploy.ts --network localhost",
     "testnet:deploy": "npx hardhat run scripts/deploy.ts --network goerli",
     "testnet:deploy-message-receiver": "npx hardhat run scripts/deployMessageReceiver.ts",

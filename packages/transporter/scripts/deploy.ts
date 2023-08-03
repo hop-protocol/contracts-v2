@@ -11,7 +11,13 @@ import {
   MAX_TRANSPORT_FEE_BPS
 } from '@hop-protocol/shared-utils/constants'
 
-async function main() {
+async function deploy(fileName?: string) {
+  console.log(`
+######################################################
+############ Deploy Transporter Contracts ############
+######################################################
+  `)
+
   const spokeChain = '420'
   const hubChainId = '5'
 
@@ -65,7 +71,7 @@ async function main() {
     console.log('Hub and Spoke bridge connected')
   }
 
-  logDeployment(contracts)
+  await logDeployment(`${__dirname}/..`, contracts, fileName)
 }
 
 async function deployConnectors(
@@ -114,7 +120,4 @@ async function deployConnectors(
   }
 }
 
-main().catch(error => {
-  console.error(error)
-  process.exitCode = 1
-})
+export default deploy

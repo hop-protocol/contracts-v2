@@ -5,7 +5,6 @@ import "../Connector.sol";
 
 error MockRelayFailed();
 error NoPendingMessage();
-error CannotMessageAddress(address to);
 
 contract MockConnector is Connector {
     bytes public pendingMessage;
@@ -18,11 +17,6 @@ contract MockConnector is Connector {
         if(!success) {
             // Bubble up error message
             assembly { revert(add(res,0x20), res) }
-        }
-
-        // Trick compiler into including error in abi
-        if (false) {
-            revert CannotMessageAddress(msg.sender);
         }
     }
 

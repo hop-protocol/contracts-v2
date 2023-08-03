@@ -7,7 +7,12 @@ import getMessengerDeployment from '@hop-protocol/messenger/utils/getDeployment'
 
 const MESSENGER_CONFIG_DIR = '@hop-protocol/messenger/deployments'
 
-async function main() {
+async function deploy(fileName?: string) {
+  console.log(`
+######################################################
+############# Deploy Connector Contracts #############
+######################################################
+  `)
   const hubChainId = '5'
   const spokeChainId = '420'
 
@@ -19,7 +24,7 @@ async function main() {
   const hubSigner = signers[hubChainId]
   const spokeSigner = signers[spokeChainId]
 
-  const { dispatchers, executors } = getMessengerDeployment()
+  const { dispatchers, executors } = getMessengerDeployment(fileName)
 
   const hubDispatcherAddress = dispatchers[hubChainId]
   const spokeDispatcherAddress = dispatchers[spokeChainId]
@@ -45,14 +50,11 @@ async function main() {
   contracts.connectorFactories[spokeChainId] = spokeConnectorFactory.address
   await logContractDeployed('ERC5164ConnectorFactory', spokeConnectorFactory)
 
-  logDeployment(contracts)
+  await logDeployment(`${__dirname}/..`, contracts, fileName)
 }
 
 async function wait(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-main().catch(error => {
-  console.error(error)
-  process.exitCode = 1
-})
+export default deploy

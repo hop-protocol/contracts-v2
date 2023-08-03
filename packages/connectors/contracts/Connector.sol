@@ -5,12 +5,12 @@ pragma solidity ^0.8.2;
 import "@hop-protocol/shared-solidity/contracts/ExecutorLib.sol";
 import "@hop-protocol/shared-solidity/contracts/Initializable.sol";
 
-error InvalidCounterpart(address counterpart);
-error InvalidBridge(address msgSender);
-error InvalidFromChainId(uint256 fromChainId);
-
 abstract contract Connector is Initializable {
     using ExecutorLib for address;
+
+    error InvalidCounterpart(address counterpart);
+    error InvalidBridge(address msgSender);
+    error InvalidFromChainId(uint256 fromChainId);
 
     address public target;
     address public counterpart;

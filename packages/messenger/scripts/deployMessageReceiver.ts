@@ -4,6 +4,7 @@ import logContractDeployed from '@hop-protocol/shared-utils/utils/logContractDep
 import { contracts } from './config'
 const { messengers } = contracts.testnet
 
+// ToDo: Move to shared-utils
 async function main() {
   const { hubSigner } = getSigners()
   let MockMessageReceiver = await ethers.getContractFactory(

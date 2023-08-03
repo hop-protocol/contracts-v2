@@ -22,7 +22,7 @@
     "gas-profile": "npx hardhat test gas-profile/gas.test.ts",
     "solhint": "solhint 'contracts/**/*.sol'",
     "coverage": "npx hardhat coverage --solcoverjs .solcover.js",
-    "deploy": "npx hardhat run scripts/deploy.ts",
+    "deploy": "npx hardhat run scripts/runDeploy.ts",
     "testnet:verify-spoke": "npx hardhat verify --network optimismGoerli --constructor-args ./scripts/constructorParams/spokeParams.js",
     "testnet:verify-hub": "npx hardhat verify --network goerli",
     "testnet:verify-fee-distributor": "npx hardhat verify --network goerli --constructor-args ./scripts/constructorParams/feeDistributerParams.js",

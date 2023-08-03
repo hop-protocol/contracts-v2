@@ -6,12 +6,12 @@ import "@hop-protocol/ERC5164/contracts/MessageReceiver.sol";
 import "@hop-protocol/shared-solidity/contracts/ExecutorLib.sol";
 import "@hop-protocol/shared-solidity/contracts/Initializable.sol";
 
-error InvalidCounterpart(address counterpart);
-error InvalidBridge(address msgSender);
-error InvalidFromChainId(uint256 fromChainId);
-
 contract Alias is MessageReceiver, Initializable {
     using ExecutorLib for address;
+
+    error InvalidCounterpart(address counterpart);
+    error InvalidBridge(address msgSender);
+    error InvalidFromChainId(uint256 fromChainId);
 
     address public baseExecutor;
     uint256 public sourceChainId;

@@ -5,7 +5,13 @@ import logDeployment from '@hop-protocol/shared-utils/utils/logDeployment'
 import { deployConfig } from './config'
 import getTransporterDeployment from '@hop-protocol/transporter/utils/getDeployment'
 
-async function main() {
+async function deploy(fileName?: string) {
+  console.log(`
+######################################################
+############# Deploy Messenger Contracts #############
+######################################################
+  `)
+
   const spokeChain = '420'
   const hubChainId = '5'
 
@@ -14,7 +20,7 @@ async function main() {
     dispatchers: {}
   }
 
-  const { transporters } = await getTransporterDeployment()
+  const { transporters } = await getTransporterDeployment(fileName)
   const hubTransporterAddress = transporters[hubChainId]
   const spokeTransporterAddress = transporters[spokeChain]
 
@@ -75,11 +81,8 @@ async function main() {
     await logContractDeployed('ExecutorManager', spokeExecutor)
     spokeExecutors.push(spokeExecutor)
 
-    logDeployment(contracts)
+    await logDeployment(`${__dirname}/..`, contracts, fileName)
   }
 }
 
-main().catch(error => {
-  console.error(error)
-  process.exitCode = 1
-})
+export default deploy

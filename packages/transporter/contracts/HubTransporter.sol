@@ -4,7 +4,6 @@ pragma solidity ^0.8.2;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./Transporter.sol";
-import "hardhat/console.sol";
 
 interface ISpokeTransporter {
     function receiveCommitment(uint256 fromChainId, bytes32 commitment) external payable;

@@ -9,7 +9,6 @@ import "../libraries/Error.sol";
 import "../libraries/Bitmap.sol";
 import "../libraries/MerkleTreeLib.sol";
 import "../libraries/MessengerLib.sol";
-import "hardhat/console.sol";
 
 interface IHopMessageReceiver {
     // Optional functions for custom validation logic

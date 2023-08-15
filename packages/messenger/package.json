@@ -14,10 +14,11 @@
   },
   "homepage": "https://github.com/hop-protocol/contracts-v2/packages/messenger#readme",
   "scripts": {
-    "compile": "npx hardhat compile",
+    "compile": "FOUNDRY_PROFILE=messenger forge build",
+    "hardhat-compile": "npx hardhat compile",
     "lint": "eslint .",
     "prettier": "prettier '**/*.{json,sol,md}' --check",
-    "test": "npx hardhat test",
+    "test": "FOUNDRY_PROFILE=messenger forge test",
     "chain": "npx hardhat node",
     "gas-profile": "npx hardhat test gas-profile/gas.test.ts",
     "solhint": "solhint 'contracts/**/*.sol'",

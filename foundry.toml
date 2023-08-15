@@ -1,19 +1,48 @@
 [profile.default]
-src = 'contracts'
-out = 'forge-artifacts'
-libs = ['node_modules', 'lib']
-test = 'test/foundry'
-# cache_path = 'forge-cache'
-allow_paths = ['./', '../', '../../node_modules']
 remappings = [
     # 'ds-test/=../../pvt/lib/forge-std/lib/ds-test/src/',
-    # 'forge-std/=../../pvt/lib/forge-std/src/',
-    '@openzeppelin/=../../node_modules/@openzeppelin/',
-    '@hop-protocol/=../',
+    'forge-std/=./lib/forge-std/src/',
+    '@openzeppelin/=./node_modules/@openzeppelin/',
+    '@hop-protocol/=./packages/',
 ]
 optimizer = true
 optimizer_runs = 500000
-solc_version = '0.8.9'
+solc_version = '0.8.19'
+libs = ['node_modules', 'lib']
+
+[profile.transporter]
+src = 'packages/transporter/contracts'
+out = 'packages/transporter/forge-artifacts'
+test = 'packages/transporter/test/foundry'
+
+[profile.messenger]
+src = 'packages/messenger/contracts'
+out = 'packages/messenger/forge-artifacts'
+test = 'packages/messenger/test/foundry'
+
+[profile.connectors]
+src = 'packages/connectors/contracts'
+out = 'packages/connectors/forge-artifacts'
+test = 'packages/connectors/test/foundry'
+
+[profile.aliases]
+src = 'packages/aliases/contracts'
+out = 'packages/aliases/forge-artifacts'
+test = 'packages/aliases/test/foundry'
+
+[profile.erc5164]
+src = 'packages/erc5164/contracts'
+out = 'packages/erc5164/forge-artifacts'
+test = 'packages/erc5164/test/foundry'
+
+[profile.shared-solidity]
+src = 'packages/shared-solidity/contracts'
+out = 'packages/shared-solidity/forge-artifacts'
+test = 'packages/shared-solidity/test/foundry'
+
+# cache_path = 'forge-cache'
+# allow_paths = ['./', '../', '../../node_modules']
+
 # ignored_error_codes = [8261]
 
 # [fuzz]

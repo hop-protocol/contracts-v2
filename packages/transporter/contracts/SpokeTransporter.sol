@@ -41,10 +41,7 @@ contract SpokeTransporter is Ownable, Transporter {
         _;
     }
 
-    constructor(
-        uint256 _hubChainId,
-        uint256 _pendingFeeBatchSize
-    ) {
+    constructor(uint256 _hubChainId, uint256 _pendingFeeBatchSize) {
         hubChainId = _hubChainId;
         pendingFeeBatchSize = _pendingFeeBatchSize;
     }

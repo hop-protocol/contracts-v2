@@ -1,6 +1,9 @@
+import fs from 'fs'
 import path from 'path'
 import * as dotenv from 'dotenv'
 import { HardhatUserConfig } from 'hardhat/config'
+import '@nomicfoundation/hardhat-foundry'
+import 'hardhat-preprocessor'
 import '@nomiclabs/hardhat-etherscan'
 import '@nomiclabs/hardhat-waffle'
 import '@typechain/hardhat'
@@ -15,7 +18,33 @@ const accounts =
     ? [process.env.DEPLOYER_PRIVATE_KEY]
     : []
 
+function getRemappings() {
+  const content = fs.readFileSync("../../remappings.txt", "utf8")
+  console.log('XXXX', content)
+
+  return fs
+    .readFileSync("../../remappings.txt", "utf8")
+    .split("\n")
+    .filter(Boolean) // remove empty lines
+    .map((line) => line.trim().split("="));
+}
+
 const config: HardhatUserConfig = {
+  preprocess: {
+    eachLine: (hre) => ({
+      transform: (line: string) => {
+        if (line.match(/^\s*import /i)) {
+          for (const [from, to] of getRemappings()) {
+            if (line.includes(from)) {
+              line = line.replace(from, to);
+              break;
+            }
+          }
+        }
+        return line;
+      },
+    }),
+  },
   solidity: {
     compilers: [
       {

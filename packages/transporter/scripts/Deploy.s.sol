@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {console} from "forge-std/console.sol";
+import {Script} from "forge-std/Script.sol";
 import {MockConnector} from "@hop-protocol/connectors/contracts/test/MockConnector.sol";
 import {L1OptimismConnector} from "@hop-protocol/connectors/contracts/external/L1OptimismConnector.sol";
 import {L2OptimismConnector} from "@hop-protocol/connectors/contracts/external/L2OptimismConnector.sol";
@@ -17,7 +18,6 @@ import {
 } from "@hop-protocol/shared-solidity/test/foundry/Constants.sol";
 import {ExternalContracts, OPStackConfig} from "@hop-protocol/shared-solidity/test/foundry/ExternalContracts.sol";
 import {CrossChainScript, Chain} from "@hop-protocol/shared-solidity/test/foundry/CrossChainScript.sol";
-import {Script} from "forge-std/Script.sol";
 import {Transporter} from "../contracts/Transporter.sol";
 import {HubTransporter} from "../contracts/HubTransporter.sol";
 import {SpokeTransporter} from  "../contracts/SpokeTransporter.sol";
@@ -32,9 +32,6 @@ contract TransporterFixture is Script, CrossChainScript {
     mapping(uint256 => address) public hubConnectors;
     mapping(uint256 => address) public spokeConnectors;
 
-    // State
-    bytes32[] public commitments;
-
     function run() public {
         uint256[] memory _spokeChainIds = new uint256[](2);
         _spokeChainIds[0] = SPOKE_CHAIN_ID_0;
@@ -47,15 +44,15 @@ contract TransporterFixture is Script, CrossChainScript {
         spokeChainIds = _spokeChainIds;
 
         console.log("Deploying contracts");
-        deployHub(_hubChainId);
+        deployHubTransporter(_hubChainId);
 
         for (uint256 i = 0; i < spokeChainIds.length; i++) {
-            deploySpoke(_hubChainId, spokeChainIds[i]);
+            deploySpokeTransporter(_hubChainId, spokeChainIds[i]);
             deployConnectors(_hubChainId, spokeChainIds[i], address(hubTransporter), address(spokeTransporters[i]));
         }
     }
 
-    function deployHub(uint256 _hubChainId) public broadcastOn(_hubChainId) {
+    function deployHubTransporter(uint256 _hubChainId) public broadcastOn(_hubChainId) {
         console.log("Deploying hub");
         hubTransporter = new HubTransporter(
             RELAY_WINDOW,
@@ -67,7 +64,7 @@ contract TransporterFixture is Script, CrossChainScript {
         transporters[_hubChainId] = Transporter(address(hubTransporter));
     }
 
-    function deploySpoke(uint256 _hubChainId, uint256 spokeChainId) public broadcastOn(spokeChainId) {
+    function deploySpokeTransporter(uint256 _hubChainId, uint256 spokeChainId) public broadcastOn(spokeChainId) {
         console.log("Deploying spoke", spokeChainId);
         SpokeTransporter spokeTransporter = new SpokeTransporter(_hubChainId, FULL_POOL_SIZE);
         transporters[spokeChainId] = spokeTransporter;

@@ -12,7 +12,7 @@ artifacts
 forge-artifacts
 
 notes.txt
-nft-poc
+old_packages
 
 tenderly.yaml
 deployment-artifacts

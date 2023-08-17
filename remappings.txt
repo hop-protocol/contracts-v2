@@ -1,3 +1,1 @@
-forge-std/=../../lib/forge-std/src/
-@openzeppelin/=../../node_modules/@openzeppelin/
-@hop-protocol/=../../packages/
+forge-std/=./lib/forge-std/src/

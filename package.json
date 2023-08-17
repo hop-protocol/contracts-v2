@@ -5,11 +5,15 @@
   "description": "Hop Contracts V2",
   "author": "Hop Team (@HopProtocol)",
   "license": "MIT",
-  "workspaces": [
-    "packages/*",
-    "packages/examples/*"
-  ],
+  "scripts": {
+    "compile": "forge build",
+    "hardhat-compile": "npx hardhat compile",
+    "test": "npx hardhat test",
+    "lint": "eslint .",
+    "prettier": "prettier '**/*.{json,sol,md}' --check"
+  },
   "devDependencies": {
+    "@eth-optimism/sdk": "^1.7.0",
     "@nomiclabs/hardhat-ethers": "^2.2.1",
     "@nomiclabs/hardhat-etherscan": "^3.1.1",
     "@nomiclabs/hardhat-waffle": "^2.0.3",
@@ -33,6 +37,7 @@
     "ethereum-waffle": "^3.4.4",
     "ethers": "^5.6.8",
     "hardhat": "^2.9.9",
+    "merkletreejs": "^0.2.32",
     "prettier": "^2.7.1",
     "prettier-plugin-solidity": "^1.0.0-beta.13",
     "solhint": "^3.3.7",
@@ -44,6 +49,7 @@
   },
   "dependencies": {
     "@nomicfoundation/hardhat-foundry": "^1.0.3",
+    "@openzeppelin/contracts": "^4.7.3",
     "hardhat-preprocessor": "^0.1.5"
   }
 }

@@ -8,6 +8,7 @@ bin
 
 #Hardhat files
 cache
+cache_hardhat
 artifacts
 forge-artifacts
 

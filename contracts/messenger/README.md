@@ -23,7 +23,7 @@ Before a message can be executed, the `ExecutionManager` must prove the bundle b
 
 ### Transporters
 
-See [Transporter package](https://github.com/hop-protocol/contracts-v2/packages/transporter).
+See [Transporter package](../transporter).
 
 `Transporter`s are used by the messenger for tranporting data such as bundles cross-chain. The data being transported is always represented by a single hash called a `commitment`. In this case, the `commitment` is the hash of the bundle data -- the `bundleHash`.
 
@@ -44,7 +44,7 @@ IMessageDispatcher(dispatcher).dispatchMessage(toChainId, to, data);
 
 ### Receive a message
 
-When receiving a message, inherit from [`MessageReceiver`](https://github.com/hop-protocol/contracts-v2/blob/master/packages/messenger/contracts/erc5164/MessageReceiver.sol) to access the `EIP-5164` validation data -- `messageId`, `from` address, and `fromChainId`.
+When receiving a message, inherit from [`MessageReceiver`](../ERC5164/MessageReceiver.sol) to access the `EIP-5164` validation data -- `messageId`, `from` address, and `fromChainId`.
 
 ```solidity
 contract MyContract is MessageReceiver {
